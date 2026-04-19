@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="128" viewBox="0 0 1024 128">
+  <rect width="1024" height="128" fill="#101214"/>
+  <g>
+    <polygon points="64,0 128,32 64,64 0,32" fill="#000000" opacity="0"/>
+    <circle cx="42" cy="36" r="7" fill="#8a847d"/><circle cx="64" cy="28" r="9" fill="#938d86"/><circle cx="82" cy="39" r="6" fill="#7a756e"/>
+    <polygon points="192,0 256,32 192,64 128,32" fill="#000000" opacity="0"/>
+    <rect x="156" y="28" width="72" height="10" fill="#7d5c3d"/>
+    <polygon points="320,0 384,32 320,64 256,32" fill="#000000" opacity="0"/>
+    <circle cx="320" cy="34" r="15" fill="#7b5a3d"/>
+    <polygon points="448,0 512,32 448,64 384,32" fill="#000000" opacity="0"/>
+    <path d="M406 42 C424 20, 464 54, 486 26" fill="none" stroke="#6f614f" stroke-width="4"/>
+
+    <polygon points="64,64 128,96 64,128 0,96" fill="#000000" opacity="0"/>
+    <path d="M34 108 L40 92 L46 106 L52 88 L58 108 L64 90 L70 106 L78 92 L86 108" fill="none" stroke="#6e7457" stroke-width="2"/>
+    <polygon points="192,64 256,96 192,128 128,96" fill="#000000" opacity="0"/>
+    <ellipse cx="192" cy="98" rx="26" ry="14" fill="#4f463e"/>
+    <polygon points="320,64 384,96 320,128 256,96" fill="#000000" opacity="0"/>
+    <ellipse cx="320" cy="98" rx="34" ry="18" fill="#7a6048" opacity="0.85"/>
+    <polygon points="448,64 512,96 448,128 384,96" fill="#000000" opacity="0"/>
+    <ellipse cx="448" cy="98" rx="40" ry="20" fill="#7d674e" opacity="0.55"/>
+  </g>
+</svg>

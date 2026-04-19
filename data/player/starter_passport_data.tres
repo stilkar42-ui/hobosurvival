@@ -1,0 +1,31 @@
+[gd_resource type="Resource" script_class="PlayerPassportData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/player/player_passport_data.gd" id="1_passport"]
+
+[resource]
+script = ExtResource("1_passport")
+full_name = "Thomas Hale"
+age = 34
+home_town = "Muncie, Indiana"
+family_status = "Married, two children waiting back home"
+current_goal = "Hold together through the month and get support home before each due day closes."
+strength = 5
+endurance = 6
+wits = 5
+presence = 4
+agility = 4
+nutrition = 58
+fatigue = 58
+morale = 47
+hygiene = 36
+warmth = 63
+hobo_lore = 3
+labor = 5
+fighting = 2
+crafting = 4
+speech = 3
+stealth = 2
+scavenging = 4
+traits_perks = PackedStringArray("Callused Hands", "Keeps His Word")
+reputation_standing = PackedStringArray("Unknown in this town", "Foremen may take him if he looks steady")
+affiliations = PackedStringArray("Family in Indiana", "Knows a rail cook outside Terre Haute")

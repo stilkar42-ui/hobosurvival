@@ -1,0 +1,192 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://scripts/front_end/camp_isometric_play_layer.gd" id="1_camp_layer"]
+[ext_resource type="Script" path="res://scripts/front_end/camp_ground_tilemap_layer.gd" id="2_ground_tilemap"]
+[ext_resource type="Script" path="res://scripts/front_end/camp_world_view.gd" id="2_world_view"]
+[ext_resource type="Script" path="res://scripts/front_end/camp_player_controller.gd" id="3_player_controller"]
+[ext_resource type="Script" path="res://scripts/front_end/camp_interaction_system.gd" id="4_interaction_system"]
+
+[node name="CampIsometricPlayLayer" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 1
+script = ExtResource("1_camp_layer")
+
+[node name="GroundTileMap" type="TileMapLayer" parent="."]
+position = Vector2(640, 360)
+script = ExtResource("2_ground_tilemap")
+
+[node name="WorldView" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 1
+script = ExtResource("2_world_view")
+
+[node name="HudPanel" type="PanelContainer" parent="."]
+layout_mode = 1
+anchors_preset = 1
+anchor_right = 0.0
+anchor_bottom = 0.0
+offset_left = 12.0
+offset_top = 12.0
+offset_right = 368.0
+offset_bottom = 214.0
+grow_horizontal = 0
+grow_vertical = 0
+mouse_filter = 2
+
+[node name="HudRoot" type="VBoxContainer" parent="HudPanel"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="HudTitle" type="Label" parent="HudPanel/HudRoot"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "Camp Condition"
+
+[node name="HudMeta" type="Label" parent="HudPanel/HudRoot"]
+layout_mode = 2
+autowrap_mode = 3
+text = "Camp routine status will appear here."
+
+[node name="HudStatsGrid" type="GridContainer" parent="HudPanel/HudRoot"]
+layout_mode = 2
+columns = 2
+theme_override_constants/h_separation = 10
+theme_override_constants/v_separation = 6
+
+[node name="HoverChip" type="PanelContainer" parent="."]
+visible = false
+layout_mode = 0
+offset_left = 812.0
+offset_top = 95.0
+offset_right = 970.0
+offset_bottom = 139.0
+mouse_filter = 2
+
+[node name="HoverChipRoot" type="MarginContainer" parent="HoverChip"]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 6
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 6
+
+[node name="HoverChipLabel" type="Label" parent="HoverChip/HoverChipRoot"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "Campfire"
+
+[node name="InteractionCard" type="PanelContainer" parent="."]
+visible = false
+layout_mode = 0
+offset_left = 844.0
+offset_top = 124.0
+offset_right = 1268.0
+offset_bottom = 512.0
+mouse_filter = 1
+
+[node name="InteractionRoot" type="VBoxContainer" parent="InteractionCard"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="InteractionTitleBar" type="PanelContainer" parent="InteractionCard/InteractionRoot"]
+layout_mode = 2
+mouse_filter = 0
+
+[node name="InteractionTitleBarRoot" type="HBoxContainer" parent="InteractionCard/InteractionRoot/InteractionTitleBar"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="InteractionBadge" type="PanelContainer" parent="InteractionCard/InteractionRoot/InteractionTitleBar/InteractionTitleBarRoot"]
+layout_mode = 2
+custom_minimum_size = Vector2(54, 54)
+
+[node name="InteractionBadgeLabel" type="Label" parent="InteractionCard/InteractionRoot/InteractionTitleBar/InteractionTitleBarRoot/InteractionBadge"]
+layout_mode = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+theme_override_font_sizes/font_size = 16
+text = "WRK"
+
+[node name="InteractionTitleText" type="VBoxContainer" parent="InteractionCard/InteractionRoot/InteractionTitleBar/InteractionTitleBarRoot"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 2
+
+[node name="InteractionTitle" type="Label" parent="InteractionCard/InteractionRoot/InteractionTitleBar/InteractionTitleBarRoot/InteractionTitleText"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "Campfire"
+
+[node name="InteractionSubtitle" type="Label" parent="InteractionCard/InteractionRoot/InteractionTitleBar/InteractionTitleBarRoot/InteractionTitleText"]
+layout_mode = 2
+autowrap_mode = 3
+text = "Camp routine"
+
+[node name="InteractionCloseButton" type="Button" parent="InteractionCard/InteractionRoot/InteractionTitleBar/InteractionTitleBarRoot"]
+visible = false
+layout_mode = 2
+text = "Close"
+
+[node name="InteractionDetail" type="Label" parent="InteractionCard/InteractionRoot"]
+layout_mode = 2
+autowrap_mode = 3
+text = "Camp interaction detail."
+
+[node name="InteractionActionButton" type="Button" parent="InteractionCard/InteractionRoot"]
+layout_mode = 2
+text = "Use"
+
+[node name="InteractionSectionScroll" type="ScrollContainer" parent="InteractionCard/InteractionRoot"]
+visible = false
+custom_minimum_size = Vector2(0, 250)
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+vertical_scroll_mode = 1
+
+[node name="InteractionSectionList" type="VBoxContainer" parent="InteractionCard/InteractionRoot/InteractionSectionScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[node name="PromptPanel" type="PanelContainer" parent="."]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 12.0
+offset_top = -82.0
+offset_right = -12.0
+offset_bottom = -12.0
+grow_horizontal = 2
+grow_vertical = 0
+
+[node name="PromptRoot" type="VBoxContainer" parent="PromptPanel"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="PromptTitle" type="Label" parent="PromptPanel/PromptRoot"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "Walk the clearing with arrow keys or WASD. Click the ground or an object to move there."
+
+[node name="PromptDetail" type="Label" parent="PromptPanel/PromptRoot"]
+layout_mode = 2
+autowrap_mode = 3
+text = "Stand beside the fire, bedroll, stash, or tool area to act in camp."
+
+[node name="PlayerController" type="Node" parent="."]
+script = ExtResource("3_player_controller")
+
+[node name="InteractionSystem" type="Node" parent="."]
+script = ExtResource("4_interaction_system")

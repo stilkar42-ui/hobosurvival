@@ -1,0 +1,111 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/debug/main_debug_shell.gd" id="1_shell_script"]
+
+[node name="MainDebugShell" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_shell_script")
+
+[node name="Root" type="HBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 16.0
+offset_top = 16.0
+offset_right = -16.0
+offset_bottom = -16.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 16
+
+[node name="Sidebar" type="PanelContainer" parent="Root"]
+custom_minimum_size = Vector2(240, 0)
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="SidebarRoot" type="VBoxContainer" parent="Root/Sidebar"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Title" type="Label" parent="Root/Sidebar/SidebarRoot"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "Prototype Shell"
+
+[node name="PageTitle" type="Label" parent="Root/Sidebar/SidebarRoot"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "Start Page"
+
+[node name="PageStatus" type="Label" parent="Root/Sidebar/SidebarRoot"]
+layout_mode = 2
+autowrap_mode = 3
+text = "Default landing page for the prototype shell."
+
+[node name="Separator" type="HSeparator" parent="Root/Sidebar/SidebarRoot"]
+layout_mode = 2
+
+[node name="StartButton" type="Button" parent="Root/Sidebar/SidebarRoot"]
+layout_mode = 2
+text = "Start"
+
+[node name="PassportButton" type="Button" parent="Root/Sidebar/SidebarRoot"]
+layout_mode = 2
+text = "Passport"
+
+[node name="InventoryButton" type="Button" parent="Root/Sidebar/SidebarRoot"]
+layout_mode = 2
+text = "Inventory"
+
+[node name="StateSeparator" type="HSeparator" parent="Root/Sidebar/SidebarRoot"]
+layout_mode = 2
+
+[node name="StateSummary" type="Label" parent="Root/Sidebar/SidebarRoot"]
+layout_mode = 2
+autowrap_mode = 3
+text = "Loading shared player state..."
+
+[node name="SaveButton" type="Button" parent="Root/Sidebar/SidebarRoot"]
+layout_mode = 2
+text = "Save"
+
+[node name="LoadButton" type="Button" parent="Root/Sidebar/SidebarRoot"]
+layout_mode = 2
+text = "Load"
+
+[node name="ResetButton" type="Button" parent="Root/Sidebar/SidebarRoot"]
+layout_mode = 2
+text = "Reset to Starter State"
+
+[node name="StateAction" type="Label" parent="Root/Sidebar/SidebarRoot"]
+layout_mode = 2
+autowrap_mode = 3
+text = "Save, load, and reset now operate on the shared player state backbone."
+
+[node name="Spacer" type="Control" parent="Root/Sidebar/SidebarRoot"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Hint" type="Label" parent="Root/Sidebar/SidebarRoot"]
+layout_mode = 2
+autowrap_mode = 3
+text = "This shell only swaps prototype pages. It is not final UI."
+
+[node name="ContentPanel" type="PanelContainer" parent="Root"]
+custom_minimum_size = Vector2(0, 520)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+clip_contents = true
+
+[node name="ContentHost" type="MarginContainer" parent="Root/ContentPanel"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+clip_contents = true

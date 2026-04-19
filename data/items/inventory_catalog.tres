@@ -1,0 +1,863 @@
+[gd_resource type="Resource" script_class="ItemCatalog" load_steps=44 format=3]
+
+[ext_resource type="Script" path="res://scripts/inventory/item_catalog.gd" id="1_catalog"]
+[ext_resource type="Script" path="res://scripts/inventory/item_definition.gd" id="2_item"]
+
+[sub_resource type="Resource" id="ItemDefinition_beans"]
+script = ExtResource("2_item")
+item_id = &"beans_can"
+display_name = "Can of Beans"
+description = "A dented can, heavy for its size, worth carrying when the road is long."
+category = 0
+quality_tier = 1
+quality_score = 1.0
+unit_weight_kg = 0.45
+max_stack = 3
+size_class = 1
+allowed_carry_zones = PackedStringArray("pack", "hands")
+hand_holdable = true
+behavior_tags = PackedStringArray("holdable")
+capabilities = PackedStringArray("consume", "inspect", "hold", "equip", "weapon", "cook_ingredient")
+trade_value_cents = 35
+visible_to_others = true
+is_consumable = true
+use_result_type = 2
+use_outputs = {
+"quantity": 1,
+"spawn_item_id": "empty_can"
+}
+food_type = 2
+nutrition_value = 28
+fading_food_source = &"road"
+
+[sub_resource type="Resource" id="ItemDefinition_wool_coat"]
+script = ExtResource("2_item")
+item_id = &"wool_coat"
+display_name = "Worn Wool Coat"
+description = "Threadbare but still warm enough to matter before dawn, with pockets that carry more than they ought to."
+category = 1
+unit_weight_kg = 2.4
+max_stack = 1
+size_class = 2
+large_medium_slots = 2
+allowed_carry_zones = PackedStringArray("pack", "hands")
+behavior_tags = PackedStringArray("wearable", "container")
+capabilities = PackedStringArray("open", "inspect")
+equip_slot_ids = PackedStringArray("slot_coat")
+trade_value_cents = 250
+visible_to_others = true
+warmth_value = 35
+
+[sub_resource type="Resource" id="ItemDefinition_hammer"]
+script = ExtResource("2_item")
+item_id = &"claw_hammer"
+display_name = "Claw Hammer"
+description = "A reliable tool, useful for day labor and repairs, awkward in a pocket."
+category = 2
+quality_tier = 1
+quality_score = 1.0
+unit_weight_kg = 0.75
+max_stack = 1
+size_class = 1
+allowed_carry_zones = PackedStringArray("pack", "hands")
+hand_holdable = true
+behavior_tags = PackedStringArray("holdable")
+capabilities = PackedStringArray("inspect", "hold", "equip", "tool", "weapon")
+trade_value_cents = 180
+visible_to_others = true
+work_tags = PackedStringArray("carpentry", "repair")
+
+[sub_resource type="Resource" id="ItemDefinition_scrap"]
+script = ExtResource("2_item")
+item_id = &"scrap_tin"
+display_name = "Scrap Tin"
+description = "Flattened salvage for patching, barter, or a rough stove."
+category = 3
+unit_weight_kg = 0.2
+max_stack = 5
+size_class = 0
+allowed_carry_zones = PackedStringArray("pack", "hands")
+hand_holdable = true
+behavior_tags = PackedStringArray("holdable")
+capabilities = PackedStringArray("inspect")
+trade_value_cents = 8
+visible_to_others = true
+work_tags = PackedStringArray("repair")
+
+[sub_resource type="Resource" id="ItemDefinition_letter"]
+script = ExtResource("2_item")
+item_id = &"family_letter"
+display_name = "Family Letter"
+description = "Folded soft at the creases. Not useful to sell, but impossible to leave behind."
+category = 5
+unit_weight_kg = 0.02
+max_stack = 1
+size_class = 0
+allowed_carry_zones = PackedStringArray("pack", "pocket", "hands")
+hand_holdable = true
+behavior_tags = PackedStringArray("holdable")
+capabilities = PackedStringArray("read", "inspect")
+trade_value_cents = 0
+visible_to_others = false
+read_text = "The paper carries home in a few cramped lines: bills, weather, and the kind of faith that hurts to deserve."
+use_result_type = 5
+social_tags = PackedStringArray("memory", "family")
+
+[sub_resource type="Resource" id="ItemDefinition_blanket_roll"]
+script = ExtResource("2_item")
+item_id = &"blanket_roll"
+display_name = "Blanket Roll"
+description = "Bulky warmth tied tight for the road. It earns its space on cold nights."
+category = 1
+unit_weight_kg = 3.2
+max_stack = 1
+size_class = 2
+large_medium_slots = 2
+allowed_carry_zones = PackedStringArray("pack", "hands")
+hand_holdable = true
+behavior_tags = PackedStringArray("holdable")
+capabilities = PackedStringArray("inspect")
+trade_value_cents = 300
+visible_to_others = true
+warmth_value = 45
+
+[sub_resource type="Resource" id="ItemDefinition_bread"]
+script = ExtResource("2_item")
+item_id = &"bread_loaf"
+display_name = "Bread Loaf"
+description = "A cheap loaf, rough on the tongue but enough to keep a man from folding in on himself."
+category = 0
+unit_weight_kg = 0.28
+max_stack = 2
+size_class = 0
+allowed_carry_zones = PackedStringArray("pack", "pocket", "hands")
+hand_holdable = true
+behavior_tags = PackedStringArray("holdable")
+capabilities = PackedStringArray("consume", "inspect")
+trade_value_cents = 20
+visible_to_others = true
+is_consumable = true
+use_result_type = 1
+food_type = 2
+nutrition_value = 18
+morale_value = 1
+fading_food_source = &"earned"
+
+[sub_resource type="Resource" id="ItemDefinition_coffee"]
+script = ExtResource("2_item")
+item_id = &"coffee_thermos"
+display_name = "Coffee Thermos"
+description = "Tin coffee, lukewarm at best, but enough to steady the hands and drag the head forward."
+category = 0
+unit_weight_kg = 0.35
+max_stack = 1
+size_class = 1
+allowed_carry_zones = PackedStringArray("pack", "hands")
+hand_holdable = true
+behavior_tags = PackedStringArray("holdable")
+capabilities = PackedStringArray("consume", "inspect")
+trade_value_cents = 12
+visible_to_others = true
+is_consumable = true
+food_type = 1
+fatigue_relief = 14
+morale_value = 2
+fading_comfort_load = 1
+
+[sub_resource type="Resource" id="ItemDefinition_stew"]
+script = ExtResource("2_item")
+item_id = &"stew_tin"
+display_name = "Tin of Hot Stew"
+description = "A proper hot meal by road standards. Thick, salty, and enough to feel human again for a little while."
+category = 0
+unit_weight_kg = 0.42
+max_stack = 1
+size_class = 1
+allowed_carry_zones = PackedStringArray("pack", "hands")
+hand_holdable = true
+behavior_tags = PackedStringArray("holdable", "prepared_food", "spoils_fast")
+capabilities = PackedStringArray("consume", "inspect")
+trade_value_cents = 44
+visible_to_others = true
+is_consumable = true
+use_result_type = 2
+use_outputs = {
+"quantity": 1,
+"spawn_item_id": "empty_can"
+}
+food_type = 1
+nutrition_value = 30
+warmth_value = 6
+morale_value = 5
+fading_food_source = &"earned"
+
+[sub_resource type="Resource" id="ItemDefinition_tobacco"]
+script = ExtResource("2_item")
+item_id = &"smoke_tobacco"
+display_name = "Cheap Tobacco Twist"
+description = "A little comfort bought dear when nerves and loneliness start to grind."
+category = 5
+unit_weight_kg = 0.05
+max_stack = 3
+size_class = 0
+allowed_carry_zones = PackedStringArray("pack", "pocket", "hands")
+hand_holdable = true
+behavior_tags = PackedStringArray("holdable")
+capabilities = PackedStringArray("consume", "inspect")
+trade_value_cents = 18
+visible_to_others = true
+is_consumable = true
+use_result_type = 3
+fatigue_relief = 2
+morale_value = 6
+fading_comfort_load = 2
+
+[sub_resource type="Resource" id="ItemDefinition_backpack"]
+script = ExtResource("2_item")
+item_id = &"backpack"
+display_name = "Canvas Backpack"
+description = "A stiff canvas pack with patched straps, better for distance than speed."
+category = 7
+unit_weight_kg = 0.82
+max_stack = 1
+size_class = 2
+large_medium_slots = 2
+allowed_carry_zones = PackedStringArray("pack", "hands")
+hand_holdable = true
+behavior_tags = PackedStringArray("container", "wearable")
+capabilities = PackedStringArray("open", "inspect")
+equip_slot_ids = PackedStringArray("slot_back")
+trade_value_cents = 325
+visible_to_others = true
+
+[sub_resource type="Resource" id="ItemDefinition_satchel"]
+script = ExtResource("2_item")
+item_id = &"satchel"
+display_name = "Small Satchel"
+description = "A compact shoulder satchel for papers, food, and the things you need close."
+category = 7
+unit_weight_kg = 0.45
+max_stack = 1
+size_class = 1
+allowed_carry_zones = PackedStringArray("pack", "hands")
+hand_holdable = true
+behavior_tags = PackedStringArray("container", "wearable", "holdable")
+capabilities = PackedStringArray("open", "inspect")
+equip_slot_ids = PackedStringArray("slot_shoulder_l", "slot_shoulder_r")
+trade_value_cents = 210
+visible_to_others = true
+
+[sub_resource type="Resource" id="ItemDefinition_haversack"]
+script = ExtResource("2_item")
+item_id = &"haversack"
+display_name = "Haversack"
+description = "A rough shoulder bag with room for food, soap, and the workday's clutter."
+category = 7
+unit_weight_kg = 0.68
+max_stack = 1
+size_class = 1
+allowed_carry_zones = PackedStringArray("pack", "hands")
+hand_holdable = true
+behavior_tags = PackedStringArray("container", "wearable", "holdable")
+capabilities = PackedStringArray("open", "inspect")
+equip_slot_ids = PackedStringArray("slot_shoulder_l", "slot_shoulder_r")
+trade_value_cents = 260
+visible_to_others = true
+
+[sub_resource type="Resource" id="ItemDefinition_bindle"]
+script = ExtResource("2_item")
+item_id = &"bindle"
+display_name = "Bindle"
+description = "Cloth tied around a stick, cheap to make and awkward to carry but still better than loose belongings."
+category = 7
+unit_weight_kg = 0.38
+max_stack = 1
+size_class = 1
+allowed_carry_zones = PackedStringArray("pack", "hands")
+hand_holdable = true
+behavior_tags = PackedStringArray("container", "holdable")
+capabilities = PackedStringArray("open", "inspect")
+equip_slot_ids = PackedStringArray("slot_hand_l", "slot_hand_r")
+trade_value_cents = 45
+visible_to_others = true
+
+[sub_resource type="Resource" id="ItemDefinition_pants"]
+script = ExtResource("2_item")
+item_id = &"pants"
+display_name = "Work Pants"
+description = "Heavy cloth pants with deep pockets, worn thin at the knees."
+category = 1
+unit_weight_kg = 0.75
+max_stack = 1
+size_class = 1
+allowed_carry_zones = PackedStringArray("pack", "hands")
+behavior_tags = PackedStringArray("wearable", "container")
+capabilities = PackedStringArray("open", "inspect")
+equip_slot_ids = PackedStringArray("slot_pants")
+trade_value_cents = 140
+visible_to_others = true
+
+[sub_resource type="Resource" id="ItemDefinition_belt"]
+script = ExtResource("2_item")
+item_id = &"belt"
+display_name = "Work Belt"
+description = "A cracked leather belt with enough loops and ties to keep small tools close."
+category = 1
+unit_weight_kg = 0.25
+max_stack = 1
+size_class = 0
+allowed_carry_zones = PackedStringArray("pack", "hands")
+hand_holdable = true
+behavior_tags = PackedStringArray("wearable", "container", "holdable")
+capabilities = PackedStringArray("open", "inspect")
+equip_slot_ids = PackedStringArray("slot_belt_waist")
+trade_value_cents = 90
+visible_to_others = true
+
+[sub_resource type="Resource" id="ItemDefinition_pocket_knife"]
+script = ExtResource("2_item")
+item_id = &"pocket_knife"
+display_name = "Pocket Knife"
+description = "A cheap folding knife, useful for string, food, and a dozen small tasks that keep a man going."
+category = 2
+unit_weight_kg = 0.12
+max_stack = 1
+size_class = 0
+allowed_carry_zones = PackedStringArray("pack", "pocket", "hands")
+hand_holdable = true
+behavior_tags = PackedStringArray("holdable")
+capabilities = PackedStringArray("inspect", "hold", "equip", "tool", "weapon")
+trade_value_cents = 120
+visible_to_others = true
+work_tags = PackedStringArray("repair", "camp")
+
+[sub_resource type="Resource" id="ItemDefinition_timetable"]
+script = ExtResource("2_item")
+item_id = &"railroad_timetable"
+display_name = "Railroad Timetable"
+description = "A creased passenger timetable, outdated in places but still useful for guessing motion and waiting."
+category = 5
+unit_weight_kg = 0.06
+max_stack = 1
+size_class = 0
+allowed_carry_zones = PackedStringArray("pack", "pocket", "hands")
+hand_holdable = true
+behavior_tags = PackedStringArray("holdable")
+capabilities = PackedStringArray("read", "inspect")
+trade_value_cents = 5
+visible_to_others = true
+read_text = "Stations, times, and pencil notes in the margin. None of it is certain, but even bad information beats blind waiting."
+use_result_type = 5
+social_tags = PackedStringArray("travel")
+
+[sub_resource type="Resource" id="ItemDefinition_church_key"]
+script = ExtResource("2_item")
+item_id = &"church_key"
+display_name = "Church Key"
+description = "A flat little can opener, plain as a nail and important when supper is sealed in tin."
+category = 2
+quality_tier = 1
+quality_score = 1.0
+unit_weight_kg = 0.04
+max_stack = 1
+size_class = 0
+allowed_carry_zones = PackedStringArray("pack", "pocket", "hands")
+hand_holdable = true
+behavior_tags = PackedStringArray("holdable")
+capabilities = PackedStringArray("inspect", "hold", "equip", "tool")
+trade_value_cents = 7
+visible_to_others = true
+work_tags = PackedStringArray("camp", "cooking")
+
+[sub_resource type="Resource" id="ItemDefinition_match_safe"]
+script = ExtResource("2_item")
+item_id = &"match_safe"
+display_name = "Match Safe"
+description = "A little tin match holder, easy to lose and worth missing on a wet night."
+category = 2
+quality_tier = 1
+quality_score = 1.0
+unit_weight_kg = 0.08
+max_stack = 1
+size_class = 0
+allowed_carry_zones = PackedStringArray("pack", "pocket", "hands")
+hand_holdable = true
+behavior_tags = PackedStringArray("holdable")
+capabilities = PackedStringArray("inspect", "hold", "equip", "tool")
+trade_value_cents = 14
+visible_to_others = true
+work_tags = PackedStringArray("camp", "fire")
+
+[sub_resource type="Resource" id="ItemDefinition_empty_can"]
+script = ExtResource("2_item")
+item_id = &"empty_can"
+display_name = "Empty Tin Can"
+description = "A used tin can, still good for patching, boiling, or making a little road hardware if you have the patience."
+category = 3
+quality_tier = 1
+quality_score = 1.0
+unit_weight_kg = 0.06
+max_stack = 5
+size_class = 0
+allowed_carry_zones = PackedStringArray("pack", "pocket", "hands")
+hand_holdable = true
+behavior_tags = PackedStringArray("holdable")
+capabilities = PackedStringArray("inspect", "hold", "equip", "tool", "weapon")
+trade_value_cents = 2
+visible_to_others = true
+work_tags = PackedStringArray("repair", "camp")
+
+[sub_resource type="Resource" id="ItemDefinition_potted_meat"]
+script = ExtResource("2_item")
+item_id = &"potted_meat"
+display_name = "Potted Meat Tin"
+description = "Greasy preserved meat in a small tin. Not much comfort, but it keeps and can stretch a meal."
+category = 0
+quality_tier = 1
+quality_score = 1.0
+unit_weight_kg = 0.24
+max_stack = 3
+size_class = 0
+allowed_carry_zones = PackedStringArray("pack", "pocket", "hands")
+hand_holdable = true
+behavior_tags = PackedStringArray("holdable")
+capabilities = PackedStringArray("consume", "inspect", "hold", "equip", "weapon", "cook_ingredient")
+trade_value_cents = 24
+visible_to_others = true
+is_consumable = true
+use_result_type = 2
+use_outputs = {
+"quantity": 1,
+"spawn_item_id": "empty_can"
+}
+food_type = 3
+nutrition_value = 22
+morale_value = 1
+fading_food_source = &"road"
+
+[sub_resource type="Resource" id="ItemDefinition_hot_coffee"]
+script = ExtResource("2_item")
+item_id = &"hot_coffee"
+display_name = "Tin Cup of Hot Coffee"
+description = "Hot coffee from a counter or cook shack, dear enough to notice and best used now before the warmth leaves it."
+category = 0
+quality_tier = 1
+quality_score = 1.0
+unit_weight_kg = 0.22
+max_stack = 1
+size_class = 0
+allowed_carry_zones = PackedStringArray("pack", "hands")
+hand_holdable = true
+behavior_tags = PackedStringArray("holdable", "prepared_food", "spoils_fast")
+capabilities = PackedStringArray("consume", "inspect", "hold")
+trade_value_cents = 14
+visible_to_others = true
+is_consumable = true
+use_result_type = 1
+food_type = 1
+warmth_value = 2
+fatigue_relief = 14
+morale_value = 2
+fading_comfort_load = 1
+
+[sub_resource type="Resource" id="ItemDefinition_soap"]
+script = ExtResource("2_item")
+item_id = &"lye_soap"
+display_name = "Lye Soap"
+description = "Harsh yellow soap, the sort that strips grease and leaves your hands raw but cleaner than before."
+category = 4
+unit_weight_kg = 0.18
+max_stack = 2
+size_class = 0
+allowed_carry_zones = PackedStringArray("pack", "pocket", "hands")
+hand_holdable = true
+behavior_tags = PackedStringArray("holdable")
+capabilities = PackedStringArray("use", "inspect", "hold")
+trade_value_cents = 10
+visible_to_others = true
+use_result_type = 3
+hygiene_value = 18
+presentability_value = 8
+morale_value = 1
+
+[sub_resource type="Resource" id="ItemDefinition_coffee_grounds"]
+script = ExtResource("2_item")
+item_id = &"coffee_grounds"
+display_name = "Loose Coffee Grounds"
+description = "A small twist of coffee for camp, cheaper than a counter cup if you can spare the time and fire."
+category = 0
+quality_tier = 1
+quality_score = 1.0
+unit_weight_kg = 0.08
+max_stack = 4
+size_class = 0
+allowed_carry_zones = PackedStringArray("pack", "pocket", "hands")
+hand_holdable = true
+behavior_tags = PackedStringArray("holdable")
+capabilities = PackedStringArray("inspect", "hold", "cook_ingredient")
+trade_value_cents = 6
+visible_to_others = true
+food_type = 1
+work_tags = PackedStringArray("camp", "cooking")
+
+[sub_resource type="Resource" id="ItemDefinition_clean_water"]
+script = ExtResource("2_item")
+item_id = &"clean_water"
+display_name = "Boiled Water"
+description = "Water made fit for morning washing or camp coffee. It matters more than it looks."
+category = 0
+quality_tier = 1
+quality_score = 1.0
+unit_weight_kg = 0.5
+max_stack = 2
+size_class = 1
+allowed_carry_zones = PackedStringArray("pack", "hands")
+hand_holdable = true
+behavior_tags = PackedStringArray("holdable")
+capabilities = PackedStringArray("inspect", "hold", "cook_ingredient")
+trade_value_cents = 0
+visible_to_others = true
+work_tags = PackedStringArray("camp", "water", "cooking", "hygiene")
+
+[sub_resource type="Resource" id="ItemDefinition_non_potable_water"]
+script = ExtResource("2_item")
+item_id = &"non_potable_water"
+display_name = "Fetched Water"
+description = "Water brought in from a nearby source. Useful only after boiling."
+category = 0
+quality_tier = 1
+quality_score = 1.0
+unit_weight_kg = 0.5
+max_stack = 2
+size_class = 1
+allowed_carry_zones = PackedStringArray("pack", "hands")
+hand_holdable = true
+behavior_tags = PackedStringArray("holdable")
+capabilities = PackedStringArray("inspect", "hold", "cook_ingredient")
+trade_value_cents = 0
+visible_to_others = true
+work_tags = PackedStringArray("camp", "water")
+
+[sub_resource type="Resource" id="ItemDefinition_dry_kindling"]
+script = ExtResource("2_item")
+item_id = &"dry_kindling"
+display_name = "Dry Kindling"
+description = "Small dry bits gathered before dark, useless as treasure and useful when the fire needs persuasion."
+category = 3
+quality_tier = 1
+quality_score = 1.0
+unit_weight_kg = 0.12
+max_stack = 4
+size_class = 0
+allowed_carry_zones = PackedStringArray("pack", "hands")
+hand_holdable = true
+behavior_tags = PackedStringArray("holdable")
+capabilities = PackedStringArray("inspect", "hold")
+trade_value_cents = 1
+visible_to_others = true
+work_tags = PackedStringArray("camp", "fire")
+
+[sub_resource type="Resource" id="ItemDefinition_cordage"]
+script = ExtResource("2_item")
+item_id = &"cordage"
+display_name = "Short Cordage"
+description = "A practical length of cord for tying, patching, and keeping camp work from coming apart."
+category = 3
+quality_tier = 1
+quality_score = 1.0
+unit_weight_kg = 0.1
+max_stack = 3
+size_class = 0
+allowed_carry_zones = PackedStringArray("pack", "pocket", "hands")
+hand_holdable = true
+behavior_tags = PackedStringArray("holdable")
+capabilities = PackedStringArray("inspect", "hold")
+trade_value_cents = 12
+visible_to_others = true
+work_tags = PackedStringArray("repair", "camp")
+
+[sub_resource type="Resource" id="ItemDefinition_oats_sack"]
+script = ExtResource("2_item")
+item_id = &"oats_sack"
+display_name = "Small Sack of Oats"
+description = "Plain oats for stretching a meal at camp, cheap enough to matter when every coin has a job."
+category = 0
+quality_tier = 1
+quality_score = 1.0
+unit_weight_kg = 0.32
+max_stack = 3
+size_class = 1
+allowed_carry_zones = PackedStringArray("pack", "hands")
+hand_holdable = true
+behavior_tags = PackedStringArray("holdable")
+capabilities = PackedStringArray("inspect", "hold", "cook_ingredient")
+trade_value_cents = 10
+visible_to_others = true
+food_type = 3
+work_tags = PackedStringArray("camp", "cooking")
+
+[sub_resource type="Resource" id="ItemDefinition_dried_beans"]
+script = ExtResource("2_item")
+item_id = &"dried_beans"
+display_name = "Dried Beans"
+description = "A small paper sack of beans. Slow food, but cheaper than a counter plate."
+category = 0
+quality_tier = 1
+quality_score = 1.0
+unit_weight_kg = 0.34
+max_stack = 3
+size_class = 1
+allowed_carry_zones = PackedStringArray("pack", "hands")
+hand_holdable = true
+behavior_tags = PackedStringArray("holdable")
+capabilities = PackedStringArray("inspect", "hold", "cook_ingredient")
+trade_value_cents = 12
+visible_to_others = true
+food_type = 3
+work_tags = PackedStringArray("camp", "cooking")
+
+[sub_resource type="Resource" id="ItemDefinition_salt_pouch"]
+script = ExtResource("2_item")
+item_id = &"salt_pouch"
+display_name = "Salt Pouch"
+description = "A twist of salt, small enough to lose and useful enough to miss."
+category = 0
+quality_tier = 1
+quality_score = 1.0
+unit_weight_kg = 0.05
+max_stack = 4
+size_class = 0
+allowed_carry_zones = PackedStringArray("pack", "pocket", "hands")
+hand_holdable = true
+behavior_tags = PackedStringArray("holdable")
+capabilities = PackedStringArray("inspect", "hold", "cook_ingredient")
+trade_value_cents = 5
+visible_to_others = true
+food_type = 3
+work_tags = PackedStringArray("camp", "cooking")
+
+[sub_resource type="Resource" id="ItemDefinition_lard_tin"]
+script = ExtResource("2_item")
+item_id = &"lard_tin"
+display_name = "Small Lard Tin"
+description = "A little cooking fat in a tin, useful when a meal needs more body than water and hope."
+category = 0
+quality_tier = 1
+quality_score = 1.0
+unit_weight_kg = 0.22
+max_stack = 2
+size_class = 0
+allowed_carry_zones = PackedStringArray("pack", "hands")
+hand_holdable = true
+behavior_tags = PackedStringArray("holdable")
+capabilities = PackedStringArray("inspect", "hold", "cook_ingredient")
+trade_value_cents = 18
+visible_to_others = true
+food_type = 3
+work_tags = PackedStringArray("camp", "cooking")
+
+[sub_resource type="Resource" id="ItemDefinition_baling_wire"]
+script = ExtResource("2_item")
+item_id = &"baling_wire"
+display_name = "Baling Wire"
+description = "A bendable length of wire for tying, bracing, and making poor materials hold a shape."
+category = 3
+quality_tier = 1
+quality_score = 1.0
+unit_weight_kg = 0.08
+max_stack = 4
+size_class = 0
+allowed_carry_zones = PackedStringArray("pack", "pocket", "hands")
+hand_holdable = true
+behavior_tags = PackedStringArray("holdable")
+capabilities = PackedStringArray("inspect", "hold")
+trade_value_cents = 9
+visible_to_others = true
+work_tags = PackedStringArray("repair", "camp")
+
+[sub_resource type="Resource" id="ItemDefinition_box_nails"]
+script = ExtResource("2_item")
+item_id = &"box_nails"
+display_name = "Small Box of Nails"
+description = "A few nails in a paper packet, better for repairs than for carrying far."
+category = 3
+quality_tier = 1
+quality_score = 1.0
+unit_weight_kg = 0.12
+max_stack = 3
+size_class = 0
+allowed_carry_zones = PackedStringArray("pack", "pocket", "hands")
+hand_holdable = true
+behavior_tags = PackedStringArray("holdable")
+capabilities = PackedStringArray("inspect", "hold")
+trade_value_cents = 8
+visible_to_others = true
+work_tags = PackedStringArray("repair", "camp")
+
+[sub_resource type="Resource" id="ItemDefinition_cloth_patch"]
+script = ExtResource("2_item")
+item_id = &"cloth_patch"
+display_name = "Cloth Patch"
+description = "Scrap cloth for mending clothes, padding a handle, or keeping a kit from rattling apart."
+category = 3
+quality_tier = 1
+quality_score = 1.0
+unit_weight_kg = 0.04
+max_stack = 5
+size_class = 0
+allowed_carry_zones = PackedStringArray("pack", "pocket", "hands")
+hand_holdable = true
+behavior_tags = PackedStringArray("holdable")
+capabilities = PackedStringArray("inspect", "hold")
+trade_value_cents = 7
+visible_to_others = true
+work_tags = PackedStringArray("repair", "camp")
+
+[sub_resource type="Resource" id="ItemDefinition_needle_thread"]
+script = ExtResource("2_item")
+item_id = &"needle_thread"
+display_name = "Needle and Thread"
+description = "A small mending set, worth more in a torn coat than it looks on the counter."
+category = 2
+quality_tier = 1
+quality_score = 1.0
+unit_weight_kg = 0.03
+max_stack = 2
+size_class = 0
+allowed_carry_zones = PackedStringArray("pack", "pocket", "hands")
+hand_holdable = true
+behavior_tags = PackedStringArray("holdable")
+capabilities = PackedStringArray("inspect", "hold", "tool")
+trade_value_cents = 11
+visible_to_others = true
+work_tags = PackedStringArray("repair", "camp")
+
+[sub_resource type="Resource" id="ItemDefinition_soup_can_stove"]
+script = ExtResource("2_item")
+item_id = &"soup_can_stove"
+display_name = "Soup Can Stove"
+description = "A pierced tin stove, compact enough for the pack and steady enough for small camp heat and coffee work."
+category = 2
+quality_tier = 1
+quality_score = 1.0
+unit_weight_kg = 0.14
+max_stack = 1
+size_class = 0
+allowed_carry_zones = PackedStringArray("pack", "hands")
+hand_holdable = true
+behavior_tags = PackedStringArray("holdable")
+capabilities = PackedStringArray("inspect", "hold", "equip", "tool")
+trade_value_cents = 24
+visible_to_others = true
+work_tags = PackedStringArray("camp", "fire", "cooking")
+cooking_max_uses = 10
+cooking_efficiency = 1.15
+cooking_stability = 1.25
+carry_profile = "compact pack tool"
+
+[sub_resource type="Resource" id="ItemDefinition_repair_roll"]
+script = ExtResource("2_item")
+item_id = &"repair_roll"
+display_name = "Repair Roll"
+description = "A small bundle of mending bits kept together so repairs do not become a separate hardship."
+category = 2
+quality_tier = 1
+quality_score = 1.0
+unit_weight_kg = 0.14
+max_stack = 1
+size_class = 0
+allowed_carry_zones = PackedStringArray("pack", "hands")
+hand_holdable = true
+behavior_tags = PackedStringArray("holdable")
+capabilities = PackedStringArray("inspect", "hold", "equip", "tool")
+trade_value_cents = 22
+visible_to_others = true
+work_tags = PackedStringArray("repair", "camp")
+
+[sub_resource type="Resource" id="ItemDefinition_tin_can_heater"]
+script = ExtResource("2_item")
+item_id = &"tin_can_heater"
+display_name = "Tin Can on a Stick"
+description = "A small tin wired to a dry handle for warming beans, meat, or a little water over campfire coals."
+category = 2
+quality_tier = 1
+quality_score = 1.0
+unit_weight_kg = 0.2
+max_stack = 1
+size_class = 1
+allowed_carry_zones = PackedStringArray("pack", "hands")
+hand_holdable = true
+behavior_tags = PackedStringArray("holdable")
+capabilities = PackedStringArray("inspect", "hold", "equip", "tool")
+trade_value_cents = 10
+visible_to_others = true
+work_tags = PackedStringArray("camp", "fire", "cooking")
+cooking_max_uses = 3
+cooking_efficiency = 0.85
+cooking_stability = 0.65
+carry_profile = "flimsy handle, awkward in a bag"
+
+[sub_resource type="Resource" id="ItemDefinition_wire_braced_tin_can_heater"]
+script = ExtResource("2_item")
+item_id = &"wire_braced_tin_can_heater"
+display_name = "Wire-Braced Tin Can on a Stick"
+description = "A tin-can heater braced with baling wire so the handle holds steadier over coals."
+category = 2
+quality_tier = 1
+quality_score = 1.0
+unit_weight_kg = 0.24
+max_stack = 1
+size_class = 1
+allowed_carry_zones = PackedStringArray("pack", "hands")
+hand_holdable = true
+behavior_tags = PackedStringArray("holdable")
+capabilities = PackedStringArray("inspect", "hold", "equip", "tool")
+trade_value_cents = 16
+visible_to_others = true
+work_tags = PackedStringArray("camp", "fire", "cooking")
+cooking_max_uses = 6
+cooking_efficiency = 1.0
+cooking_stability = 1.0
+carry_profile = "braced handle, still simple"
+
+[sub_resource type="Resource" id="ItemDefinition_alarm_can_line"]
+script = ExtResource("2_item")
+item_id = &"alarm_can_line"
+display_name = "Alarm Can Line"
+description = "A tin-and-line warning rig, not a guarantee, just a little more notice in a nervous camp."
+category = 2
+quality_tier = 1
+quality_score = 1.0
+unit_weight_kg = 0.18
+max_stack = 1
+size_class = 0
+allowed_carry_zones = PackedStringArray("pack", "hands")
+hand_holdable = true
+behavior_tags = PackedStringArray("holdable")
+capabilities = PackedStringArray("inspect", "hold", "equip", "tool")
+trade_value_cents = 20
+visible_to_others = true
+work_tags = PackedStringArray("camp", "safety")
+
+[sub_resource type="Resource" id="ItemDefinition_road_cook_kit"]
+script = ExtResource("2_item")
+item_id = &"road_cook_kit"
+display_name = "Road Cook Kit"
+description = "A small camp cook bundle for boiling, stretching staples, and making cheap food do more work."
+category = 2
+quality_tier = 1
+quality_score = 1.0
+unit_weight_kg = 0.48
+max_stack = 1
+size_class = 1
+allowed_carry_zones = PackedStringArray("pack", "hands")
+hand_holdable = true
+behavior_tags = PackedStringArray("holdable")
+capabilities = PackedStringArray("inspect", "hold", "equip", "tool")
+trade_value_cents = 32
+visible_to_others = true
+work_tags = PackedStringArray("camp", "cooking")
+
+[resource]
+script = ExtResource("1_catalog")
+items = Array[ExtResource("2_item")]([SubResource("ItemDefinition_beans"), SubResource("ItemDefinition_wool_coat"), SubResource("ItemDefinition_hammer"), SubResource("ItemDefinition_scrap"), SubResource("ItemDefinition_letter"), SubResource("ItemDefinition_blanket_roll"), SubResource("ItemDefinition_bread"), SubResource("ItemDefinition_coffee"), SubResource("ItemDefinition_stew"), SubResource("ItemDefinition_tobacco"), SubResource("ItemDefinition_backpack"), SubResource("ItemDefinition_satchel"), SubResource("ItemDefinition_haversack"), SubResource("ItemDefinition_bindle"), SubResource("ItemDefinition_pants"), SubResource("ItemDefinition_belt"), SubResource("ItemDefinition_pocket_knife"), SubResource("ItemDefinition_timetable"), SubResource("ItemDefinition_church_key"), SubResource("ItemDefinition_match_safe"), SubResource("ItemDefinition_empty_can"), SubResource("ItemDefinition_potted_meat"), SubResource("ItemDefinition_hot_coffee"), SubResource("ItemDefinition_soap"), SubResource("ItemDefinition_coffee_grounds"), SubResource("ItemDefinition_clean_water"), SubResource("ItemDefinition_non_potable_water"), SubResource("ItemDefinition_dry_kindling"), SubResource("ItemDefinition_cordage"), SubResource("ItemDefinition_oats_sack"), SubResource("ItemDefinition_dried_beans"), SubResource("ItemDefinition_salt_pouch"), SubResource("ItemDefinition_lard_tin"), SubResource("ItemDefinition_baling_wire"), SubResource("ItemDefinition_box_nails"), SubResource("ItemDefinition_cloth_patch"), SubResource("ItemDefinition_needle_thread"), SubResource("ItemDefinition_soup_can_stove"), SubResource("ItemDefinition_repair_roll"), SubResource("ItemDefinition_tin_can_heater"), SubResource("ItemDefinition_wire_braced_tin_can_heater"), SubResource("ItemDefinition_alarm_can_line"), SubResource("ItemDefinition_road_cook_kit")])

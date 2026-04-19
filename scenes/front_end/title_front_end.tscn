@@ -1,0 +1,186 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/front_end/title_front_end.gd" id="1_front_end_script"]
+[ext_resource type="Script" path="res://scripts/ui/title_atmosphere.gd" id="2_atmosphere_script"]
+[ext_resource type="Script" path="res://scripts/player/player_state_service.gd" id="3_player_state_service"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_menu_panel"]
+bg_color = Color(0.0862745, 0.0784314, 0.0705882, 0.8)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.333333, 0.258824, 0.180392, 0.65)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+shadow_color = Color(0, 0, 0, 0.35)
+shadow_size = 8
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_content_panel"]
+bg_color = Color(0.121569, 0.109804, 0.101961, 0.76)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.431373, 0.34902, 0.25098, 0.55)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+shadow_color = Color(0, 0, 0, 0.3)
+shadow_size = 8
+
+[node name="TitleFrontEnd" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_front_end_script")
+
+[node name="PlayerStateService" type="Node" parent="."]
+script = ExtResource("3_player_state_service")
+
+[node name="Atmosphere" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("2_atmosphere_script")
+
+[node name="Overlay" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Margin" type="MarginContainer" parent="Overlay"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 28.0
+offset_top = 24.0
+offset_right = -28.0
+offset_bottom = -24.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 0
+theme_override_constants/margin_top = 0
+theme_override_constants/margin_right = 0
+theme_override_constants/margin_bottom = 0
+
+[node name="Layout" type="HBoxContainer" parent="Overlay/Margin"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 20
+
+[node name="MenuColumn" type="VBoxContainer" parent="Overlay/Margin/Layout"]
+custom_minimum_size = Vector2(360, 0)
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 10
+
+[node name="SmallHeader" type="Label" parent="Overlay/Margin/Layout/MenuColumn"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+modulate = Color(0.858824, 0.768627, 0.623529, 0.85)
+text = "An American road survival prototype"
+
+[node name="GameTitle" type="Label" parent="Overlay/Margin/Layout/MenuColumn"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 42
+text = "HOBO SURVIVAL"
+
+[node name="SubTitle" type="Label" parent="Overlay/Margin/Layout/MenuColumn"]
+layout_mode = 2
+autowrap_mode = 3
+text = "Subtitle"
+
+[node name="MenuPanel" type="PanelContainer" parent="Overlay/Margin/Layout/MenuColumn"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_menu_panel")
+
+[node name="MenuRoot" type="VBoxContainer" parent="Overlay/Margin/Layout/MenuColumn/MenuPanel"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="StartButton" type="Button" parent="Overlay/Margin/Layout/MenuColumn/MenuPanel/MenuRoot"]
+layout_mode = 2
+text = "Start"
+
+[node name="OptionsButton" type="Button" parent="Overlay/Margin/Layout/MenuColumn/MenuPanel/MenuRoot"]
+layout_mode = 2
+text = "Settings / Options"
+
+[node name="DebugButton" type="Button" parent="Overlay/Margin/Layout/MenuColumn/MenuPanel/MenuRoot"]
+layout_mode = 2
+text = "Debug"
+
+[node name="QuitButton" type="Button" parent="Overlay/Margin/Layout/MenuColumn/MenuPanel/MenuRoot"]
+layout_mode = 2
+text = "Quit / Exit Game"
+
+[node name="MoodPanel" type="PanelContainer" parent="Overlay/Margin/Layout/MenuColumn"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_menu_panel")
+
+[node name="MoodRoot" type="VBoxContainer" parent="Overlay/Margin/Layout/MenuColumn/MoodPanel"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="MoodTitle" type="Label" parent="Overlay/Margin/Layout/MenuColumn/MoodPanel/MoodRoot"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "Roadside Notes"
+
+[node name="MoodText" type="Label" parent="Overlay/Margin/Layout/MenuColumn/MoodPanel/MoodRoot"]
+layout_mode = 2
+autowrap_mode = 3
+text = "Cold tracks, thin meals, day labor before dark, and the long pressure of people depending on you."
+
+[node name="ContentColumn" type="VBoxContainer" parent="Overlay/Margin/Layout"]
+visible = false
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="ContentFrame" type="PanelContainer" parent="Overlay/Margin/Layout/ContentColumn"]
+custom_minimum_size = Vector2(0, 520)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+clip_contents = true
+theme_override_styles/panel = SubResource("StyleBoxFlat_content_panel")
+
+[node name="ContentRoot" type="VBoxContainer" parent="Overlay/Margin/Layout/ContentColumn/ContentFrame"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 10
+
+[node name="ContentTitle" type="Label" parent="Overlay/Margin/Layout/ContentColumn/ContentFrame/ContentRoot"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "Start"
+
+[node name="ContentStatus" type="Label" parent="Overlay/Margin/Layout/ContentColumn/ContentFrame/ContentRoot"]
+layout_mode = 2
+autowrap_mode = 3
+text = "Placeholder route for the future game opening."
+
+[node name="ContentHost" type="MarginContainer" parent="Overlay/Margin/Layout/ContentColumn/ContentFrame/ContentRoot"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+clip_contents = true

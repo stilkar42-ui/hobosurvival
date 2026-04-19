@@ -1,0 +1,102 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/debug/inventory_debug_scene.gd" id="1_debug_script"]
+[ext_resource type="Script" path="res://scripts/ui/inventory_panel.gd" id="2_inventory_panel"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_debug_sidebar"]
+bg_color = Color(0.117647, 0.109804, 0.101961, 0.9)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.329412, 0.27451, 0.223529, 0.7)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+shadow_color = Color(0, 0, 0, 0.24)
+shadow_size = 8
+
+[node name="InventoryDebugScene" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_debug_script")
+
+[node name="Root" type="HBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 16.0
+offset_top = 16.0
+offset_right = -16.0
+offset_bottom = -16.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 16
+
+[node name="InventoryPanel" type="PanelContainer" parent="Root"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+script = ExtResource("2_inventory_panel")
+
+[node name="DebugActions" type="PanelContainer" parent="Root"]
+custom_minimum_size = Vector2(280, 0)
+layout_mode = 2
+size_flags_horizontal = 0
+size_flags_vertical = 3
+theme_override_styles/panel = SubResource("StyleBoxFlat_debug_sidebar")
+
+[node name="ActionRoot" type="VBoxContainer" parent="Root/DebugActions"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Title" type="Label" parent="Root/DebugActions/ActionRoot"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+modulate = Color(0.866667, 0.831373, 0.768627, 1)
+text = "Debug Actions"
+
+[node name="StatusLabel" type="Label" parent="Root/DebugActions/ActionRoot"]
+layout_mode = 2
+size_flags_vertical = 3
+autowrap_mode = 3
+modulate = Color(0.717647, 0.67451, 0.607843, 1)
+text = "Select a stack or container, then choose an action."
+
+[node name="EquipButton" type="Button" parent="Root/DebugActions/ActionRoot"]
+layout_mode = 2
+text = "Equip"
+
+[node name="MoveFocusedButton" type="Button" parent="Root/DebugActions/ActionRoot"]
+layout_mode = 2
+text = "Move to Focused Storage"
+
+[node name="MoveGroundButton" type="Button" parent="Root/DebugActions/ActionRoot"]
+layout_mode = 2
+text = "Drop"
+
+[node name="SplitButton" type="Button" parent="Root/DebugActions/ActionRoot"]
+layout_mode = 2
+text = "Split Stack"
+
+[node name="MergeButton" type="Button" parent="Root/DebugActions/ActionRoot"]
+layout_mode = 2
+text = "Merge Where Valid"
+
+[node name="RemoveOneButton" type="Button" parent="Root/DebugActions/ActionRoot"]
+layout_mode = 2
+text = "Remove 1"
+
+[node name="DeleteButton" type="Button" parent="Root/DebugActions/ActionRoot"]
+layout_mode = 2
+text = "Delete Stack"
+
+[node name="OpenContainerButton" type="Button" parent="Root/DebugActions/ActionRoot"]
+layout_mode = 2
+text = "Open Container"

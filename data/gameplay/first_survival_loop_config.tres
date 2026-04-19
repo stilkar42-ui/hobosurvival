@@ -1,0 +1,179 @@
+[gd_resource type="Resource" script_class="SurvivalLoopConfig" load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://scripts/gameplay/survival_loop_config.gd" id="1_config"]
+[ext_resource type="Script" path="res://scripts/gameplay/survival_job_template.gd" id="2_job_template"]
+
+[sub_resource type="Resource" id="JobTemplate_hiring_line"]
+script = ExtResource("2_job_template")
+template_id = &"hiring_line_labor"
+title = "Hiring Line Day Labor"
+summary = "A foreman needs hands for loading and rough haul work before noon."
+job_category = &"day_labor"
+decay_behavior = &"degrade_pay"
+pay_decay_cents_per_day = 12
+minimum_pay_cents = 82
+min_appearance_tier = &"disheveled"
+appearance_requirement_text = "At least disheveled; the foreman wants a man who can still stand in a hiring line."
+weight = 14
+duration_minutes = 300
+pay_cents = 112
+nutrition_drain = 15
+fatigue_delta = 18
+morale_delta = -3
+hygiene_delta = -8
+available_from_minutes = 360
+available_until_minutes = 780
+
+[sub_resource type="Resource" id="JobTemplate_hammer_repair"]
+script = ExtResource("2_job_template")
+template_id = &"hammer_repair_call"
+title = "Hammer Repair Odd Job"
+summary = "A rough repair call that only opens if you still have a usable hammer on you."
+job_category = &"town_odd_jobs"
+decay_behavior = &"stable"
+min_appearance_tier = &"presentable"
+appearance_requirement_text = "Presentable enough for private repair work."
+weight = 9
+duration_minutes = 210
+pay_cents = 84
+nutrition_drain = 8
+fatigue_delta = 12
+morale_delta = 2
+hygiene_delta = -4
+available_from_minutes = 420
+available_until_minutes = 1020
+required_item_id = &"claw_hammer"
+can_persist = true
+persistence_chance_percent = 70
+persistent_days_min = 2
+persistent_days_max = 3
+
+[sub_resource type="Resource" id="JobTemplate_kitchen_cleanup"]
+script = ExtResource("2_job_template")
+template_id = &"kitchen_cleanup"
+title = "Kitchen Cleanup Shift"
+summary = "A cook shack needs pans scrubbed and refuse hauled clear before supper."
+job_category = &"church_charity"
+decay_behavior = &"expire"
+min_appearance_tier = &"grimey"
+appearance_requirement_text = "Grimey is tolerated; filthy and unkept is turned away from kitchen work."
+weight = 8
+duration_minutes = 180
+pay_cents = 68
+nutrition_drain = 7
+fatigue_delta = 10
+morale_delta = 1
+hygiene_delta = -6
+available_from_minutes = 600
+available_until_minutes = 1080
+can_persist = true
+persistence_chance_percent = 40
+persistent_days_min = 2
+persistent_days_max = 2
+
+[sub_resource type="Resource" id="JobTemplate_yard_scrounge"]
+script = ExtResource("2_job_template")
+template_id = &"yard_scrounge_pull"
+title = "Yard Edge Scrounge"
+summary = "No one is paying wages, but there is still salvage to be had if you are willing to stoop for it."
+job_category = &"desperation_salvage"
+decay_behavior = &"expire"
+max_appearance_tier = &"disheveled"
+appearance_requirement_text = "Available when you look rough enough that no one mistakes this for steady hiring."
+weight = 11
+duration_minutes = 150
+pay_cents = 0
+nutrition_drain = 7
+fatigue_delta = 9
+morale_delta = -5
+hygiene_delta = -10
+available_from_minutes = 360
+available_until_minutes = 1080
+reward_item_id = &"scrap_tin"
+reward_item_quantity = 2
+fading_income_source = &"scrounge"
+
+[sub_resource type="Resource" id="JobTemplate_coal_shovel"]
+script = ExtResource("2_job_template")
+template_id = &"coal_shovel_run"
+title = "Coal Shovel Run"
+summary = "Hard, filthy pay for a short burst of brutal work near the rail spur."
+job_category = &"industrial"
+decay_behavior = &"expire"
+min_appearance_tier = &"filthy_unkept"
+appearance_requirement_text = "Dirt does not disqualify you here; the work will cover everyone in coal dust anyway."
+weight = 6
+duration_minutes = 240
+pay_cents = 126
+nutrition_drain = 18
+fatigue_delta = 24
+morale_delta = -4
+hygiene_delta = -18
+available_from_minutes = 360
+available_until_minutes = 840
+
+[sub_resource type="Resource" id="JobTemplate_salvage_sort"]
+script = ExtResource("2_job_template")
+template_id = &"salvage_sort"
+title = "Salvage Sorting Table"
+summary = "An old hand will share a little cash if you help sort salvage and patch piles for resale."
+job_category = &"day_labor"
+decay_behavior = &"degrade_pay"
+pay_decay_cents_per_day = 8
+minimum_pay_cents = 52
+min_appearance_tier = &"disheveled"
+appearance_requirement_text = "At least disheveled; too far gone and the old hand will not stake the table on you."
+weight = 7
+duration_minutes = 210
+pay_cents = 76
+nutrition_drain = 8
+fatigue_delta = 11
+morale_delta = 0
+hygiene_delta = -7
+available_from_minutes = 480
+available_until_minutes = 1080
+can_persist = true
+persistence_chance_percent = 55
+persistent_days_min = 2
+persistent_days_max = 3
+
+[resource]
+script = ExtResource("1_config")
+day_limit = 28
+support_goal_cents = 1500
+send_small_amount_cents = 375
+send_large_amount_cents = 750
+monthly_support_target_cents = 1500
+support_obligation_defaults = Array[Dictionary]([{
+"checkpoint_day": 7,
+"label": "Week 1",
+"obligation_id": &"week_1",
+"target_cents": 375
+}, {
+"checkpoint_day": 14,
+"label": "Week 2",
+"obligation_id": &"week_2",
+"target_cents": 375
+}, {
+"checkpoint_day": 21,
+"label": "Week 3",
+"obligation_id": &"week_3",
+"target_cents": 375
+}, {
+"checkpoint_day": 28,
+"label": "Week 4",
+"obligation_id": &"week_4",
+"target_cents": 375
+}])
+support_send_methods = Array[Dictionary]([{
+"delivery_delay_days": 2,
+"display_name": "Mail",
+"fee_cents": 5,
+"method_id": &"mail"
+}, {
+"delivery_delay_days": 0,
+"display_name": "Telegraph",
+"fee_cents": 25,
+"method_id": &"telegraph"
+}])
+job_templates = Array[ExtResource("2_job_template")]([SubResource("JobTemplate_hiring_line"), SubResource("JobTemplate_hammer_repair"), SubResource("JobTemplate_kitchen_cleanup"), SubResource("JobTemplate_yard_scrounge"), SubResource("JobTemplate_coal_shovel"), SubResource("JobTemplate_salvage_sort")])

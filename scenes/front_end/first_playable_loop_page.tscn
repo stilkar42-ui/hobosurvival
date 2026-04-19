@@ -1,0 +1,613 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/front_end/first_playable_loop_page.gd" id="1_loop_script"]
+[ext_resource type="Script" path="res://scripts/ui/inventory_panel.gd" id="2_inventory_panel_script"]
+[ext_resource type="Script" path="res://scripts/ui/hobo_passport_panel.gd" id="3_passport_panel_script"]
+[ext_resource type="Script" path="res://scripts/ui/inventory_radial_menu.gd" id="4_inventory_radial_menu_script"]
+
+[node name="FirstPlayableLoopPage" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_loop_script")
+
+[node name="Root" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 14.0
+offset_top = 12.0
+offset_right = -14.0
+offset_bottom = -12.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 12
+
+[node name="CampViewportHost" type="Control" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="SummaryPanel" type="PanelContainer" parent="Root"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="SummaryRoot" type="VBoxContainer" parent="Root/SummaryPanel"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 6
+
+[node name="SummaryTitle" type="Label" parent="Root/SummaryPanel/SummaryRoot"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "First Playable Loop"
+
+[node name="SummaryStats" type="Label" parent="Root/SummaryPanel/SummaryRoot"]
+layout_mode = 2
+autowrap_mode = 3
+text = "Day 1, 6:30 AM"
+
+[node name="ConditionStats" type="Label" parent="Root/SummaryPanel/SummaryRoot"]
+layout_mode = 2
+autowrap_mode = 3
+text = "Nutrition 58 / 100"
+
+[node name="GoalLabel" type="Label" parent="Root/SummaryPanel/SummaryRoot"]
+layout_mode = 2
+autowrap_mode = 3
+text = "Send money home."
+
+[node name="MainRow" type="HBoxContainer" parent="Root"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 12
+
+[node name="ActionsPanel" type="PanelContainer" parent="Root/MainRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="ActionScroll" type="ScrollContainer" parent="Root/MainRow/ActionsPanel"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="ActionRoot" type="VBoxContainer" parent="Root/MainRow/ActionsPanel/ActionScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 10
+
+[node name="StatusLabel" type="Label" parent="Root/MainRow/ActionsPanel/ActionScroll/ActionRoot"]
+layout_mode = 2
+autowrap_mode = 3
+text = "Take stock of the day."
+
+[node name="WorkSummary" type="Label" parent="Root/MainRow/ActionsPanel/ActionScroll/ActionRoot"]
+layout_mode = 2
+autowrap_mode = 3
+text = "Jobs"
+
+[node name="JobsList" type="VBoxContainer" parent="Root/MainRow/ActionsPanel/ActionScroll/ActionRoot"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[node name="SuppliesSummary" type="Label" parent="Root/MainRow/ActionsPanel/ActionScroll/ActionRoot"]
+layout_mode = 2
+autowrap_mode = 3
+text = "Supplies"
+
+[node name="BuyBreadButton" type="Button" parent="Root/MainRow/ActionsPanel/ActionScroll/ActionRoot"]
+layout_mode = 2
+text = "Buy Bread"
+
+[node name="BuyCoffeeButton" type="Button" parent="Root/MainRow/ActionsPanel/ActionScroll/ActionRoot"]
+layout_mode = 2
+text = "Buy Coffee"
+
+[node name="BuyStewButton" type="Button" parent="Root/MainRow/ActionsPanel/ActionScroll/ActionRoot"]
+layout_mode = 2
+text = "Buy Hot Stew"
+
+[node name="BuyTobaccoButton" type="Button" parent="Root/MainRow/ActionsPanel/ActionScroll/ActionRoot"]
+layout_mode = 2
+text = "Buy Tobacco"
+
+[node name="BuyGroceryBeansButton" type="Button" parent="Root/MainRow/ActionsPanel/ActionScroll/ActionRoot"]
+layout_mode = 2
+text = "Grocery: Beans"
+
+[node name="BuyGroceryPottedMeatButton" type="Button" parent="Root/MainRow/ActionsPanel/ActionScroll/ActionRoot"]
+layout_mode = 2
+text = "Grocery: Potted Meat"
+
+[node name="BuyCoffeeGroundsButton" type="Button" parent="Root/MainRow/ActionsPanel/ActionScroll/ActionRoot"]
+layout_mode = 2
+text = "Grocery: Coffee Grounds"
+
+[node name="BuyHardwareMatchesButton" type="Button" parent="Root/MainRow/ActionsPanel/ActionScroll/ActionRoot"]
+layout_mode = 2
+text = "Hardware: Match Safe"
+
+[node name="BuyHardwareEmptyCanButton" type="Button" parent="Root/MainRow/ActionsPanel/ActionScroll/ActionRoot"]
+layout_mode = 2
+text = "Hardware: Tin Can"
+
+[node name="BuyHardwareCordageButton" type="Button" parent="Root/MainRow/ActionsPanel/ActionScroll/ActionRoot"]
+layout_mode = 2
+text = "Hardware: Cordage"
+
+[node name="UseSelectedButton" type="Button" parent="Root/MainRow/ActionsPanel/ActionScroll/ActionRoot"]
+layout_mode = 2
+text = "Use Selected"
+
+[node name="FamilySummary" type="Label" parent="Root/MainRow/ActionsPanel/ActionScroll/ActionRoot"]
+layout_mode = 2
+autowrap_mode = 3
+text = "Family support"
+
+[node name="SendSmallButton" type="Button" parent="Root/MainRow/ActionsPanel/ActionScroll/ActionRoot"]
+layout_mode = 2
+text = "Send Small Amount"
+
+[node name="SendLargeButton" type="Button" parent="Root/MainRow/ActionsPanel/ActionScroll/ActionRoot"]
+layout_mode = 2
+text = "Send Larger Amount"
+
+[node name="CampSummary" type="Label" parent="Root/MainRow/ActionsPanel/ActionScroll/ActionRoot"]
+layout_mode = 2
+autowrap_mode = 3
+text = "Camp"
+
+[node name="BuildFireButton" type="Button" parent="Root/MainRow/ActionsPanel/ActionScroll/ActionRoot"]
+layout_mode = 2
+text = "Build Fire"
+
+[node name="TendFireButton" type="Button" parent="Root/MainRow/ActionsPanel/ActionScroll/ActionRoot"]
+layout_mode = 2
+text = "Tend Fire"
+
+[node name="GatherKindlingButton" type="Button" parent="Root/MainRow/ActionsPanel/ActionScroll/ActionRoot"]
+layout_mode = 2
+text = "Gather Kindling"
+
+[node name="BrewCampCoffeeButton" type="Button" parent="Root/MainRow/ActionsPanel/ActionScroll/ActionRoot"]
+layout_mode = 2
+text = "Brew Camp Coffee"
+
+[node name="TimeSummary" type="Label" parent="Root/MainRow/ActionsPanel/ActionScroll/ActionRoot"]
+layout_mode = 2
+autowrap_mode = 3
+text = "Time actions"
+
+[node name="WaitButton" type="Button" parent="Root/MainRow/ActionsPanel/ActionScroll/ActionRoot"]
+layout_mode = 2
+text = "Wait 30m"
+
+[node name="SellScrapButton" type="Button" parent="Root/MainRow/ActionsPanel/ActionScroll/ActionRoot"]
+layout_mode = 2
+text = "Sell Scrap"
+
+[node name="SleepButton" type="Button" parent="Root/MainRow/ActionsPanel/ActionScroll/ActionRoot"]
+layout_mode = 2
+text = "Sleep Rough"
+
+[node name="ResultPanel" type="PanelContainer" parent="Root/MainRow/ActionsPanel/ActionScroll/ActionRoot"]
+layout_mode = 2
+visible = false
+
+[node name="ResultRoot" type="VBoxContainer" parent="Root/MainRow/ActionsPanel/ActionScroll/ActionRoot/ResultPanel"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="ResultTitle" type="Label" parent="Root/MainRow/ActionsPanel/ActionScroll/ActionRoot/ResultPanel/ResultRoot"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "Outcome"
+
+[node name="ResultBody" type="Label" parent="Root/MainRow/ActionsPanel/ActionScroll/ActionRoot/ResultPanel/ResultRoot"]
+layout_mode = 2
+autowrap_mode = 3
+text = "Run result."
+
+[node name="ResetRunButton" type="Button" parent="Root/MainRow/ActionsPanel/ActionScroll/ActionRoot/ResultPanel/ResultRoot"]
+layout_mode = 2
+text = "Reset Run"
+
+[node name="GoDebugButton" type="Button" parent="Root/MainRow/ActionsPanel/ActionScroll/ActionRoot/ResultPanel/ResultRoot"]
+layout_mode = 2
+text = "Go to Debug"
+
+[node name="RightColumn" type="VBoxContainer" parent="Root/MainRow"]
+custom_minimum_size = Vector2(320, 0)
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 10
+
+[node name="InventorySummaryPanel" type="PanelContainer" parent="Root/MainRow/RightColumn"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="InventorySummaryRoot" type="VBoxContainer" parent="Root/MainRow/RightColumn/InventorySummaryPanel"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="InventorySummary" type="Label" parent="Root/MainRow/RightColumn/InventorySummaryPanel/InventorySummaryRoot"]
+layout_mode = 2
+autowrap_mode = 3
+text = "Inventory summary"
+
+[node name="SelectedItem" type="Label" parent="Root/MainRow/RightColumn/InventorySummaryPanel/InventorySummaryRoot"]
+layout_mode = 2
+autowrap_mode = 3
+text = "No selected item."
+
+[node name="OpenInventoryButton" type="Button" parent="Root/MainRow/RightColumn/InventorySummaryPanel/InventorySummaryRoot"]
+layout_mode = 2
+text = "Open Inventory"
+
+[node name="OpenPassportButton" type="Button" parent="Root/MainRow/RightColumn/InventorySummaryPanel/InventorySummaryRoot"]
+layout_mode = 2
+text = "Open Passport"
+
+[node name="OpenGettingReadyButton" type="Button" parent="Root/MainRow/RightColumn/InventorySummaryPanel/InventorySummaryRoot"]
+layout_mode = 2
+text = "Getting Ready"
+
+[node name="ReturnToMenuButton" type="Button" parent="Root/MainRow/RightColumn/InventorySummaryPanel/InventorySummaryRoot"]
+layout_mode = 2
+text = "Return to Menu"
+
+[node name="QuitGameButton" type="Button" parent="Root/MainRow/RightColumn/InventorySummaryPanel/InventorySummaryRoot"]
+layout_mode = 2
+text = "Quit Game"
+
+[node name="InventoryHint" type="Label" parent="Root/MainRow/RightColumn"]
+layout_mode = 2
+autowrap_mode = 3
+text = "Inventory and passport access."
+
+[node name="FadeDebugPanel" type="PanelContainer" parent="Root/MainRow/RightColumn"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="FadeDebugRoot" type="VBoxContainer" parent="Root/MainRow/RightColumn/FadeDebugPanel"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="FadeDebugTitle" type="Label" parent="Root/MainRow/RightColumn/FadeDebugPanel/FadeDebugRoot"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "Fading Meter"
+
+[node name="FadeDebugLabel" type="Label" parent="Root/MainRow/RightColumn/FadeDebugPanel/FadeDebugRoot"]
+layout_mode = 2
+autowrap_mode = 3
+text = "Fade 0 | Steady | Last delta +0"
+
+[node name="InventoryOverlay" type="Control" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+top_level = true
+z_index = 20
+mouse_filter = 0
+
+[node name="Backdrop" type="ColorRect" parent="InventoryOverlay"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.82)
+
+[node name="InventoryMargin" type="MarginContainer" parent="InventoryOverlay"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 12.0
+offset_top = 12.0
+offset_right = -12.0
+offset_bottom = -12.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="InventoryWindow" type="PanelContainer" parent="InventoryOverlay/InventoryMargin"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="InventoryRoot" type="VBoxContainer" parent="InventoryOverlay/InventoryMargin/InventoryWindow"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 10
+
+[node name="InventoryHeader" type="HBoxContainer" parent="InventoryOverlay/InventoryMargin/InventoryWindow/InventoryRoot"]
+layout_mode = 2
+theme_override_constants/separation = 8
+mouse_filter = 0
+
+[node name="InventoryBadge" type="PanelContainer" parent="InventoryOverlay/InventoryMargin/InventoryWindow/InventoryRoot/InventoryHeader"]
+layout_mode = 2
+custom_minimum_size = Vector2(54, 54)
+
+[node name="InventoryBadgeLabel" type="Label" parent="InventoryOverlay/InventoryMargin/InventoryWindow/InventoryRoot/InventoryHeader/InventoryBadge"]
+layout_mode = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+theme_override_font_sizes/font_size = 16
+text = "PACK"
+
+[node name="InventoryTitle" type="Label" parent="InventoryOverlay/InventoryMargin/InventoryWindow/InventoryRoot/InventoryHeader"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 24
+text = "Inventory Management"
+
+[node name="CloseInventoryButton" type="Button" parent="InventoryOverlay/InventoryMargin/InventoryWindow/InventoryRoot/InventoryHeader"]
+layout_mode = 2
+text = "Back"
+
+[node name="InventoryStatus" type="Label" parent="InventoryOverlay/InventoryMargin/InventoryWindow/InventoryRoot"]
+layout_mode = 2
+autowrap_mode = 3
+text = "Detailed inventory management."
+
+[node name="InventoryActionsPanel" type="PanelContainer" parent="InventoryOverlay/InventoryMargin/InventoryWindow/InventoryRoot"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="InventoryActionsRoot" type="VBoxContainer" parent="InventoryOverlay/InventoryMargin/InventoryWindow/InventoryRoot/InventoryActionsPanel"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="InventoryActionSummary" type="Label" parent="InventoryOverlay/InventoryMargin/InventoryWindow/InventoryRoot/InventoryActionsPanel/InventoryActionsRoot"]
+layout_mode = 2
+autowrap_mode = 3
+text = "Select an item or container to manage it."
+
+[node name="InventoryDestinationLabel" type="Label" parent="InventoryOverlay/InventoryMargin/InventoryWindow/InventoryRoot/InventoryActionsPanel/InventoryActionsRoot"]
+layout_mode = 2
+autowrap_mode = 3
+text = "Click a slot, container, or ground area in the inventory view to set the destination focus."
+
+[node name="InventoryMoveCancelButton" type="Button" parent="InventoryOverlay/InventoryMargin/InventoryWindow/InventoryRoot/InventoryActionsPanel/InventoryActionsRoot"]
+visible = false
+layout_mode = 2
+text = "Cancel Move"
+
+[node name="InventoryActionButtons" type="GridContainer" parent="InventoryOverlay/InventoryMargin/InventoryWindow/InventoryRoot/InventoryActionsPanel/InventoryActionsRoot"]
+visible = false
+layout_mode = 2
+size_flags_horizontal = 3
+columns = 5
+theme_override_constants/h_separation = 8
+theme_override_constants/v_separation = 8
+
+[node name="InventoryTransferButton" type="Button" parent="InventoryOverlay/InventoryMargin/InventoryWindow/InventoryRoot/InventoryActionsPanel/InventoryActionsRoot/InventoryActionButtons"]
+layout_mode = 2
+text = "Move"
+
+[node name="InventoryDropButton" type="Button" parent="InventoryOverlay/InventoryMargin/InventoryWindow/InventoryRoot/InventoryActionsPanel/InventoryActionsRoot/InventoryActionButtons"]
+layout_mode = 2
+text = "Drop to Ground"
+
+[node name="InventoryEquipButton" type="Button" parent="InventoryOverlay/InventoryMargin/InventoryWindow/InventoryRoot/InventoryActionsPanel/InventoryActionsRoot/InventoryActionButtons"]
+layout_mode = 2
+text = "Equip"
+
+[node name="InventoryUnequipButton" type="Button" parent="InventoryOverlay/InventoryMargin/InventoryWindow/InventoryRoot/InventoryActionsPanel/InventoryActionsRoot/InventoryActionButtons"]
+layout_mode = 2
+text = "Unequip"
+
+[node name="UseSelectedInInventoryButton" type="Button" parent="InventoryOverlay/InventoryMargin/InventoryWindow/InventoryRoot/InventoryActionsPanel/InventoryActionsRoot/InventoryActionButtons"]
+layout_mode = 2
+text = "Use"
+
+[node name="InventoryContentScroll" type="ScrollContainer" parent="InventoryOverlay/InventoryMargin/InventoryWindow/InventoryRoot"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="InventoryPanel" type="PanelContainer" parent="InventoryOverlay/InventoryMargin/InventoryWindow/InventoryRoot/InventoryContentScroll"]
+custom_minimum_size = Vector2(0, 360)
+layout_mode = 2
+size_flags_horizontal = 3
+script = ExtResource("2_inventory_panel_script")
+
+[node name="InventoryRadialMenu" type="Control" parent="InventoryOverlay"]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+top_level = true
+z_index = 25
+mouse_filter = 0
+script = ExtResource("4_inventory_radial_menu_script")
+
+[node name="PassportOverlay" type="Control" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 0
+
+[node name="Backdrop" type="ColorRect" parent="PassportOverlay"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.58)
+
+[node name="PassportMargin" type="MarginContainer" parent="PassportOverlay"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 40.0
+offset_top = 32.0
+offset_right = -40.0
+offset_bottom = -32.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="PassportWindow" type="PanelContainer" parent="PassportOverlay/PassportMargin"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="PassportRoot" type="VBoxContainer" parent="PassportOverlay/PassportMargin/PassportWindow"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 10
+
+[node name="PassportHeader" type="HBoxContainer" parent="PassportOverlay/PassportMargin/PassportWindow/PassportRoot"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="PassportTitle" type="Label" parent="PassportOverlay/PassportMargin/PassportWindow/PassportRoot/PassportHeader"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 24
+text = "Passport"
+
+[node name="ClosePassportButton" type="Button" parent="PassportOverlay/PassportMargin/PassportWindow/PassportRoot/PassportHeader"]
+layout_mode = 2
+text = "Close"
+
+[node name="PassportPanel" type="PanelContainer" parent="PassportOverlay/PassportMargin/PassportWindow/PassportRoot"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+script = ExtResource("3_passport_panel_script")
+
+[node name="GettingReadyOverlay" type="Control" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 0
+
+[node name="Backdrop" type="ColorRect" parent="GettingReadyOverlay"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.64)
+
+[node name="GettingReadyMargin" type="MarginContainer" parent="GettingReadyOverlay"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -360.0
+offset_top = -230.0
+offset_right = 360.0
+offset_bottom = 230.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="GettingReadyWindow" type="PanelContainer" parent="GettingReadyOverlay/GettingReadyMargin"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="GettingReadyRoot" type="VBoxContainer" parent="GettingReadyOverlay/GettingReadyMargin/GettingReadyWindow"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 10
+
+[node name="GettingReadyHeader" type="HBoxContainer" parent="GettingReadyOverlay/GettingReadyMargin/GettingReadyWindow/GettingReadyRoot"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="GettingReadyTitle" type="Label" parent="GettingReadyOverlay/GettingReadyMargin/GettingReadyWindow/GettingReadyRoot/GettingReadyHeader"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 24
+text = "Getting Ready"
+
+[node name="CloseGettingReadyButton" type="Button" parent="GettingReadyOverlay/GettingReadyMargin/GettingReadyWindow/GettingReadyRoot/GettingReadyHeader"]
+layout_mode = 2
+text = "Back"
+
+[node name="GettingReadyStatus" type="Label" parent="GettingReadyOverlay/GettingReadyMargin/GettingReadyWindow/GettingReadyRoot"]
+layout_mode = 2
+autowrap_mode = 3
+text = "Clean up, straighten yourself, and get fit to be seen."
+
+[node name="GettingReadyStats" type="Label" parent="GettingReadyOverlay/GettingReadyMargin/GettingReadyWindow/GettingReadyRoot"]
+layout_mode = 2
+autowrap_mode = 3
+text = "Hygiene 36 / 100 | Presentability 32 / 100"
+
+[node name="GettingReadyActions" type="GridContainer" parent="GettingReadyOverlay/GettingReadyMargin/GettingReadyWindow/GettingReadyRoot"]
+layout_mode = 2
+size_flags_horizontal = 3
+columns = 2
+theme_override_constants/h_separation = 8
+theme_override_constants/v_separation = 8
+
+[node name="FetchWaterButton" type="Button" parent="GettingReadyOverlay/GettingReadyMargin/GettingReadyWindow/GettingReadyRoot/GettingReadyActions"]
+layout_mode = 2
+text = "Fetch or Boil Water"
+
+[node name="WashBodyButton" type="Button" parent="GettingReadyOverlay/GettingReadyMargin/GettingReadyWindow/GettingReadyRoot/GettingReadyActions"]
+layout_mode = 2
+text = "Wash Body"
+
+[node name="WashFaceHandsButton" type="Button" parent="GettingReadyOverlay/GettingReadyMargin/GettingReadyWindow/GettingReadyRoot/GettingReadyActions"]
+layout_mode = 2
+text = "Wash Face / Hands"
+
+[node name="ShaveButton" type="Button" parent="GettingReadyOverlay/GettingReadyMargin/GettingReadyWindow/GettingReadyRoot/GettingReadyActions"]
+layout_mode = 2
+text = "Shave"
+
+[node name="CombGroomButton" type="Button" parent="GettingReadyOverlay/GettingReadyMargin/GettingReadyWindow/GettingReadyRoot/GettingReadyActions"]
+layout_mode = 2
+text = "Comb / Groom"
+
+[node name="AirOutClothesButton" type="Button" parent="GettingReadyOverlay/GettingReadyMargin/GettingReadyWindow/GettingReadyRoot/GettingReadyActions"]
+layout_mode = 2
+text = "Air Out Clothes"
+
+[node name="BrushClothesButton" type="Button" parent="GettingReadyOverlay/GettingReadyMargin/GettingReadyWindow/GettingReadyRoot/GettingReadyActions"]
+layout_mode = 2
+text = "Brush Clothes"
