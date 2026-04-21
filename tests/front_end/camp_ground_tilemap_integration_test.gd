@@ -19,15 +19,31 @@ func _run_checks(layer: Control) -> void:
 	await process_frame
 	await process_frame
 
-	var ground_tilemap = layer.get_node_or_null("GroundTileMap")
-	_expect(ground_tilemap != null, "camp layer exposes a dedicated ground TileMap layer")
-	_expect(ground_tilemap != null and ground_tilemap is TileMapLayer, "ground layer uses TileMapLayer")
-	_expect(ground_tilemap != null and ground_tilemap.tile_set != null, "ground TileMap layer has a configured TileSet resource")
-	_expect(ground_tilemap != null and ground_tilemap.get_used_cells().size() > 0, "ground TileMap layer paints camp terrain cells")
-
 	var world_view = layer.get_node("WorldView")
-	_expect(world_view != null and world_view.has_method("set_draw_ground_layer"), "world view can disable its custom ground drawing")
-	_expect(world_view != null and not bool(world_view.get("draw_ground_layer")), "custom ground drawing is disabled when the TileMap ground layer is active")
+	var ground_tilemap = layer.get_node_or_null("GroundTileMap")
+	_expect(world_view != null, "camp layer exposes a world view")
+	_expect(world_view != null and bool(world_view.get("draw_ground_layer")), "world view owns the rebuilt 32x32 ground drawing")
+	_expect(world_view != null and not bool(world_view.get("show_debug_footprints")), "debug footprint overlay stays off during normal play")
+	var has_zoom := world_view != null and world_view.has_method("adjust_zoom")
+	_expect(has_zoom, "world view exposes mouse-wheel zoom control")
+	if has_zoom:
+		_expect(float(world_view.get("view_zoom")) > 1.0, "camp starts zoomed in for the 32x32 tile scale")
+	var object_textures: Dictionary = world_view.get("_object_textures")
+	_expect(object_textures.is_empty(), "world view no longer loads runtime image textures for player or object art")
+	_expect(not object_textures.has(&"tarp_shelter"), "inactive camp shelter texture is not loaded for the prototype foundation")
+	_expect(not object_textures.has(&"crate"), "inactive crate texture is not loaded for the prototype foundation")
+	_expect(world_view != null and world_view.has_method("_resolve_ground_tile_key"), "world view resolves 32x32 camp terrain tiles")
+	_expect(
+		StringName(world_view.call("_resolve_ground_tile_key", Vector2i(16, 16))) in [&"camp", &"path"],
+		"camp center resolves to camp-worn 32x32 terrain"
+	)
+	_expect(ground_tilemap == null or not ground_tilemap.visible, "legacy 128x64 TileMap ground is hidden")
+	if has_zoom:
+		var zoom_before := float(world_view.get("view_zoom"))
+		world_view.call("adjust_zoom", 1.0)
+		_expect(float(world_view.get("view_zoom")) > zoom_before, "mouse-wheel zoom can move the camp camera closer")
+		world_view.call("adjust_zoom", -1.0)
+		_expect(float(world_view.get("view_zoom")) <= zoom_before + 0.01, "mouse-wheel zoom can back the camp camera away")
 
 	quit(1 if _failed else 0)
 

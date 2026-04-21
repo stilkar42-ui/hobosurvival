@@ -2,6 +2,8 @@ extends SceneTree
 
 const FirstPlayableLoopPageScene := preload("res://scenes/front_end/first_playable_loop_page.tscn")
 const CampIsometricPlayLayerScene := preload("res://scenes/front_end/camp_isometric_play_layer.tscn")
+const CampInteractionSystemScript := preload("res://scripts/front_end/camp_interaction_system.gd")
+const CampWorldObjectScript := preload("res://scripts/front_end/camp_world_object.gd")
 const PlayerStateRuntimeScript := preload("res://scripts/player/player_state_runtime.gd")
 const SurvivalLoopRulesScript := preload("res://scripts/gameplay/survival_loop_rules.gd")
 const InventoryScript := preload("res://scripts/inventory/inventory.gd")
@@ -31,6 +33,21 @@ func _run_checks(root: Window, loop_page: Control) -> void:
 		player_state != null and player_state.loop_location_id == SurvivalLoopRulesScript.LOCATION_TOWN,
 		"first playable page does not force the starter state into camp"
 	)
+	var town_world_layer = loop_page.get("_camp_isometric_layer")
+	_expect(town_world_layer != null and town_world_layer.get("map_mode") == &"town", "starter town opens as a walkable world layer instead of a button-only page")
+	if town_world_layer != null:
+		_expect(_find_world_object(town_world_layer, &"town_jobs_board") != null, "town world exposes the jobs board as an in-world object")
+		_expect(_find_world_object(town_world_layer, &"town_church") != null, "town world exposes the remittance church office as an in-world object")
+		_expect(_find_world_object(town_world_layer, &"town_grocery") != null, "town world exposes the grocery as an in-world object")
+		_expect(_find_world_object(town_world_layer, &"town_hardware") != null, "town world exposes the hardware store as an in-world object")
+		_expect(_find_world_object(town_world_layer, &"town_camp_road") != null, "town world exposes the road back to camp as an in-world object")
+		_assert_prototype_world_contract(town_world_layer, &"town")
+		_assert_required_objects_reachable(town_world_layer, [&"town_jobs_board", &"town_church", &"town_grocery", &"town_hardware", &"town_camp_road"])
+		loop_page.call("_on_camp_interaction_activated", &"town_grocery", &"", &"grocery")
+		await process_frame
+		_expect(loop_page.get("_active_loop_page") == &"grocery", "using the grocery building opens the existing grocery store page")
+		loop_page.call("_set_active_loop_page", &"town")
+		await process_frame
 
 	var exit_to_menu_button: Button = loop_page.get_node("Root/MainRow/RightColumn/InventorySummaryPanel/InventorySummaryRoot/ReturnToMenuButton")
 	var quit_button: Button = loop_page.get_node("Root/MainRow/RightColumn/InventorySummaryPanel/InventorySummaryRoot/QuitGameButton")
@@ -93,6 +110,9 @@ func _run_checks(root: Window, loop_page: Control) -> void:
 
 	var camp_layer = CampIsometricPlayLayerScene.instantiate()
 	root.add_child(camp_layer)
+	_assert_prototype_world_contract(camp_layer, &"camp")
+	_assert_required_objects_reachable(camp_layer, [&"campfire", &"woodpile", &"bedroll", &"stash", &"tool_area", &"wash_line", &"trail_sign"])
+	_assert_cardinal_interaction_contract()
 
 	camp_layer.call("set_hud_snapshot", {
 		"title": "Camp Condition",
@@ -182,7 +202,7 @@ func _run_checks(root: Window, loop_page: Control) -> void:
 	_expect(camp_layer.get("_pending_interaction_object_id") == &"trail_sign", "clicking a distant interactable queues movement to the object before activating it")
 
 	var world_view = camp_layer.get_node("WorldView")
-	var player_start_tile = Vector2(33, 37)
+	var player_start_tile = Vector2(15, 19)
 	var camp_center_screen_before = world_view.call("get_screen_position_for_grid", player_start_tile)
 	camp_layer.call("_on_player_render_position_changed", player_start_tile + Vector2(1.0, 0.0))
 	await process_frame
@@ -369,6 +389,77 @@ func _find_world_object(camp_layer: Node, object_id: StringName):
 		if world_object != null and world_object.id == object_id:
 			return world_object
 	return null
+
+
+func _assert_prototype_world_contract(camp_layer: Node, mode: StringName) -> void:
+	var world_view = camp_layer.get_node_or_null("WorldView")
+	_expect(world_view != null, "%s prototype world exposes a drawable world view" % String(mode))
+	if world_view == null:
+		return
+	var allowed_ground := {}
+	var world_size := Vector2i(32, 32)
+	var forbidden_objects: Array[StringName] = []
+	var required_objects: Array[StringName] = []
+	if mode == &"town":
+		allowed_ground = {&"path": true, &"packed_dirt": true, &"grass": true}
+		world_size = Vector2i(64, 32)
+		required_objects = [&"town_jobs_board", &"town_church", &"town_grocery", &"town_hardware", &"town_camp_road"]
+		forbidden_objects = [&"town_foreman_office", &"town_lamp_w", &"town_lamp_e", &"town_trash_grocery", &"town_crate_hardware", &"town_board_stack_depot", &"town_wheelbarrow_depot", &"town_handcart_shop", &"town_lanterns_board"]
+	else:
+		allowed_ground = {&"camp": true, &"path": true, &"grass": true}
+		required_objects = [&"campfire", &"woodpile", &"bedroll", &"stash", &"tool_area", &"wash_line", &"trail_sign"]
+		forbidden_objects = [&"lean_to_w", &"lean_to_e", &"log_sw", &"log_s", &"stump_s", &"crate_e", &"coffee_setup", &"camp_sack", &"camp_rocks"]
+	var noisy_ground_hits: Array[String] = []
+	for y in range(world_size.y):
+		for x in range(world_size.x):
+			var tile_key: StringName = world_view.call("_resolve_ground_tile_key", Vector2i(x, y))
+			if not allowed_ground.has(tile_key):
+				noisy_ground_hits.append("%s at %d,%d" % [String(tile_key), x, y])
+	_expect(noisy_ground_hits.is_empty(), "%s terrain resolves only prototype keys; noisy hits: %s" % [String(mode), ", ".join(noisy_ground_hits)])
+	for object_id in required_objects:
+		_expect(_find_world_object(camp_layer, object_id) != null, "%s prototype keeps required object %s" % [String(mode), String(object_id)])
+	for object_id in forbidden_objects:
+		_expect(_find_world_object(camp_layer, object_id) == null, "%s prototype removes decorative object %s" % [String(mode), String(object_id)])
+
+
+func _assert_required_objects_reachable(camp_layer: Node, object_ids: Array[StringName]) -> void:
+	var player_controller = camp_layer.get_node_or_null("PlayerController")
+	var interaction_system = camp_layer.get_node_or_null("InteractionSystem")
+	_expect(player_controller != null, "prototype layer exposes a player controller for reachability checks")
+	_expect(interaction_system != null, "prototype layer exposes an interaction system for reachability checks")
+	if player_controller == null or interaction_system == null:
+		return
+	var spawn_tile: Vector2i = player_controller.get("grid_position")
+	for object_id in object_ids:
+		player_controller.call("set_grid_position", spawn_tile)
+		player_controller.call("clear_path")
+		var reachable := false
+		var candidates: Array = interaction_system.call("get_interaction_tiles", object_id)
+		for candidate in candidates:
+			player_controller.call("set_grid_position", spawn_tile)
+			player_controller.call("clear_path")
+			if bool(player_controller.call("request_path_to", candidate)):
+				reachable = true
+				break
+		_expect(reachable, "prototype pathing reaches an interaction tile for %s" % String(object_id))
+
+
+func _assert_cardinal_interaction_contract() -> void:
+	var interaction_system = CampInteractionSystemScript.new()
+	var facade = CampWorldObjectScript.new({
+		"id": &"test_facade",
+		"position": Vector2(10.5, 11.0),
+		"size_tiles": Vector2i(2, 2),
+		"is_interactable": true
+	})
+	interaction_system.set_world_objects([facade])
+	interaction_system.set_player_grid_position(Vector2i(10, 10))
+	_expect(not interaction_system.is_player_adjacent_to_object(&"test_facade"), "occupied object tiles do not count as interaction-adjacent")
+	interaction_system.set_player_grid_position(Vector2i(9, 9))
+	_expect(not interaction_system.is_player_adjacent_to_object(&"test_facade"), "diagonal-only contact does not count as interaction-adjacent")
+	interaction_system.set_player_grid_position(Vector2i(9, 10))
+	_expect(interaction_system.is_player_adjacent_to_object(&"test_facade"), "cardinal edge tiles count as interaction-adjacent")
+	interaction_system.free()
 
 
 func _visible_text_under(node: Node) -> String:

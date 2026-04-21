@@ -22,7 +22,7 @@ func _init() -> void:
 	})
 	var wash_line = CampWorldObjectScript.new({
 		"id": &"wash_line",
-		"position": Vector2i(12, 9),
+		"position": Vector2(12.5, 9),
 		"type": &"wash_line",
 		"interaction_type": &"page",
 		"size_tiles": Vector2i(2, 1),
@@ -34,13 +34,14 @@ func _init() -> void:
 	_expect(view.has_method("get_cached_interactable_objects"), "camp world view exposes cached interactable lookup for hit testing")
 	_expect(bool(view.call("has_cached_occupied_tile", Vector2i(11, 10))), "occupied tile cache recognizes single-tile objects")
 	_expect(bool(view.call("has_cached_occupied_tile", Vector2i(13, 9))), "occupied tile cache recognizes multi-tile objects")
+	_expect(bool(view.call("has_cached_occupied_tile", Vector2i(12, 9))), "bottom-center anchor expands multi-tile footprints back to the left edge tile")
 	_expect(not bool(view.call("has_cached_occupied_tile", Vector2i(5, 5))), "occupied tile cache leaves empty ground unblocked")
 	_expect(view.call("get_cached_interactable_objects").size() == 2, "interactable cache retains clickable camp objects")
 
 	var stash_id = StringName(view.call("_get_object_id_at_point", view.call("_world_to_screen", Vector2(11, 10))))
 	_expect(stash_id == &"stash", "object hit testing still resolves the stash")
 
-	var wash_line_id = StringName(view.call("_get_object_id_at_point", view.call("_world_to_screen", Vector2(12, 9))))
+	var wash_line_id = StringName(view.call("_get_object_id_at_point", view.call("_world_to_screen", Vector2(12.5, 9))))
 	_expect(wash_line_id == &"wash_line", "object hit testing still resolves the wash line")
 
 	quit(1 if _failed else 0)

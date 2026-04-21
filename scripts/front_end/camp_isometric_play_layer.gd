@@ -3,13 +3,18 @@ extends Control
 const CampWorldObjectScript := preload("res://scripts/front_end/camp_world_object.gd")
 
 const INVENTORY_UI_PAGE := &"inventory_ui"
-const WORLD_BOUNDS := Rect2i(0, 0, 72, 72)
-const CAMP_CENTER := Vector2i(36, 34)
-const PLAYER_START_TILE := Vector2i(33, 37)
+const WORLD_BOUNDS := Rect2i(0, 0, 32, 32)
+const CAMP_CENTER := Vector2i(16, 16)
+const PLAYER_START_TILE := Vector2i(15, 19)
+const TOWN_WORLD_BOUNDS := Rect2i(0, 0, 64, 32)
+const TOWN_CENTER := Vector2i(32, 15)
+const TOWN_PLAYER_START_TILE := Vector2i(31, 22)
 const CAMERA_DEADZONE_HALF_SIZE := Vector2(156.0, 96.0)
 
 signal interaction_activated(route_id: StringName, action_id: StringName, page_id: StringName)
 signal overlay_action_requested(command: Dictionary)
+
+@export var map_mode: StringName = &"camp"
 
 @onready var world_view = $WorldView
 @onready var ground_tilemap = $GroundTileMap
@@ -60,13 +65,24 @@ func _ready() -> void:
 	size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	size_flags_vertical = Control.SIZE_EXPAND_FILL
 	focus_mode = Control.FOCUS_ALL
+	if ground_tilemap != null:
+		ground_tilemap.visible = false
 	_configure_hud()
 	_configure_interaction_card()
 	if has_signal("resized"):
 		resized.connect(Callable(self, "_sync_ground_tilemap_view"))
 	_connect_runtime_nodes()
-	_build_default_camp()
+	_build_default_world()
 	set_input_enabled(true)
+
+
+func set_map_mode(new_map_mode: StringName) -> void:
+	if map_mode == new_map_mode and not _world_objects.is_empty():
+		return
+	map_mode = new_map_mode
+	if not is_node_ready():
+		return
+	_build_default_world()
 
 
 func set_interactions(interactions: Array) -> void:
@@ -132,6 +148,10 @@ func set_hud_snapshot(snapshot: Dictionary) -> void:
 			int(stat.get("value", 0)),
 			int(stat.get("max", 100))
 		)
+
+
+func get_world_objects_for_tests() -> Array:
+	return _world_objects
 
 
 func _configure_hud() -> void:
@@ -328,6 +348,26 @@ func _connect_runtime_nodes() -> void:
 	interaction_system.interaction_requested.connect(Callable(self, "_on_interaction_requested"))
 
 
+func _build_default_world() -> void:
+	_clear_contextual_overlay()
+	_interaction_card_has_manual_position = false
+	if interaction_system != null and interaction_system.has_method("set_default_prompt"):
+		if map_mode == &"town":
+			interaction_system.set_default_prompt(
+				"Walk town with arrow keys or WASD. Click the street or a building to move there.",
+				"Stand beside the jobs board, store, office, church, or camp road to act."
+			)
+		else:
+			interaction_system.set_default_prompt(
+				"Walk the clearing with arrow keys or WASD. Click the ground or an object to move there.",
+				"Stand beside the fire, bedroll, stash, or tool area to act in camp."
+			)
+	if map_mode == &"town":
+		_build_default_town()
+	else:
+		_build_default_camp()
+
+
 func _build_default_camp() -> void:
 	_world_objects = [
 		CampWorldObjectScript.new({
@@ -343,7 +383,7 @@ func _build_default_camp() -> void:
 		}),
 		CampWorldObjectScript.new({
 			"id": &"woodpile",
-			"position": CAMP_CENTER + Vector2i(-4, 0),
+			"position": CAMP_CENTER + Vector2i(-3, 0),
 			"type": &"woodpile",
 			"interaction_type": &"action",
 			"route_id": &"fire",
@@ -353,7 +393,7 @@ func _build_default_camp() -> void:
 		}),
 		CampWorldObjectScript.new({
 			"id": &"bedroll",
-			"position": CAMP_CENTER + Vector2i(-4, 4),
+			"position": Vector2(CAMP_CENTER) + Vector2(-2.5, 3.0),
 			"type": &"bedroll",
 			"interaction_type": &"action",
 			"route_id": &"rest",
@@ -365,7 +405,7 @@ func _build_default_camp() -> void:
 		}),
 		CampWorldObjectScript.new({
 			"id": &"stash",
-			"position": CAMP_CENTER + Vector2i(4, 3),
+			"position": CAMP_CENTER + Vector2i(3, 3),
 			"type": &"stash",
 			"interaction_type": &"ui",
 			"route_id": &"stash",
@@ -376,18 +416,19 @@ func _build_default_camp() -> void:
 		}),
 		CampWorldObjectScript.new({
 			"id": &"tool_area",
-			"position": CAMP_CENTER + Vector2i(5, -2),
+			"position": CAMP_CENTER + Vector2i(4, -2),
 			"type": &"tool_area",
 			"interaction_type": &"page",
 			"route_id": &"craft",
 			"display_name": "Tool Area",
 			"prompt_action": "Craft",
 			"page_id": &"hobocraft",
+			"size_tiles": Vector2i(2, 1),
 			"detail_text": "Camp craft is repair, patching, and staying usable."
 		}),
 		CampWorldObjectScript.new({
 			"id": &"trail_sign",
-			"position": CAMP_CENTER + Vector2i(10, -9),
+			"position": CAMP_CENTER + Vector2i(8, -7),
 			"type": &"trail_sign",
 			"interaction_type": &"action",
 			"route_id": &"exit",
@@ -395,15 +436,9 @@ func _build_default_camp() -> void:
 			"prompt_action": "Leave for Town",
 			"detail_text": "The town is back down the path: wages, errands, scrutiny, and noise."
 		}),
-		CampWorldObjectScript.new({"id": &"lean_to_w", "position": CAMP_CENTER + Vector2i(-8, -3), "type": &"tarp_shelter", "interaction_type": &"", "display_name": "Lean-to", "size_tiles": Vector2i(3, 2), "is_interactable": false}),
-		CampWorldObjectScript.new({"id": &"lean_to_e", "position": CAMP_CENTER + Vector2i(5, -6), "type": &"tarp_shelter", "interaction_type": &"", "display_name": "Lean-to", "size_tiles": Vector2i(3, 2), "is_interactable": false}),
-		CampWorldObjectScript.new({"id": &"log_sw", "position": CAMP_CENTER + Vector2i(-7, 6), "type": &"log", "interaction_type": &"", "display_name": "Log Seat", "is_interactable": false}),
-		CampWorldObjectScript.new({"id": &"log_s", "position": CAMP_CENTER + Vector2i(1, 8), "type": &"log", "interaction_type": &"", "display_name": "Log Seat", "is_interactable": false}),
-		CampWorldObjectScript.new({"id": &"stump_s", "position": CAMP_CENTER + Vector2i(-1, 7), "type": &"stump", "interaction_type": &"", "display_name": "Stump", "is_interactable": false}),
-		CampWorldObjectScript.new({"id": &"crate_e", "position": CAMP_CENTER + Vector2i(7, 2), "type": &"crate", "interaction_type": &"", "display_name": "Crate", "is_interactable": false}),
 		CampWorldObjectScript.new({
 			"id": &"wash_line",
-			"position": CAMP_CENTER + Vector2i(8, -4),
+			"position": Vector2(CAMP_CENTER) + Vector2(6.5, -3.0),
 			"type": &"wash_line",
 			"interaction_type": &"page",
 			"route_id": &"ready",
@@ -414,10 +449,78 @@ func _build_default_camp() -> void:
 			"detail_text": "A place to wash, air out clothes, and put yourself back together before facing other people."
 		})
 	]
-	_add_environment_ring()
 	_rebuild_world_object_cache()
 	_apply_interaction_overrides()
 	player_controller.set_grid_position(PLAYER_START_TILE)
+	_camera_render_position = Vector2(PLAYER_START_TILE)
+	_sync_runtime_state()
+
+
+func _build_default_town() -> void:
+	_world_objects = [
+		CampWorldObjectScript.new({
+			"id": &"town_jobs_board",
+			"position": TOWN_CENTER + Vector2i(-10, 2),
+			"type": &"town_jobs_board",
+			"interaction_type": &"page",
+			"route_id": &"town_jobs",
+			"display_name": "Jobs Board",
+			"prompt_action": "Read the Jobs Board",
+			"page_id": &"jobs_board",
+			"detail_text": "Public work notices go stale fast. Check wages, hours, and whether the day still has room."
+		}),
+		CampWorldObjectScript.new({
+			"id": &"town_church",
+			"position": Vector2(TOWN_CENTER) + Vector2(-17.0, -2.0),
+			"type": &"town_church",
+			"interaction_type": &"page",
+			"route_id": &"town_send_money",
+			"display_name": "Church Office",
+			"prompt_action": "Send Money Home",
+			"page_id": &"send_money",
+			"size_tiles": Vector2i(3, 3),
+			"detail_text": "A quiet office where money orders, letters, and the pressure from home meet the day's earnings."
+		}),
+		CampWorldObjectScript.new({
+			"id": &"town_grocery",
+			"position": Vector2(TOWN_CENTER) + Vector2(10.0, 0.0),
+			"type": &"town_grocery",
+			"interaction_type": &"page",
+			"route_id": &"town_grocery",
+			"display_name": "Grocery Store",
+			"prompt_action": "Buy Provisions",
+			"page_id": &"grocery",
+			"size_tiles": Vector2i(3, 3),
+			"detail_text": "Food, coffee, and small comforts come out of the stake before the road takes its share."
+		}),
+		CampWorldObjectScript.new({
+			"id": &"town_hardware",
+			"position": Vector2(TOWN_CENTER) + Vector2(19.0, 0.0),
+			"type": &"town_hardware",
+			"interaction_type": &"page",
+			"route_id": &"town_hardware",
+			"display_name": "Hardware Store",
+			"prompt_action": "Buy Tools",
+			"page_id": &"hardware",
+			"size_tiles": Vector2i(3, 3),
+			"detail_text": "Small gear, tins, matches, and repair materials that make camp work possible."
+		}),
+		CampWorldObjectScript.new({
+			"id": &"town_camp_road",
+			"position": TOWN_CENTER + Vector2i(24, 3),
+			"type": &"town_road_exit",
+			"interaction_type": &"action",
+			"route_id": &"town_exit",
+			"display_name": "Road to Camp",
+			"prompt_action": "Walk to Camp",
+			"action_id": &"go_to_camp",
+			"detail_text": "The road back to camp costs daylight but returns you to fire, gear, and preparation."
+		})
+	]
+	_rebuild_world_object_cache()
+	_apply_interaction_overrides()
+	player_controller.set_grid_position(TOWN_PLAYER_START_TILE)
+	_camera_render_position = Vector2(TOWN_PLAYER_START_TILE)
 	_sync_runtime_state()
 
 
@@ -425,7 +528,7 @@ func _add_environment_ring() -> void:
 	for y in range(WORLD_BOUNDS.size.y):
 		for x in range(WORLD_BOUNDS.size.x):
 			var tile = Vector2i(x, y)
-			if Vector2(tile - CAMP_CENTER).length() < 10.0:
+			if Vector2(tile - CAMP_CENTER).length() < 7.0:
 				continue
 			if not _is_tree_tile(tile):
 				continue
@@ -434,22 +537,43 @@ func _add_environment_ring() -> void:
 				"position": tile,
 				"type": &"tree",
 				"interaction_type": &"",
-				"display_name": "Pine",
+				"display_name": "Brush",
 				"is_interactable": false
 			}))
 
 
 func _is_tree_tile(tile: Vector2i) -> bool:
+	var hash = _hash01(tile.x, tile.y)
 	if tile.x < 2 or tile.y < 2 or tile.x > WORLD_BOUNDS.size.x - 3 or tile.y > WORLD_BOUNDS.size.y - 3:
-		return true
+		return hash > 0.90
 	var distance_from_camp = Vector2(tile - CAMP_CENTER).length()
 	if distance_from_camp < 10.0:
 		return false
-	var path_distance = _distance_to_path(Vector2(tile), Vector2(CAMP_CENTER), Vector2(CAMP_CENTER + Vector2i(11, -10)))
-	if path_distance < 1.4 and distance_from_camp < 16.0:
+	var path_distance = _distance_to_path(Vector2(tile), Vector2(CAMP_CENTER), Vector2(CAMP_CENTER + Vector2i(8, -7)))
+	if path_distance < 1.4 and distance_from_camp < 12.0:
 		return false
-	var hash = _hash01(tile.x, tile.y)
-	return hash > 0.76 or (distance_from_camp > 18.0 and hash > 0.52)
+	return hash > 0.965 or (distance_from_camp > 12.5 and hash > 0.91)
+
+
+func _add_town_tree_edges() -> void:
+	for y in range(TOWN_WORLD_BOUNDS.size.y):
+		for x in range(TOWN_WORLD_BOUNDS.size.x):
+			var tile = Vector2i(x, y)
+			if x > 4 and x < TOWN_WORLD_BOUNDS.size.x - 5 and y > 4 and y < TOWN_WORLD_BOUNDS.size.y - 5:
+				continue
+			var hash = _hash01(x, y)
+			if hash < 0.955:
+				continue
+			if ((x + y) % 3) == 0:
+				continue
+			_world_objects.append(CampWorldObjectScript.new({
+				"id": StringName("town_tree_%d_%d" % [x, y]),
+				"position": tile,
+				"type": &"tree",
+				"interaction_type": &"",
+				"display_name": "Town Edge Brush",
+				"is_interactable": false
+			}))
 
 
 func _apply_interaction_overrides() -> void:
@@ -481,6 +605,18 @@ func _apply_default_object_binding(world_object) -> void:
 			world_object.page_id = INVENTORY_UI_PAGE
 		&"ready":
 			world_object.page_id = &"getting_ready"
+		&"town_jobs":
+			world_object.page_id = &"jobs_board"
+		&"town_send_money":
+			world_object.page_id = &"send_money"
+		&"town_grocery":
+			world_object.page_id = &"grocery"
+		&"town_hardware":
+			world_object.page_id = &"hardware"
+		&"town_foreman":
+			world_object.page_id = &"jobs_board"
+		&"town_exit":
+			world_object.action_id = &"go_to_camp"
 
 
 func _resolve_prompt_action(route_id: StringName, label: String) -> String:
@@ -499,28 +635,50 @@ func _resolve_prompt_action(route_id: StringName, label: String) -> String:
 			return "Open the Stash"
 		&"ready":
 			return "Get Ready"
+		&"town_jobs":
+			return "Read the Jobs Board"
+		&"town_send_money":
+			return "Send Money Home"
+		&"town_grocery":
+			return "Buy Provisions"
+		&"town_hardware":
+			return "Buy Tools"
+		&"town_foreman":
+			return "Ask After Work"
+		&"town_exit":
+			return "Walk to Camp"
 		_:
 			return label
 
 
 func _sync_runtime_state() -> void:
 	_rebuild_world_object_cache()
-	if ground_tilemap != null and ground_tilemap.has_method("setup_ground"):
-		ground_tilemap.setup_ground(WORLD_BOUNDS, CAMP_CENTER)
-		world_view.set_draw_ground_layer(false)
-	world_view.set_world_size(WORLD_BOUNDS.size)
+	if ground_tilemap != null:
+		ground_tilemap.visible = false
+	world_view.set_draw_ground_layer(true)
+	world_view.set_world_size(_get_world_bounds().size)
 	world_view.set_world_objects(_world_objects)
-	world_view.set_camp_anchor(CAMP_CENTER)
+	world_view.set_camp_anchor(_get_world_center())
+	if world_view.has_method("set_terrain_mode"):
+		world_view.set_terrain_mode(map_mode)
 	world_view.set_player_grid_position(player_controller.grid_position)
 	world_view.set_player_render_position(player_controller.render_position)
 	_camera_render_position = player_controller.render_position
 	world_view.set_camera_render_position(_camera_render_position)
 	_rebuild_blocked_tiles_cache()
-	player_controller.set_navigation_data(WORLD_BOUNDS, _blocked_tiles_cache)
+	player_controller.set_navigation_data(_get_world_bounds(), _blocked_tiles_cache)
 	interaction_system.set_world_objects(_world_objects)
 	interaction_system.set_player_grid_position(player_controller.grid_position)
 	_sync_ground_tilemap_view()
 	_interaction_card_visibility_refresh()
+
+
+func _get_world_bounds() -> Rect2i:
+	return TOWN_WORLD_BOUNDS if map_mode == &"town" else WORLD_BOUNDS
+
+
+func _get_world_center() -> Vector2i:
+	return TOWN_CENTER if map_mode == &"town" else CAMP_CENTER
 
 
 func _collect_blocked_tiles() -> Dictionary:
@@ -576,7 +734,7 @@ func _on_object_clicked(object_id: StringName) -> void:
 		return a_distance < b_distance
 	)
 	for candidate in candidates:
-		if not WORLD_BOUNDS.has_point(candidate):
+		if not _get_world_bounds().has_point(candidate):
 			continue
 		if player_controller.request_path_to(candidate):
 			_pending_interaction_object_id = object_id
@@ -585,7 +743,7 @@ func _on_object_clicked(object_id: StringName) -> void:
 
 func _on_player_position_changed(grid_position: Vector2i) -> void:
 	world_view.set_player_grid_position(grid_position)
-	player_controller.set_navigation_data(WORLD_BOUNDS, _blocked_tiles_cache)
+	player_controller.set_navigation_data(_get_world_bounds(), _blocked_tiles_cache)
 	interaction_system.set_player_grid_position(grid_position)
 	if _active_overlay_object_id != &"" and not interaction_system.is_player_adjacent_to_object(_active_overlay_object_id):
 		_clear_contextual_overlay()
@@ -778,7 +936,7 @@ func _position_hover_chip() -> void:
 	if world_object == null or world_view == null or not world_view.has_method("get_screen_position_for_grid"):
 		hover_chip.visible = false
 		return
-	var screen_position = world_view.get_screen_position_for_grid(Vector2(world_object.position))
+	var screen_position = _get_world_object_screen_anchor(world_object)
 	var preferred = screen_position + Vector2(-hover_chip.size.x * 0.5, -52.0)
 	var max_x = maxf(size.x - hover_chip.size.x - 12.0, 12.0)
 	var max_y = maxf(size.y - hover_chip.size.y - 96.0, 12.0)
@@ -802,7 +960,7 @@ func _position_interaction_card() -> void:
 	var world_object = _world_object_by_id.get(_active_overlay_object_id, null)
 	if world_object == null or world_view == null or not world_view.has_method("get_screen_position_for_grid"):
 		return
-	var screen_position = world_view.get_screen_position_for_grid(Vector2(world_object.position))
+	var screen_position = _get_world_object_screen_anchor(world_object)
 	var preferred = screen_position + Vector2(54.0, -132.0)
 	var max_x = maxf(size.x - interaction_card.size.x - 12.0, 12.0)
 	var max_y = maxf(size.y - interaction_card.size.y - 96.0, 12.0)
@@ -810,6 +968,14 @@ func _position_interaction_card() -> void:
 		clampf(preferred.x, 12.0, max_x),
 		clampf(preferred.y, 12.0, max_y)
 	)
+
+
+func _get_world_object_screen_anchor(world_object) -> Vector2:
+	if world_view == null:
+		return Vector2.ZERO
+	if world_object != null and world_object.has_method("get_ground_contact_position"):
+		return world_view.get_screen_position_for_grid(world_object.get_ground_contact_position())
+	return world_view.get_screen_position_for_grid(Vector2(world_object.position))
 
 
 func _on_interaction_title_bar_gui_input(event: InputEvent) -> void:

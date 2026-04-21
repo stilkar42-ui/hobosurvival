@@ -2,7 +2,7 @@ class_name CampWorldObject
 extends RefCounted
 
 var id: StringName = &""
-var position: Vector2i = Vector2i.ZERO
+var position: Vector2 = Vector2.ZERO
 var type: StringName = &""
 var interaction_type: StringName = &""
 var route_id: StringName = &""
@@ -18,7 +18,7 @@ var detail_text := ""
 
 func _init(config: Dictionary = {}) -> void:
 	id = StringName(config.get("id", id))
-	position = config.get("position", position)
+	position = Vector2(config.get("position", position))
 	type = StringName(config.get("type", type))
 	interaction_type = StringName(config.get("interaction_type", interaction_type))
 	route_id = StringName(config.get("route_id", route_id))
@@ -32,11 +32,25 @@ func _init(config: Dictionary = {}) -> void:
 	detail_text = String(config.get("detail_text", detail_text))
 
 
+func get_ground_contact_position() -> Vector2:
+	return position
+
+
+func get_footprint_origin() -> Vector2i:
+	var width: int = max(size_tiles.x, 1)
+	var height: int = max(size_tiles.y, 1)
+	return Vector2i(
+		roundi(position.x - float(width - 1) * 0.5),
+		roundi(position.y - float(height - 1))
+	)
+
+
 func get_occupied_tiles() -> Array:
 	var tiles: Array = []
+	var origin: Vector2i = get_footprint_origin()
 	for y in range(max(size_tiles.y, 1)):
 		for x in range(max(size_tiles.x, 1)):
-			tiles.append(position + Vector2i(x, y))
+			tiles.append(origin + Vector2i(x, y))
 	return tiles
 
 

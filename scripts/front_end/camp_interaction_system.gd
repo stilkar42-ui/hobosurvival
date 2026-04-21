@@ -13,6 +13,8 @@ const CARDINAL_DIRS := [
 
 var player_grid_position := Vector2i.ZERO
 var world_objects: Array = []
+var default_prompt_title := "Walk the clearing with arrow keys or WASD. Click the ground or an object to move there."
+var default_prompt_detail := "Stand beside the fire, bedroll, stash, or tool area to act in camp."
 
 var _active_object_id: StringName = &""
 var _interactable_objects: Array = []
@@ -28,6 +30,13 @@ func set_world_objects(new_world_objects: Array) -> void:
 func set_player_grid_position(new_player_grid_position: Vector2i) -> void:
 	player_grid_position = new_player_grid_position
 	_refresh_active_object()
+
+
+func set_default_prompt(title: String, detail: String) -> void:
+	default_prompt_title = title
+	default_prompt_detail = detail
+	if _active_object_id == &"":
+		prompt_changed.emit(default_prompt_title, default_prompt_detail, &"")
 
 
 func get_active_object_id() -> StringName:
@@ -87,11 +96,7 @@ func _refresh_active_object() -> void:
 		return
 	_active_object_id = next_object_id
 	if best_object == null:
-		prompt_changed.emit(
-			"Walk the clearing with arrow keys or WASD. Click the ground or an object to move there.",
-			"Stand beside the fire, bedroll, stash, or tool area to act in camp.",
-			&""
-		)
+		prompt_changed.emit(default_prompt_title, default_prompt_detail, &"")
 		return
 	prompt_changed.emit(
 		"Press E to %s" % best_object.prompt_action,
@@ -115,8 +120,11 @@ func _distance_to_object(tile: Vector2i, world_object) -> int:
 
 func _is_tile_adjacent_to_object(tile: Vector2i, world_object) -> bool:
 	for occupied_tile in world_object.get_occupied_tiles():
+		if tile == occupied_tile:
+			return false
+	for occupied_tile in world_object.get_occupied_tiles():
 		var distance = absi(tile.x - occupied_tile.x) + absi(tile.y - occupied_tile.y)
-		if distance <= 1:
+		if distance == 1:
 			return true
 	return false
 
