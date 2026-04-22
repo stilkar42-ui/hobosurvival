@@ -245,19 +245,7 @@ func build_location_pages(page) -> void:
 	ready_actions_grid.reparent(page._getting_ready_page_root)
 	ready_actions_grid.columns = 2
 
-	page._navigation_controller.configure({
-		page.PAGE_TOWN: page._town_page_panel,
-		page.PAGE_JOBS_BOARD: page._jobs_board_page_panel,
-		page.PAGE_SEND_MONEY: page._send_money_page_panel,
-		page.PAGE_CAMP: page._camp_page_panel,
-		page.PAGE_GROCERY: page._grocery_page_panel,
-		page.PAGE_HARDWARE: page._hardware_page_panel,
-		page.PAGE_GETTING_READY: page._getting_ready_page_panel,
-		page.PAGE_HOBOCRAFT: page._hobocraft_page_panel,
-		page.PAGE_COOKING: page._cooking_page_panel
-	}, page._page_nav_row, page._camp_nav_panel)
 	page._set_active_loop_page(page.PAGE_TOWN)
-	page._mount_camp_world_host()
 
 
 func connect_buttons(page) -> void:

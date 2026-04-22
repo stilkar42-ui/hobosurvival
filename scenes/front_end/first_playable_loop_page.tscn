@@ -1,6 +1,6 @@
 [gd_scene load_steps=5 format=3]
 
-[ext_resource type="Script" path="res://scripts/front_end/first_playable_loop_page.gd" id="1_loop_script"]
+[ext_resource type="Script" path="res://scripts/front_end/first_playable_loop_shell.gd" id="1_loop_script"]
 [ext_resource type="Script" path="res://scripts/ui/inventory_panel.gd" id="2_inventory_panel_script"]
 [ext_resource type="Script" path="res://scripts/ui/hobo_passport_panel.gd" id="3_passport_panel_script"]
 [ext_resource type="Script" path="res://scripts/ui/inventory_radial_menu.gd" id="4_inventory_radial_menu_script"]

@@ -8,7 +8,6 @@ const FadingMeterSystemScript := preload("res://scripts/gameplay/fading_meter_sy
 const FirstPlayableLoopActionControllerScript := preload("res://scripts/front_end/first_playable_loop_action_controller.gd")
 const OverlayBuilderScript := preload("res://scripts/front_end/adapters/overlay_builder.gd")
 const FirstPlayableLoopLayoutControllerScript := preload("res://scripts/front_end/first_playable_loop_layout_controller.gd")
-const FirstPlayableLoopNavigationControllerScript := preload("res://scripts/front_end/first_playable_loop_navigation_controller.gd")
 const InventoryScript := preload("res://scripts/inventory/inventory.gd")
 const DataManagerScript := preload("res://scripts/managers/data_manager.gd")
 const EntityManagerScript := preload("res://scripts/managers/entity_manager.gd")
@@ -17,11 +16,19 @@ const InventoryManagerScript := preload("res://scripts/managers/inventory_manage
 const LocationManagerScript := preload("res://scripts/managers/location_manager.gd")
 const PlayerStateRuntimeScript := preload("res://scripts/player/player_state_runtime.gd")
 const PlayerStateServiceScript := preload("res://scripts/player/player_state_service.gd")
+const ReputationManagerScript := preload("res://scripts/managers/reputation_manager.gd")
 const StatsManagerScript := preload("res://scripts/managers/stats_manager.gd")
 const SurvivalLoopRulesScript := preload("res://scripts/gameplay/survival_loop_rules.gd")
 const TimeManagerScript := preload("res://scripts/managers/time_manager.gd")
 const UIManagerScript := preload("res://scripts/managers/ui_manager.gd")
-const CampIsometricLayerScene := preload("res://scenes/front_end/camp_isometric_play_layer.tscn")
+const CraftingPageScript := preload("res://scripts/pages/crafting_page.gd")
+const EventEncounterPageScript := preload("res://scripts/pages/event_encounter_page.gd")
+const InventoryPageScript := preload("res://scripts/pages/inventory_page.gd")
+const LocationPageScript := preload("res://scripts/pages/location_page.gd")
+const PassportStatsPageScript := preload("res://scripts/pages/passport_stats_page.gd")
+const RestCampPageScript := preload("res://scripts/pages/rest_camp_page.gd")
+const TravelPageScript := preload("res://scripts/pages/travel_page.gd")
+const WorldMapPageScript := preload("res://scripts/pages/world_map_page.gd")
 
 const INVENTORY_MENU_MOVE_TO := 2001
 const INVENTORY_MENU_DROP := 2002
@@ -204,7 +211,7 @@ var _condition_bars_root: GridContainer
 var _camp_nav_panel: PanelContainer
 var _camp_nav_root: VBoxContainer
 var _camp_nav_status_label: Label
-var _camp_isometric_layer: Control
+var _camp_isometric_layer: Control = null
 var _camp_world_host_trace_pending := false
 var _inventory_open_context: StringName = &"carried"
 var _inventory_window_dragging := false
@@ -226,7 +233,6 @@ var _selected_send_amount_cents := 125
 var _did_finish_ready := false
 var _did_apply_default_camp_start := false
 var _layout_controller = FirstPlayableLoopLayoutControllerScript.new()
-var _navigation_controller = FirstPlayableLoopNavigationControllerScript.new()
 var _action_controller = FirstPlayableLoopActionControllerScript.new()
 var _overlay_builder = OverlayBuilderScript.new()
 var _data_manager = DataManagerScript.new()
@@ -235,8 +241,17 @@ var _time_manager = TimeManagerScript.new()
 var _stats_manager = StatsManagerScript.new()
 var _inventory_manager = InventoryManagerScript.new()
 var _location_manager = LocationManagerScript.new()
+var _reputation_manager = ReputationManagerScript.new()
 var _entity_manager = EntityManagerScript.new()
 var _ui_manager = UIManagerScript.new()
+var _world_map_page = WorldMapPageScript.new()
+var _location_page = LocationPageScript.new()
+var _travel_page = TravelPageScript.new()
+var _inventory_page = InventoryPageScript.new()
+var _crafting_page = CraftingPageScript.new()
+var _passport_stats_page = PassportStatsPageScript.new()
+var _event_encounter_page = EventEncounterPageScript.new()
+var _rest_camp_page = RestCampPageScript.new()
 
 
 func _ready() -> void:
@@ -250,6 +265,7 @@ func _finish_ready() -> void:
 	_build_location_pages()
 	_apply_styles()
 	_connect_buttons()
+	_bind_explicit_pages()
 	inventory_overlay.visible = false
 	passport_overlay.visible = false
 	getting_ready_overlay.visible = false
@@ -290,24 +306,87 @@ func _configure_managers() -> void:
 	_game_state_manager.configure(_player_state_service)
 	_stats_manager.configure(_player_state_service)
 	_inventory_manager.configure(_player_state_service)
+	_reputation_manager.configure(_player_state_service)
 
 
 func _register_pages_with_ui_manager() -> void:
-	var page_panels := {
-		PAGE_TOWN: _town_page_panel,
-		PAGE_JOBS_BOARD: _jobs_board_page_panel,
-		PAGE_SEND_MONEY: _send_money_page_panel,
-		PAGE_CAMP: _camp_page_panel,
-		PAGE_GROCERY: _grocery_page_panel,
-		PAGE_HARDWARE: _hardware_page_panel,
-		PAGE_GETTING_READY: _getting_ready_page_panel,
-		PAGE_HOBOCRAFT: _hobocraft_page_panel,
-		PAGE_COOKING: _cooking_page_panel
-	}
-	for page_id in page_panels.keys():
-		_ui_manager.register_page(StringName(page_id), page_panels.get(page_id))
+	_ui_manager.register_page(&"WorldMapPage", _world_map_page)
+	_ui_manager.register_page(&"LocationPage", _location_page)
+	_ui_manager.register_page(&"TravelPage", _travel_page)
+	_ui_manager.register_page(&"InventoryPage", _inventory_page)
+	_ui_manager.register_page(&"CraftingPage", _crafting_page)
+	_ui_manager.register_page(&"PassportStatsPage", _passport_stats_page)
+	_ui_manager.register_page(&"EventEncounterPage", _event_encounter_page)
+	_ui_manager.register_page(&"RestCampPage", _rest_camp_page)
+	_ui_manager.register_route(PAGE_TOWN, &"WorldMapPage")
+	_ui_manager.register_route(PAGE_CAMP, &"WorldMapPage")
+	_ui_manager.register_route(PAGE_JOBS_BOARD, &"LocationPage")
+	_ui_manager.register_route(PAGE_SEND_MONEY, &"LocationPage")
+	_ui_manager.register_route(PAGE_GROCERY, &"LocationPage")
+	_ui_manager.register_route(PAGE_HARDWARE, &"LocationPage")
+	_ui_manager.register_route(PAGE_HOBOCRAFT, &"CraftingPage")
+	_ui_manager.register_route(PAGE_COOKING, &"CraftingPage")
+	_ui_manager.register_route(PAGE_GETTING_READY, &"RestCampPage")
+	_ui_manager.register_route(&"inventory_ui", &"InventoryPage")
+	_ui_manager.register_route(&"passport_stats", &"PassportStatsPage")
+	_ui_manager.register_route(&"event_encounter", &"EventEncounterPage")
+	_ui_manager.register_route(&"travel_ui", &"TravelPage")
 	if _active_loop_page != &"":
 		_ui_manager.switch_to(_active_loop_page)
+
+
+func _bind_explicit_pages() -> void:
+	_world_map_page.bind(_town_page_panel, _camp_page_panel, camp_viewport_host)
+	_world_map_page.attach_camp_layer(_camp_isometric_layer)
+	_location_page.bind({
+		PAGE_JOBS_BOARD: _jobs_board_page_panel,
+		PAGE_SEND_MONEY: _send_money_page_panel,
+		PAGE_GROCERY: _grocery_page_panel,
+		PAGE_HARDWARE: _hardware_page_panel
+	})
+	_travel_page.bind({
+		"page_nav_row": _page_nav_row,
+		"camp_nav_panel": _camp_nav_panel,
+		"go_to_camp_button": _go_to_camp_button,
+		"return_to_town_button": _return_to_town_button,
+		"open_jobs_board_button": _open_jobs_board_button,
+		"open_send_money_page_button": _open_send_money_page_button,
+		"open_grocery_page_button": _open_grocery_page_button,
+		"open_hardware_page_button": _open_hardware_page_button,
+		"open_getting_ready_page_button": _open_getting_ready_page_button,
+		"open_hobocraft_page_button": _open_hobocraft_page_button,
+		"open_cooking_page_button": _open_cooking_page_button
+	})
+	_inventory_page.bind({
+		"overlay": inventory_overlay,
+		"summary_label": inventory_summary_label,
+		"selected_item_label": selected_item_label,
+		"hint_label": inventory_hint_label,
+		"modal_status_label": inventory_modal_status_label,
+		"action_summary_label": inventory_action_summary_label,
+		"destination_label": inventory_destination_label,
+		"inventory_panel": inventory_panel
+	})
+	_crafting_page.bind(_hobocraft_page_panel, _cooking_page_panel)
+	_passport_stats_page.bind(passport_overlay, passport_panel)
+	_event_encounter_page.bind({
+		"status_label": status_label,
+		"result_panel": result_panel,
+		"result_title_label": result_title_label,
+		"result_body_label": result_body_label
+	})
+	_rest_camp_page.bind({
+		"overlay": getting_ready_overlay,
+		"status_label": getting_ready_status_label,
+		"stats_label": getting_ready_stats_label,
+		"fetch_water_button": ready_fetch_water_button,
+		"wash_body_button": ready_wash_body_button,
+		"wash_face_hands_button": ready_wash_face_hands_button,
+		"shave_button": ready_shave_button,
+		"comb_groom_button": ready_comb_groom_button,
+		"air_out_clothes_button": ready_air_out_clothes_button,
+		"brush_clothes_button": ready_brush_clothes_button
+	})
 
 
 func _exit_tree() -> void:
@@ -356,42 +435,8 @@ func _make_panel_scroll(scroll_name: String) -> ScrollContainer:
 
 
 func _mount_camp_world_host() -> void:
-	if camp_viewport_host == null:
-		return
-	camp_viewport_host.set_anchors_preset(Control.PRESET_FULL_RECT)
-	camp_viewport_host.offset_left = 0.0
-	camp_viewport_host.offset_top = 0.0
-	camp_viewport_host.offset_right = 0.0
-	camp_viewport_host.offset_bottom = 0.0
-	camp_viewport_host.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	camp_viewport_host.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	if _camp_isometric_layer == null:
-		_camp_isometric_layer = CampIsometricLayerScene.instantiate()
-		_camp_isometric_layer.name = "CampIsometricPlayLayer"
-		if _camp_isometric_layer.has_signal("interaction_activated"):
-			_camp_isometric_layer.connect("interaction_activated", Callable(self, "_on_camp_interaction_activated"))
-		if _camp_isometric_layer.has_signal("overlay_action_requested"):
-			_camp_isometric_layer.connect("overlay_action_requested", Callable(self, "_on_camp_overlay_action_requested"))
-	if _camp_isometric_layer.get_parent() != camp_viewport_host:
-		if _camp_isometric_layer.get_parent() != null:
-			_camp_isometric_layer.reparent(camp_viewport_host)
-		else:
-			camp_viewport_host.add_child(_camp_isometric_layer)
-	if _camp_isometric_layer is Control:
-		_camp_isometric_layer.set_anchors_preset(Control.PRESET_FULL_RECT)
-		_camp_isometric_layer.offset_left = 0.0
-		_camp_isometric_layer.offset_top = 0.0
-		_camp_isometric_layer.offset_right = 0.0
-		_camp_isometric_layer.offset_bottom = 0.0
-		_camp_isometric_layer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		_camp_isometric_layer.size_flags_vertical = Control.SIZE_EXPAND_FILL
-		_camp_isometric_layer.custom_minimum_size = Vector2.ZERO
-	if enable_trace_logging:
-		print("[CampHost.trace] phase=mount parent=%s host=%s" % [
-			String(_camp_isometric_layer.get_parent().get_path()),
-			String(camp_viewport_host.get_path())
-		])
-	_queue_camp_world_host_trace("mount")
+	if camp_viewport_host != null:
+		camp_viewport_host.visible = false
 
 
 func _configure_scroll_content(content: Control, min_width: float = 0.0) -> void:
@@ -454,13 +499,13 @@ func _apply_styles() -> void:
 
 func _bind_player_state(player_state) -> void:
 	if player_state == null:
-		inventory_panel.set_inventory(null)
-		passport_panel.set_passport_data(null)
+		_inventory_page.bind_player_state(null)
+		_passport_stats_page.bind_player_state(null)
 		return
 	# The loop screen, inventory modal, and passport modal all bind to the same shared
 	# player-state instance so UI stays synchronized as actions resolve.
-	inventory_panel.set_inventory(player_state.inventory_state)
-	passport_panel.set_passport_data(player_state.passport_profile)
+	_inventory_page.bind_player_state(player_state)
+	_passport_stats_page.bind_player_state(player_state)
 
 
 func _apply_default_camp_start_if_needed() -> void:
@@ -506,9 +551,7 @@ func _on_state_message(_success: bool, message: String) -> void:
 
 func _set_active_loop_page(page_id: StringName, refresh_after: bool = true) -> void:
 	_ui_manager.switch_to(page_id)
-	_navigation_controller.set_active_page(page_id)
-	_active_loop_page = _ui_manager.get_active_page() if _ui_manager.get_active_page() != &"" else _navigation_controller.get_active_page()
-	_refresh_camp_world_host_state(_get_player_state())
+	_active_loop_page = _ui_manager.get_active_route() if _ui_manager.get_active_route() != &"" else page_id
 	if refresh_after:
 		_refresh_view()
 
@@ -517,7 +560,7 @@ func _is_world_camp_page(player_state = null) -> bool:
 	var location_id: StringName = &""
 	if player_state != null:
 		location_id = StringName(player_state.loop_location_id)
-	return _navigation_controller.is_world_camp_page(location_id, SurvivalLoopRulesScript.LOCATION_CAMP, PAGE_CAMP)
+	return location_id == SurvivalLoopRulesScript.LOCATION_CAMP and _active_loop_page == PAGE_CAMP
 
 
 func _is_world_town_page(player_state = null) -> bool:
@@ -528,33 +571,10 @@ func _is_world_town_page(player_state = null) -> bool:
 
 
 func _refresh_camp_world_host_state(player_state) -> void:
-	if camp_viewport_host == null:
-		return
-	var show_world_camp = _is_world_camp_page(player_state)
-	var show_world_town = _is_world_town_page(player_state)
-	var show_world = show_world_camp or show_world_town
-	root_layout.visible = not show_world
-	camp_viewport_host.visible = show_world
-	if _camp_isometric_layer != null and _camp_isometric_layer.has_method("set_map_mode"):
-		_camp_isometric_layer.set_map_mode(&"town" if show_world_town else &"camp")
-	if _camp_isometric_layer != null and _camp_isometric_layer.has_method("set_input_enabled"):
-		_camp_isometric_layer.set_input_enabled(
-			show_world \
-				and not inventory_overlay.visible \
-				and not passport_overlay.visible \
-				and not getting_ready_overlay.visible
-		)
-	if enable_trace_logging:
-		print("[CampHost.trace] phase=refresh show_world=%s town=%s camp=%s root_visible=%s host_visible=%s location=%s active_page=%s" % [
-			str(show_world),
-			str(show_world_town),
-			str(show_world_camp),
-			str(root_layout.visible),
-			str(camp_viewport_host.visible),
-			String(player_state.loop_location_id if player_state != null else &""),
-			String(_active_loop_page)
-		])
-	_queue_camp_world_host_trace("refresh")
+	root_layout.visible = true
+	if camp_viewport_host != null:
+		camp_viewport_host.visible = false
+	_world_map_page.render_world_state(false, player_state)
 
 
 func _refresh_inventory_overlay_presentation(player_state) -> void:
@@ -776,16 +796,11 @@ func _trace_camp_world_host_rects(phase: String) -> void:
 func _sync_active_page_with_location(player_state) -> void:
 	if player_state == null:
 		return
-	_navigation_controller.sync_active_page_for_location(
-		StringName(player_state.loop_location_id),
-		SurvivalLoopRulesScript.LOCATION_TOWN,
-		SurvivalLoopRulesScript.LOCATION_CAMP,
-		_location_manager.get_town_world_page(),
-		_location_manager.get_camp_world_page(),
-		_location_manager.get_town_only_pages(),
-		_location_manager.get_camp_only_pages()
-	)
-	_active_loop_page = _navigation_controller.get_active_page()
+	var location_id := StringName(player_state.loop_location_id)
+	if _location_manager.is_camp_location(location_id) and _active_loop_page in _location_manager.get_town_only_pages():
+		_set_active_loop_page(_location_manager.get_camp_world_page(), false)
+	elif _location_manager.is_town_location(location_id) and _active_loop_page in _location_manager.get_camp_only_pages():
+		_set_active_loop_page(_location_manager.get_town_world_page(), false)
 
 
 func _on_inventory_selection_changed(_value = null) -> void:
@@ -1365,53 +1380,11 @@ func _on_camp_overlay_action_requested(command: Dictionary) -> void:
 
 
 func _refresh_camp_isometric_layer(player_state, config) -> void:
-	if _camp_isometric_layer == null or player_state == null or config == null or not _camp_isometric_layer.has_method("set_interactions"):
-		return
-	if _active_loop_page == PAGE_TOWN:
-		_refresh_town_isometric_layer(player_state, config)
-		return
-	if _camp_isometric_layer.has_method("set_input_enabled"):
-		_camp_isometric_layer.set_input_enabled(
-			_active_loop_page == PAGE_CAMP \
-				and not inventory_overlay.visible \
-				and not passport_overlay.visible \
-				and not getting_ready_overlay.visible
-		)
-	if _camp_isometric_layer.has_method("set_hud_snapshot"):
-		_camp_isometric_layer.set_hud_snapshot(_build_camp_hud_snapshot(player_state, config))
-	_camp_isometric_layer.set_interactions(_entity_manager.build_camp_interactions(
-		_game_state_manager,
-		player_state,
-		config,
-		_location_manager.get_camp_interaction_page_ids(),
-		Callable(self, "_format_duration")
-	))
-	if _camp_isometric_layer.has_method("set_contextual_overlay_models"):
-		_camp_isometric_layer.set_contextual_overlay_models(_build_camp_contextual_overlay_models(player_state, config))
+	return
 
 
 func _refresh_town_isometric_layer(player_state, config) -> void:
-	if _camp_isometric_layer == null or player_state == null or config == null or not _camp_isometric_layer.has_method("set_interactions"):
-		return
-	if _camp_isometric_layer.has_method("set_map_mode"):
-		_camp_isometric_layer.set_map_mode(&"town")
-	if _camp_isometric_layer.has_method("set_input_enabled"):
-		_camp_isometric_layer.set_input_enabled(
-			_active_loop_page == PAGE_TOWN \
-				and not inventory_overlay.visible \
-				and not passport_overlay.visible \
-				and not getting_ready_overlay.visible
-		)
-	if _camp_isometric_layer.has_method("set_hud_snapshot"):
-		_camp_isometric_layer.set_hud_snapshot(_build_town_hud_snapshot(player_state, config))
-	_camp_isometric_layer.set_interactions(_entity_manager.build_town_interactions(
-		_game_state_manager,
-		config,
-		_location_manager.get_town_interaction_page_ids(),
-		Callable(self, "_format_duration")
-	))
-	if _camp_isometric_layer.has_method("set_contextual_overlay_models"):
-		_camp_isometric_layer.set_contextual_overlay_models({})
+	return
 
 
 func _build_camp_contextual_overlay_models(player_state, config) -> Dictionary:
@@ -1657,13 +1630,13 @@ func _on_go_debug_pressed() -> void:
 
 func _on_open_inventory_pressed(open_context: StringName = &"carried") -> void:
 	_inventory_open_context = open_context
-	passport_overlay.visible = false
-	getting_ready_overlay.visible = false
-	inventory_overlay.visible = true
-	inventory_overlay.move_to_front()
+	_passport_stats_page.set_visible(false)
+	_rest_camp_page.set_visible(false)
+	_inventory_page.set_visible(true)
 	inventory_radial_menu.hide_menu()
 	_last_inventory_message = "Drag anything visible to a visible place. Click to inspect."
 	_ensure_inventory_overlay_content_ready()
+	_ui_manager.switch_to(&"inventory_ui")
 	_refresh_view()
 
 
@@ -1671,50 +1644,54 @@ func _on_close_inventory_pressed() -> void:
 	_cancel_inventory_move("", false)
 	_close_all_inventory_container_popups()
 	inventory_radial_menu.hide_menu()
-	inventory_overlay.visible = false
+	_inventory_page.set_visible(false)
 	_inventory_open_context = &"carried"
+	_ui_manager.switch_to(_active_loop_page)
 	_refresh_view()
 
 
 func _on_open_passport_pressed() -> void:
 	_cancel_inventory_move("", false)
 	inventory_radial_menu.hide_menu()
-	inventory_overlay.visible = false
-	getting_ready_overlay.visible = false
-	passport_overlay.visible = true
+	_inventory_page.set_visible(false)
+	_rest_camp_page.set_visible(false)
+	_passport_stats_page.set_visible(true)
+	_ui_manager.switch_to(&"passport_stats")
 	_refresh_view()
 
 
 func _on_close_passport_pressed() -> void:
-	passport_overlay.visible = false
+	_passport_stats_page.set_visible(false)
+	_ui_manager.switch_to(_active_loop_page)
 
 
 func _on_open_getting_ready_pressed() -> void:
 	_cancel_inventory_move("", false)
 	inventory_radial_menu.hide_menu()
-	inventory_overlay.visible = false
-	passport_overlay.visible = false
-	getting_ready_overlay.visible = false
+	_inventory_page.set_visible(false)
+	_passport_stats_page.set_visible(false)
+	_rest_camp_page.set_visible(false)
 	_set_active_loop_page(PAGE_GETTING_READY, false)
 	_refresh_view()
 
 
 func _on_close_getting_ready_pressed() -> void:
-	getting_ready_overlay.visible = false
+	_rest_camp_page.set_visible(false)
+	_ui_manager.switch_to(_active_loop_page)
 	_refresh_view()
 
 
 func _on_close_getting_ready_page_pressed() -> void:
-	getting_ready_overlay.visible = false
+	_rest_camp_page.set_visible(false)
 	_set_active_loop_page(PAGE_CAMP, false)
 	_refresh_view()
 
 
 func _on_return_to_menu_pressed() -> void:
 	inventory_radial_menu.hide_menu()
-	inventory_overlay.visible = false
-	passport_overlay.visible = false
-	getting_ready_overlay.visible = false
+	_inventory_page.set_visible(false)
+	_passport_stats_page.set_visible(false)
+	_rest_camp_page.set_visible(false)
 	_cancel_inventory_move("", false)
 	request_return_to_menu.emit()
 
@@ -1729,19 +1706,6 @@ func _refresh_view() -> void:
 	if player_state == null or config == null:
 		_refresh_camp_world_host_state(null)
 		_refresh_inventory_overlay_presentation(null)
-		if _camp_isometric_layer != null and _camp_isometric_layer.has_method("set_hud_snapshot"):
-			_camp_isometric_layer.set_hud_snapshot({
-				"title": "Camp Condition",
-				"summary": "Shared state is unavailable.",
-				"stats": [
-					{"id": &"nutrition", "label": "Nutrition", "value": 0, "max": 100},
-					{"id": &"stamina", "label": "Stamina", "value": 0, "max": 100},
-					{"id": &"warmth", "label": "Warmth", "value": 0, "max": 100},
-					{"id": &"morale", "label": "Morale", "value": 0, "max": 100},
-					{"id": &"hygiene", "label": "Hygiene", "value": 0, "max": 100},
-					{"id": &"presentability", "label": "Presentability", "value": 0, "max": 100}
-				]
-			})
 		summary_title_label.text = "First Playable Loop"
 		summary_stats_label.text = "Shared state is unavailable."
 		condition_stats_label.text = ""
@@ -1756,11 +1720,12 @@ func _refresh_view() -> void:
 			_send_money_summary_label.text = "Send money is unavailable until shared state is ready."
 		if _pending_support_label != null:
 			_pending_support_label.text = "Pending support unavailable."
-		inventory_modal_status_label.text = "Waiting for shared state."
-		inventory_action_summary_label.text = "Inventory actions will appear once the shared player state is ready."
-		inventory_destination_label.text = "Destination focus unavailable."
-		getting_ready_status_label.text = "Getting ready is unavailable until shared state is ready."
-		getting_ready_stats_label.text = ""
+		_inventory_page.render_modal(
+			"Waiting for shared state.",
+			"Inventory actions will appear once the shared player state is ready.",
+			"Destination focus unavailable."
+		)
+		_rest_camp_page.render(null, null, "Getting ready is unavailable until shared state is ready.", Callable(self, "_format_duration"), 0)
 		inventory_move_cancel_button.visible = false
 		inventory_action_buttons.visible = false
 		_clear_job_buttons()
@@ -1769,12 +1734,14 @@ func _refresh_view() -> void:
 		_set_inventory_management_buttons_disabled(true)
 		if _camp_nav_panel != null:
 			_camp_nav_panel.visible = false
+		_event_encounter_page.render_status(_last_status_message)
 		result_panel.visible = false
 		return
 
 	_sync_active_page_with_location(player_state)
 	_refresh_camp_world_host_state(player_state)
 	_refresh_inventory_overlay_presentation(player_state)
+	_world_map_page.render_summary(summary_title_label, summary_stats_label, "First Playable Survival Loop", "")
 	summary_title_label.text = "First Playable Survival Loop"
 	var current_obligation = player_state.get_current_support_obligation()
 	var obligation_label = "No open support due"
@@ -1803,7 +1770,7 @@ func _refresh_view() -> void:
 	]
 	_refresh_condition_bars(player_state)
 	goal_label.text = player_state.passport_profile.current_goal
-	status_label.text = _format_status_with_debug(_last_status_message)
+	_event_encounter_page.render_status(_format_status_with_debug(_last_status_message))
 
 	work_summary_label.text = "Each morning the day throws up a small board of openings. Some die by nightfall, some linger, and none of them wait forever."
 	supplies_summary_label.text = "Town provisioning is practical: prepared food is quick and costly, while groceries and hardware feed slower camp work."
@@ -1811,8 +1778,12 @@ func _refresh_view() -> void:
 		_format_cents(player_state.monthly_support_target_cents),
 		player_state.day_limit
 	]
-	_send_money_summary_label.text = _build_send_money_summary(player_state, config)
-	_pending_support_label.text = "Pending support:\n%s" % player_state.get_pending_support_label()
+	_location_page.render_send_money(
+		_send_money_summary_label,
+		_pending_support_label,
+		_build_send_money_summary(player_state, config),
+		"Pending support:\n%s" % player_state.get_pending_support_label()
+	)
 	camp_summary_label.text = "Camp is usable daylight or dark. Time spent here costs opportunity, but fire, kindling, rest, cooking, and repair keep the body serviceable."
 	_camp_nav_status_label.text = "%s\n%s" % [
 		player_state.get_camp_preparation_label(),
@@ -1826,7 +1797,11 @@ func _refresh_view() -> void:
 		"+" if player_state.fade_last_daily_delta >= 0 else "",
 		player_state.fade_last_daily_delta
 	]
-	inventory_modal_status_label.text = _build_inventory_modal_status(player_state)
+	_inventory_page.render_modal(
+		_build_inventory_modal_status(player_state),
+		inventory_action_summary_label.text,
+		inventory_destination_label.text
+	)
 
 	_configure_purchase_button(buy_bread_button, "Buy Bread", config.bread_price_cents, _get_item_definition(config.bread_item_id))
 	_configure_purchase_button(buy_coffee_button, "Buy Coffee", config.coffee_price_cents, _get_item_definition(config.coffee_item_id))
@@ -1838,7 +1813,7 @@ func _refresh_view() -> void:
 	_configure_purchase_button(buy_hardware_matches_button, "Hardware: Match Safe", config.hardware_matches_price_cents, _get_item_definition(config.hardware_matches_item_id))
 	_configure_purchase_button(buy_hardware_empty_can_button, "Hardware: Tin Can", config.hardware_empty_can_price_cents, _get_item_definition(config.hardware_empty_can_item_id))
 	_configure_purchase_button(buy_hardware_cordage_button, "Hardware: Cordage", config.hardware_cordage_price_cents, _get_item_definition(config.hardware_cordage_item_id))
-	_hardware_summary_label.text = "Hardware here is not treasure. It is small camp utility: matches, a tin for boiling, and cordage for repair."
+	_location_page.render_store_summary(_hardware_summary_label, "Hardware here is not treasure. It is small camp utility: matches, a tin for boiling, and cordage for repair.")
 	send_small_button.text = _build_send_method_button_text(config, &"mail", config.send_small_amount_cents)
 	send_large_button.text = _build_send_method_button_text(config, &"telegraph", config.send_large_amount_cents)
 	if _send_custom_amount_label != null:
@@ -1892,7 +1867,11 @@ func _refresh_view() -> void:
 	quit_game_button.disabled = false
 
 	_refresh_page_navigation_buttons(player_state)
-	_refresh_camp_isometric_layer(player_state, config)
+	_travel_page.render(config, Callable(self, "_format_duration"))
+	_travel_page.render_location_access(
+		player_state.loop_location_id == SurvivalLoopRulesScript.LOCATION_TOWN,
+		player_state.loop_location_id == SurvivalLoopRulesScript.LOCATION_CAMP
+	)
 	_refresh_inventory_summary(player_state)
 	_refresh_getting_ready_panel(player_state)
 	_refresh_store_stock_sections(player_state)
@@ -1923,8 +1902,8 @@ func _refresh_view() -> void:
 	_refresh_action_button(sleep_button, SurvivalLoopRulesScript.ACTION_SLEEP_ROUGH)
 	_refresh_getting_ready_action_buttons()
 	_refresh_inventory_management_actions(player_state)
-	_refresh_result_panel(player_state)
-	passport_panel.set_passport_data(player_state.passport_profile)
+	_event_encounter_page.render_result(player_state)
+	_passport_stats_page.bind_player_state(player_state)
 
 
 func _refresh_page_navigation_buttons(player_state) -> void:
@@ -1945,10 +1924,10 @@ func _refresh_page_navigation_buttons(player_state) -> void:
 	_back_to_camp_from_hobocraft_button.disabled = not at_camp
 	_back_to_camp_from_cooking_button.disabled = not at_camp
 	_back_to_camp_from_ready_button.text = "Close"
-	_navigation_controller.refresh_navigation_visibility(
+	_travel_page.render_navigation_visibility(
 		StringName(player_state.loop_location_id),
 		SurvivalLoopRulesScript.LOCATION_CAMP,
-		PAGE_CAMP,
+		_active_loop_page,
 		_location_manager.get_camp_sub_pages()
 	)
 
@@ -2604,9 +2583,13 @@ func _refresh_inventory_summary(player_state) -> void:
 
 	var selected_stack = _get_selected_stack(player_state)
 	if selected_stack == null:
-		selected_item_label.text = "No item selected.\nOpen inventory to choose food, coffee, tobacco, soap, papers, or other carried items for direct use."
-		selected_item_label.modulate = Color("d9e2e6")
-		selected_item_label.tooltip_text = ""
+		_inventory_page.render_sidebar(
+			inventory_summary_label.text,
+			"No item selected.\nOpen inventory to choose food, coffee, tobacco, soap, papers, or other carried items for direct use.",
+			inventory_hint_label.text,
+			"",
+			Color("d9e2e6")
+		)
 		use_selected_button.text = "Use Selected"
 		use_selected_button.set_meta("base_tooltip", "")
 		use_selected_in_inventory_button.text = "Use Selected"
@@ -2616,9 +2599,13 @@ func _refresh_inventory_summary(player_state) -> void:
 	var detail_text = _build_selected_item_text(selected_stack)
 	if player_state.has_method("is_stack_equipped") and player_state.is_stack_equipped(inventory_panel.selected_stack_index):
 		detail_text += "\nReadied in %s." % _get_slot_label(StringName(selected_stack.carry_zone))
-	selected_item_label.text = detail_text
-	selected_item_label.modulate = selected_stack.get_quality_color() if selected_stack.has_method("get_quality_color") else Color("d9e2e6")
-	selected_item_label.tooltip_text = selected_stack.item.get_inventory_tooltip_text() if selected_stack.item != null else ""
+	_inventory_page.render_sidebar(
+		inventory_summary_label.text,
+		detail_text,
+		inventory_hint_label.text,
+		selected_stack.item.get_inventory_tooltip_text() if selected_stack.item != null else "",
+		selected_stack.get_quality_color() if selected_stack.has_method("get_quality_color") else Color("d9e2e6")
+	)
 	use_selected_button.text = "Use Selected\n%s" % _build_selected_action_label(selected_stack)
 	use_selected_button.set_meta("base_tooltip", selected_item_label.tooltip_text)
 	use_selected_in_inventory_button.text = "Use Selected\n%s" % _build_selected_action_label(selected_stack)
@@ -2626,31 +2613,13 @@ func _refresh_inventory_summary(player_state) -> void:
 
 
 func _refresh_getting_ready_panel(player_state) -> void:
-	if player_state == null or player_state.passport_profile == null:
-		getting_ready_status_label.text = "Getting ready is unavailable until shared state is ready."
-		getting_ready_stats_label.text = ""
-		return
-	getting_ready_status_label.text = _format_status_with_debug(_last_getting_ready_message)
-	getting_ready_stats_label.text = "Water potable %d / non-potable %d    Hygiene %d / 100    Presentability %d / 100    Stamina %d / 100    Morale %d / 100    Time %s" % [
-		player_state.camp_potable_water_units,
-		player_state.camp_non_potable_water_units,
-		player_state.passport_profile.hygiene,
-		player_state.passport_profile.presentability,
-		_get_stamina_value(player_state),
-		player_state.passport_profile.morale,
-		player_state.get_time_of_day_label()
-	]
-	var config = _get_loop_config()
-	if config == null:
-		return
-	var water_action_duration = config.ready_boil_water_minutes if player_state.camp_non_potable_water_units > 0 else config.ready_fetch_water_minutes
-	ready_fetch_water_button.text = "Fetch Water / Boil Water\nrequired first | %s" % _format_duration(water_action_duration)
-	ready_wash_body_button.text = "Wash Body\n+Hygiene, +Presentability, -Stamina | %s" % _format_duration(config.ready_wash_body_minutes)
-	ready_wash_face_hands_button.text = "Wash Face / Hands\n+Hygiene, +Presentability | %s" % _format_duration(config.ready_wash_face_hands_minutes)
-	ready_shave_button.text = "Shave\n+Presentability | %s" % _format_duration(config.ready_shave_minutes)
-	ready_comb_groom_button.text = "Comb / Groom\n+Presentability | %s" % _format_duration(config.ready_comb_groom_minutes)
-	ready_air_out_clothes_button.text = "Air Out Clothes\n+Hygiene, +Presentability | %s" % _format_duration(config.ready_air_out_clothes_minutes)
-	ready_brush_clothes_button.text = "Brush Clothes\n+Presentability | %s" % _format_duration(config.ready_brush_clothes_minutes)
+	_rest_camp_page.render(
+		player_state,
+		_get_loop_config(),
+		_format_status_with_debug(_last_getting_ready_message),
+		Callable(self, "_format_duration"),
+		_get_stamina_value(player_state) if player_state != null else 0
+	)
 
 
 func _refresh_getting_ready_action_buttons() -> void:

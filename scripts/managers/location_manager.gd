@@ -10,12 +10,18 @@ const PAGE_CAMP := &"camp"
 const PAGE_GROCERY := &"grocery"
 const PAGE_HARDWARE := &"hardware"
 const PAGE_GETTING_READY := &"getting_ready"
+const PAGE_REST_CAMP := &"rest_camp"
 const PAGE_HOBOCRAFT := &"hobocraft"
 const PAGE_COOKING := &"cooking"
+const ROUTE_INVENTORY := &"inventory_ui"
+const ROUTE_PASSPORT := &"passport_stats"
+const ROUTE_EVENT := &"event_encounter"
+const ROUTE_TRAVEL := &"travel_ui"
 
 const TOWN_ONLY_PAGES := [PAGE_TOWN, PAGE_JOBS_BOARD, PAGE_SEND_MONEY, PAGE_GROCERY, PAGE_HARDWARE]
-const CAMP_ONLY_PAGES := [PAGE_CAMP, PAGE_GETTING_READY, PAGE_HOBOCRAFT, PAGE_COOKING]
-const CAMP_SUB_PAGES := [PAGE_GETTING_READY, PAGE_HOBOCRAFT, PAGE_COOKING]
+const CAMP_ONLY_PAGES := [PAGE_CAMP, PAGE_GETTING_READY, PAGE_REST_CAMP, PAGE_HOBOCRAFT, PAGE_COOKING]
+const CAMP_SUB_PAGES := [PAGE_GETTING_READY, PAGE_REST_CAMP, PAGE_HOBOCRAFT, PAGE_COOKING]
+const OVERLAY_ROUTES := [ROUTE_INVENTORY, ROUTE_PASSPORT, ROUTE_EVENT]
 
 const CAMP_INTERACTION_PAGE_IDS := {
 	&"hobocraft": PAGE_HOBOCRAFT,
@@ -76,6 +82,28 @@ func get_town_interaction_page_ids() -> Dictionary:
 
 func get_route_destination(route_id: StringName) -> Dictionary:
 	return ROUTE_DESTINATIONS.get(route_id, {}).duplicate(true)
+
+
+func get_default_route_for_location(location_id: StringName) -> StringName:
+	if is_camp_location(location_id):
+		return PAGE_CAMP
+	return PAGE_TOWN
+
+
+func normalize_route_for_location(active_route: StringName, location_id: StringName) -> StringName:
+	if is_overlay_route(active_route):
+		return active_route
+	if is_camp_location(location_id) and active_route in TOWN_ONLY_PAGES:
+		return PAGE_CAMP
+	if is_town_location(location_id) and active_route in CAMP_ONLY_PAGES:
+		return PAGE_TOWN
+	if active_route == &"":
+		return get_default_route_for_location(location_id)
+	return active_route
+
+
+func is_overlay_route(route_id: StringName) -> bool:
+	return route_id in OVERLAY_ROUTES
 
 
 func is_town_location(location_id: StringName) -> bool:
