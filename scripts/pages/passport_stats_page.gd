@@ -1,6 +1,8 @@
 class_name PassportStatsPage
 extends RefCounted
 
+const PageUIThemeScript := preload("res://scripts/ui/page_ui_theme.gd")
+
 var _overlay: Control = null
 var _close_button: Button = null
 var _open_passport_button: Button = null
@@ -28,6 +30,7 @@ func bootstrap(_scene_root: Control, deps: Dictionary) -> void:
 		_open_passport_button.text = "Open Passport"
 		if not _open_passport_button.pressed.is_connected(Callable(self, "_open")):
 			_open_passport_button.pressed.connect(Callable(self, "_open"))
+	_apply_layout_theme()
 	if _game_state_manager != null and not _game_state_manager.player_state_changed.is_connected(Callable(self, "refresh_from_state")):
 		_game_state_manager.player_state_changed.connect(Callable(self, "refresh_from_state"))
 	refresh_from_state(_game_state_manager.get_player_state() if _game_state_manager != null else null)
@@ -62,6 +65,19 @@ func handle_input(event: InputEvent) -> bool:
 		_close()
 		return true
 	return false
+
+
+func _apply_layout_theme() -> void:
+	if _overlay != null:
+		PageUIThemeScript.style_overlay_backdrop(_overlay.get_node_or_null("Backdrop"))
+		var window = _overlay.get_node_or_null("PassportMargin/PassportWindow") as PanelContainer
+		PageUIThemeScript.apply_panel_variant(window, "panel")
+		var title = _overlay.get_node_or_null("PassportMargin/PassportWindow/PassportRoot/PassportHeader/PassportTitle") as Label
+		PageUIThemeScript.style_header_label(title, true)
+	if _close_button != null:
+		PageUIThemeScript.style_button(_close_button)
+	if _open_passport_button != null:
+		PageUIThemeScript.style_button(_open_passport_button, true)
 
 
 func _open() -> void:

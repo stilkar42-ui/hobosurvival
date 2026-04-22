@@ -3,6 +3,7 @@ extends RefCounted
 
 const SurvivalLoopRulesScript := preload("res://scripts/gameplay/survival_loop_rules.gd")
 const FadingMeterSystemScript := preload("res://scripts/gameplay/fading_meter_system.gd")
+const PageUIThemeScript := preload("res://scripts/ui/page_ui_theme.gd")
 
 const ROUTE_TOWN := &"town"
 const ROUTE_CAMP := &"camp"
@@ -206,27 +207,33 @@ func _build_panel(page_host) -> void:
 	root.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	root.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_panel.add_child(root)
+	PageUIThemeScript.apply_panel_variant(_panel, "panel")
 
 	var title = Label.new()
 	title.text = "World Map"
-	title.add_theme_font_size_override("font_size", 24)
+	PageUIThemeScript.style_header_label(title, true)
 	root.add_child(title)
 
+	var intro_section := PageUIThemeScript.create_section_panel("ROAD STATUS", "highlight")
+	root.add_child(intro_section.panel)
 	_status_label = Label.new()
 	_status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	root.add_child(_status_label)
-
+	PageUIThemeScript.style_body_label(_status_label)
+	intro_section.root.add_child(_status_label)
 	_route_summary_label = Label.new()
 	_route_summary_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	root.add_child(_route_summary_label)
+	PageUIThemeScript.style_body_label(_route_summary_label, true)
+	intro_section.root.add_child(_route_summary_label)
 
+	var page_section := PageUIThemeScript.create_section_panel("DIRECT PAGES")
+	root.add_child(page_section.panel)
 	var page_grid = GridContainer.new()
 	page_grid.name = "DirectPageGrid"
 	page_grid.columns = 2
 	page_grid.add_theme_constant_override("h_separation", 10)
 	page_grid.add_theme_constant_override("v_separation", 10)
 	page_grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	root.add_child(page_grid)
+	page_section.root.add_child(page_grid)
 
 	_travel_button = _make_button("Travel", Callable(self, "_open_travel"))
 	_location_button = _make_button("Town Services", Callable(self, "_open_location_page"))
@@ -249,7 +256,9 @@ func _build_panel(page_host) -> void:
 
 	var action_row = HBoxContainer.new()
 	action_row.add_theme_constant_override("separation", 8)
-	root.add_child(action_row)
+	var action_section := PageUIThemeScript.create_section_panel("AVAILABLE ACTIONS")
+	root.add_child(action_section.panel)
+	action_section.root.add_child(action_row)
 
 	_wait_button = _make_button("Wait", Callable(self, "_on_wait_pressed"))
 	_wait_button.custom_minimum_size = Vector2(180.0, 44.0)
@@ -267,6 +276,7 @@ func _make_button(label_text: String, pressed_callable: Callable) -> Button:
 	button.custom_minimum_size = Vector2(0.0, 48.0)
 	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	button.pressed.connect(pressed_callable)
+	PageUIThemeScript.style_button(button, true)
 	return button
 
 

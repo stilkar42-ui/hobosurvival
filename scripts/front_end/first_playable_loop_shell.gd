@@ -24,10 +24,17 @@ const PassportStatsPageScript := preload("res://scripts/pages/passport_stats_pag
 const RestCampPageScript := preload("res://scripts/pages/rest_camp_page.gd")
 const TravelPageScript := preload("res://scripts/pages/travel_page.gd")
 const WorldMapPageScript := preload("res://scripts/pages/world_map_page.gd")
+const PageUIThemeScript := preload("res://scripts/ui/page_ui_theme.gd")
 
 @export var enable_trace_logging := false
 
 @onready var camp_viewport_host: Control = $CampViewportHost
+@onready var root_layout: VBoxContainer = $Root
+@onready var summary_panel: PanelContainer = $Root/SummaryPanel
+@onready var summary_root: VBoxContainer = $Root/SummaryPanel/SummaryRoot
+@onready var main_row: HBoxContainer = $Root/MainRow
+@onready var actions_panel: PanelContainer = $Root/MainRow/ActionsPanel
+@onready var action_scroll: ScrollContainer = $Root/MainRow/ActionsPanel/ActionScroll
 @onready var action_root: VBoxContainer = $Root/MainRow/ActionsPanel/ActionScroll/ActionRoot
 @onready var summary_title_label: Label = $Root/SummaryPanel/SummaryRoot/SummaryTitle
 @onready var summary_stats_label: Label = $Root/SummaryPanel/SummaryRoot/SummaryStats
@@ -48,6 +55,9 @@ const WorldMapPageScript := preload("res://scripts/pages/world_map_page.gd")
 @onready var return_to_menu_button: Button = $Root/MainRow/RightColumn/InventorySummaryPanel/InventorySummaryRoot/ReturnToMenuButton
 @onready var quit_game_button: Button = $Root/MainRow/RightColumn/InventorySummaryPanel/InventorySummaryRoot/QuitGameButton
 @onready var inventory_hint_label: Label = $Root/MainRow/RightColumn/InventoryHint
+@onready var right_column: VBoxContainer = $Root/MainRow/RightColumn
+@onready var inventory_summary_root: VBoxContainer = $Root/MainRow/RightColumn/InventorySummaryPanel/InventorySummaryRoot
+@onready var fade_debug_panel: PanelContainer = $Root/MainRow/RightColumn/FadeDebugPanel
 @onready var fade_debug_label: Label = $Root/MainRow/RightColumn/FadeDebugPanel/FadeDebugRoot/FadeDebugLabel
 @onready var inventory_overlay: Control = $InventoryOverlay
 @onready var inventory_window: PanelContainer = $InventoryOverlay/InventoryMargin/InventoryWindow
@@ -128,6 +138,7 @@ func _bootstrap() -> void:
 	_hide_legacy_action_controls()
 	_build_page_host()
 	_bootstrap_pages()
+	_apply_ui_framework()
 	_register_pages_with_ui_manager()
 	_connect_global_signals()
 	_event_encounter_page.show_status("Take stock of the day, find work, and send something home before the road hollows you out.")
@@ -158,6 +169,95 @@ func _build_page_host() -> void:
 	_page_host.add_theme_constant_override("separation", 10)
 	action_root.add_child(_page_host)
 	action_root.move_child(_page_host, status_label.get_index() + 1)
+
+
+func _apply_ui_framework() -> void:
+	theme = PageUIThemeScript.build_theme()
+	PageUIThemeScript.ensure_background(self)
+	PageUIThemeScript.apply_panel_variant(summary_panel, "highlight")
+	PageUIThemeScript.apply_panel_variant(actions_panel, "panel")
+	PageUIThemeScript.apply_panel_variant(inventory_summary_panel, "alt")
+	PageUIThemeScript.apply_panel_variant(fade_debug_panel, "panel")
+	PageUIThemeScript.apply_panel_variant(result_panel, "alt")
+	PageUIThemeScript.style_overlay_backdrop(inventory_overlay.get_node_or_null("Backdrop"))
+	PageUIThemeScript.style_overlay_backdrop(passport_overlay.get_node_or_null("Backdrop"))
+	PageUIThemeScript.style_overlay_backdrop(getting_ready_overlay.get_node_or_null("Backdrop"))
+	PageUIThemeScript.apply_panel_variant(inventory_window, "panel")
+	PageUIThemeScript.apply_panel_variant(passport_overlay.get_node("PassportMargin/PassportWindow"), "panel")
+	PageUIThemeScript.apply_panel_variant(getting_ready_overlay.get_node("GettingReadyMargin/GettingReadyWindow"), "panel")
+	PageUIThemeScript.style_header_label(summary_title_label, true)
+	PageUIThemeScript.style_body_label(summary_stats_label)
+	PageUIThemeScript.style_body_label(condition_stats_label)
+	PageUIThemeScript.style_body_label(goal_label, true)
+	PageUIThemeScript.style_body_label(status_label)
+	PageUIThemeScript.style_section_label(result_title_label, true)
+	PageUIThemeScript.style_body_label(result_body_label)
+	PageUIThemeScript.style_body_label(inventory_summary_label)
+	PageUIThemeScript.style_body_label(selected_item_label, true)
+	PageUIThemeScript.style_small_label(inventory_hint_label)
+	PageUIThemeScript.style_small_label(fade_debug_label)
+	_rebuild_top_bar_layout()
+	_rebuild_right_rail_layout()
+
+
+func _rebuild_top_bar_layout() -> void:
+	if summary_root.get_node_or_null("TopBarSections") != null:
+		return
+	var top_bar := HBoxContainer.new()
+	top_bar.name = "TopBarSections"
+	top_bar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	top_bar.add_theme_constant_override("separation", 10)
+	summary_root.add_child(top_bar)
+	for label_info in [
+		{"title": "ROAD", "label": summary_title_label, "variant": "highlight"},
+		{"title": "TIME / WEEK", "label": summary_stats_label, "variant": "panel"},
+		{"title": "CONDITION", "label": condition_stats_label, "variant": "panel"},
+		{"title": "CURRENT AIM", "label": goal_label, "variant": "panel"}
+	]:
+		summary_root.remove_child(label_info.label)
+		var section := PageUIThemeScript.create_section_panel(label_info.title, label_info.variant)
+		section.panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		section.root.add_child(label_info.label)
+		top_bar.add_child(section.panel)
+		PageUIThemeScript.style_small_label(section.title)
+		if label_info.label == summary_title_label:
+			PageUIThemeScript.style_header_label(summary_title_label, true)
+		else:
+			PageUIThemeScript.style_body_label(label_info.label)
+	summary_root.move_child(top_bar, 0)
+
+
+func _rebuild_right_rail_layout() -> void:
+	if inventory_summary_root.get_node_or_null("QuickActionsSection") != null:
+		return
+	var section_title := Label.new()
+	section_title.text = "ROADSIDE KIT"
+	PageUIThemeScript.style_small_label(section_title)
+	inventory_summary_root.add_child(section_title)
+	inventory_summary_root.move_child(section_title, 0)
+	var quick_actions := VBoxContainer.new()
+	quick_actions.name = "QuickActionsSection"
+	quick_actions.add_theme_constant_override("separation", 8)
+	inventory_summary_root.add_child(quick_actions)
+	var quick_title := Label.new()
+	quick_title.text = "QUICK ACTIONS"
+	PageUIThemeScript.style_small_label(quick_title)
+	quick_actions.add_child(quick_title)
+	for button in [open_inventory_button, open_passport_button, open_getting_ready_button]:
+		if button.get_parent() != null:
+			button.get_parent().remove_child(button)
+		PageUIThemeScript.style_button(button, true)
+		quick_actions.add_child(button)
+	open_getting_ready_button.text = "Travel / Routes"
+	var menu_actions := VBoxContainer.new()
+	menu_actions.name = "MenuActionsSection"
+	menu_actions.add_theme_constant_override("separation", 8)
+	inventory_summary_root.add_child(menu_actions)
+	for button in [return_to_menu_button, quit_game_button]:
+		if button.get_parent() != null:
+			button.get_parent().remove_child(button)
+		PageUIThemeScript.style_button(button)
+		menu_actions.add_child(button)
 
 
 func _bootstrap_pages() -> void:

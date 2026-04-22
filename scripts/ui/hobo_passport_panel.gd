@@ -1,6 +1,8 @@
 class_name HoboPassportPanel
 extends PanelContainer
 
+const PageUIThemeScript := preload("res://scripts/ui/page_ui_theme.gd")
+
 var passport_data: PlayerPassportData = null
 var _selected_section_id: StringName = &""
 var _selected_field_id: StringName = &""
@@ -39,7 +41,7 @@ func set_passport_data(new_passport_data: PlayerPassportData) -> void:
 func _build_static_layout() -> void:
 	size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	size_flags_vertical = Control.SIZE_EXPAND_FILL
-	add_theme_stylebox_override("panel", _make_panel_style(Color("6b5a3f"), Color("eadfc5"), 2, 10))
+	PageUIThemeScript.apply_panel_variant(self, "alt")
 
 	_root = VBoxContainer.new()
 	_root.name = "PassportRoot"
@@ -50,19 +52,18 @@ func _build_static_layout() -> void:
 
 	var title = Label.new()
 	title.text = "Hobo Passport"
-	title.add_theme_font_size_override("font_size", 24)
-	title.modulate = Color("f0e2c2")
+	PageUIThemeScript.style_header_label(title, true)
 	_root.add_child(title)
 
 	var subtitle = Label.new()
 	subtitle.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	subtitle.text = "Debug rig character page. Identity, condition, skill, and standing live here for later dialogue, work, survival, and reputation systems."
-	subtitle.modulate = Color("d3c2a2")
+	PageUIThemeScript.style_body_label(subtitle, true)
 	_root.add_child(subtitle)
 
 	_summary_label = Label.new()
 	_summary_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_summary_label.modulate = Color("edd8b4")
+	PageUIThemeScript.style_body_label(_summary_label)
 	_root.add_child(_summary_label)
 
 	var columns = HBoxContainer.new()
@@ -81,7 +82,7 @@ func _build_static_layout() -> void:
 func _build_sections_panel() -> PanelContainer:
 	var panel = PanelContainer.new()
 	panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	panel.add_theme_stylebox_override("panel", _make_panel_style(Color("5f4d35"), Color("b59463"), 2, 8))
+	PageUIThemeScript.apply_panel_variant(panel, "panel")
 
 	var content = VBoxContainer.new()
 	content.add_theme_constant_override("separation", 8)
@@ -91,8 +92,7 @@ func _build_sections_panel() -> PanelContainer:
 
 	var title = Label.new()
 	title.text = "Sections"
-	title.add_theme_font_size_override("font_size", 18)
-	title.modulate = Color("efe2c4")
+	PageUIThemeScript.style_section_label(title)
 	content.add_child(title)
 
 	_section_list = VBoxContainer.new()
@@ -120,7 +120,7 @@ func _build_fields_panel() -> PanelContainer:
 	panel.custom_minimum_size = Vector2(360.0, 0.0)
 	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	panel.add_theme_stylebox_override("panel", _make_panel_style(Color("6d5b41"), Color("d7c19a"), 2, 8))
+	PageUIThemeScript.apply_panel_variant(panel, "highlight")
 
 	var content = VBoxContainer.new()
 	content.add_theme_constant_override("separation", 8)
@@ -129,16 +129,15 @@ func _build_fields_panel() -> PanelContainer:
 	panel.add_child(content)
 
 	_section_title_label = Label.new()
-	_section_title_label.add_theme_font_size_override("font_size", 22)
+	PageUIThemeScript.style_header_label(_section_title_label, true)
 	_section_title_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_section_title_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_section_title_label.modulate = Color("f5e7c8")
 	content.add_child(_section_title_label)
 
 	_section_summary_label = Label.new()
 	_section_summary_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_section_summary_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_section_summary_label.modulate = Color("e0d0b2")
+	PageUIThemeScript.style_body_label(_section_summary_label)
 	content.add_child(_section_summary_label)
 
 	content.add_child(HSeparator.new())
@@ -167,7 +166,7 @@ func _build_detail_panel() -> PanelContainer:
 	panel.custom_minimum_size = Vector2(320.0, 0.0)
 	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	panel.add_theme_stylebox_override("panel", _make_panel_style(Color("4f4331"), Color("a98958"), 2, 8))
+	PageUIThemeScript.apply_panel_variant(panel, "panel")
 
 	var content = VBoxContainer.new()
 	content.add_theme_constant_override("separation", 8)
@@ -177,27 +176,25 @@ func _build_detail_panel() -> PanelContainer:
 
 	var title = Label.new()
 	title.text = "Field Detail"
-	title.add_theme_font_size_override("font_size", 18)
-	title.modulate = Color("efe0c1")
+	PageUIThemeScript.style_section_label(title)
 	content.add_child(title)
 
 	_detail_section_label = Label.new()
 	_detail_section_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_detail_section_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_detail_section_label.modulate = Color("c8b796")
+	PageUIThemeScript.style_small_label(_detail_section_label)
 	content.add_child(_detail_section_label)
 
 	_detail_field_label = Label.new()
-	_detail_field_label.add_theme_font_size_override("font_size", 22)
+	PageUIThemeScript.style_header_label(_detail_field_label)
 	_detail_field_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_detail_field_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_detail_field_label.modulate = Color("f4e5c4")
 	content.add_child(_detail_field_label)
 
 	_detail_value_label = Label.new()
 	_detail_value_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_detail_value_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_detail_value_label.modulate = Color("e9d7b5")
+	PageUIThemeScript.style_body_label(_detail_value_label)
 	content.add_child(_detail_value_label)
 
 	content.add_child(HSeparator.new())
@@ -205,7 +202,7 @@ func _build_detail_panel() -> PanelContainer:
 	_detail_notes_label = Label.new()
 	_detail_notes_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_detail_notes_label.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	_detail_notes_label.modulate = Color("d7c7a8")
+	PageUIThemeScript.style_body_label(_detail_notes_label, true)
 
 	_detail_scroll = ScrollContainer.new()
 	_detail_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL

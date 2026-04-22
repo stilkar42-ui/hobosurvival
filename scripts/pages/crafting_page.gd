@@ -3,6 +3,7 @@ extends RefCounted
 
 const OverlayBuilderScript := preload("res://scripts/front_end/adapters/overlay_builder.gd")
 const SurvivalLoopRulesScript := preload("res://scripts/gameplay/survival_loop_rules.gd")
+const PageUIThemeScript := preload("res://scripts/ui/page_ui_theme.gd")
 
 const ROUTE_HOBOCRAFT := &"hobocraft"
 const ROUTE_COOKING := &"cooking"
@@ -137,6 +138,7 @@ func _build_panels(page_host) -> void:
 	root.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	root.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_panel.add_child(root)
+	PageUIThemeScript.apply_panel_variant(_panel, "panel")
 
 	_hobocraft_panel = _build_hobocraft_page()
 	_cooking_panel = _build_cooking_page()
@@ -148,6 +150,7 @@ func _build_hobocraft_page() -> PanelContainer:
 	var panel = PanelContainer.new()
 	panel.name = "HobocraftPage"
 	panel.visible = false
+	PageUIThemeScript.apply_panel_variant(panel, "alt")
 	var root = VBoxContainer.new()
 	root.name = "PageRoot"
 	root.add_theme_constant_override("separation", 10)
@@ -160,6 +163,7 @@ func _build_hobocraft_page() -> PanelContainer:
 	root.add_child(layout)
 	var list_panel = PanelContainer.new()
 	list_panel.custom_minimum_size = Vector2(280.0, 0.0)
+	PageUIThemeScript.apply_panel_variant(list_panel, "dark")
 	layout.add_child(list_panel)
 	_hobocraft_recipe_list = VBoxContainer.new()
 	_hobocraft_recipe_list.name = "HobocraftRecipeList"
@@ -167,6 +171,7 @@ func _build_hobocraft_page() -> PanelContainer:
 	list_panel.add_child(_hobocraft_recipe_list)
 	var detail_panel = PanelContainer.new()
 	detail_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	PageUIThemeScript.apply_panel_variant(detail_panel, "highlight")
 	layout.add_child(detail_panel)
 	_hobocraft_detail_root = VBoxContainer.new()
 	_hobocraft_detail_root.name = "HobocraftDetail"
@@ -179,6 +184,7 @@ func _build_cooking_page() -> PanelContainer:
 	var panel = PanelContainer.new()
 	panel.name = "CookingPage"
 	panel.visible = false
+	PageUIThemeScript.apply_panel_variant(panel, "alt")
 	var root = VBoxContainer.new()
 	root.name = "PageRoot"
 	root.add_theme_constant_override("separation", 10)
@@ -211,6 +217,7 @@ func _build_cooking_page() -> PanelContainer:
 	root.add_child(layout)
 	var list_panel = PanelContainer.new()
 	list_panel.custom_minimum_size = Vector2(280.0, 0.0)
+	PageUIThemeScript.apply_panel_variant(list_panel, "dark")
 	layout.add_child(list_panel)
 	_cooking_recipe_list = VBoxContainer.new()
 	_cooking_recipe_list.name = "CookingRecipeList"
@@ -218,6 +225,7 @@ func _build_cooking_page() -> PanelContainer:
 	list_panel.add_child(_cooking_recipe_list)
 	var detail_panel = PanelContainer.new()
 	detail_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	PageUIThemeScript.apply_panel_variant(detail_panel, "highlight")
 	layout.add_child(detail_panel)
 	_cooking_detail_root = VBoxContainer.new()
 	_cooking_detail_root.name = "CookingDetail"
@@ -372,13 +380,13 @@ func _build_recipe_note_panel(note_model: Dictionary) -> Control:
 	var panel = PanelContainer.new()
 	panel.name = "RecipeInventoryNote"
 	panel.custom_minimum_size = Vector2(270.0, 0.0)
-	panel.add_theme_stylebox_override("panel", _make_recipe_section_style(Color("0f0f10"), Color("f0ebe0"), 2, 12, 14.0))
+	PageUIThemeScript.apply_panel_variant(panel, "dark")
 	var root = VBoxContainer.new()
 	root.add_theme_constant_override("separation", 8)
 	panel.add_child(root)
 	var title = Label.new()
 	title.text = String(note_model.get("title", "Camp Note"))
-	title.add_theme_font_size_override("font_size", 20)
+	PageUIThemeScript.style_section_label(title, true)
 	root.add_child(title)
 	var status = Label.new()
 	status.text = String(note_model.get("status", "Missing materials"))
@@ -396,7 +404,7 @@ func _build_recipe_card_panel(card_model: Dictionary, action_pressed: Callable) 
 	var panel = PanelContainer.new()
 	panel.name = "RecipeIndexCard"
 	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	panel.add_theme_stylebox_override("panel", _make_recipe_section_style(Color("efe2c8"), Color("8e7452"), 2, 10, 16.0))
+	PageUIThemeScript.apply_panel_variant(panel, "highlight")
 	var root = VBoxContainer.new()
 	root.add_theme_constant_override("separation", 10)
 	panel.add_child(root)
@@ -417,7 +425,7 @@ func _build_recipe_card_panel(card_model: Dictionary, action_pressed: Callable) 
 	header.add_child(title_column)
 	var title = Label.new()
 	title.text = String(card_model.get("title", "Recipe"))
-	title.add_theme_font_size_override("font_size", 24)
+	PageUIThemeScript.style_header_label(title, true)
 	title_column.add_child(title)
 	var subtitle = Label.new()
 	subtitle.text = String(card_model.get("subtitle", "written down for camp use"))
@@ -439,6 +447,7 @@ func _build_recipe_card_panel(card_model: Dictionary, action_pressed: Callable) 
 	action_button.disabled = bool(card_model.get("action_disabled", false))
 	action_button.tooltip_text = String(card_model.get("action_tooltip", ""))
 	action_button.pressed.connect(action_pressed)
+	PageUIThemeScript.style_button(action_button, true)
 	root.add_child(action_button)
 	return panel
 
@@ -448,7 +457,7 @@ func _build_recipe_card_section(title_text: String, body_text: String, font_colo
 	section.add_theme_constant_override("separation", 4)
 	var title = Label.new()
 	title.text = title_text
-	title.add_theme_font_size_override("font_size", 16)
+	PageUIThemeScript.style_section_label(title)
 	section.add_child(title)
 	var body = Label.new()
 	body.text = body_text
@@ -502,24 +511,26 @@ func _make_back_button() -> Button:
 	button.text = "Back to World"
 	button.custom_minimum_size = Vector2(180.0, 40.0)
 	button.pressed.connect(Callable(self, "_go_back"))
+	PageUIThemeScript.style_button(button)
 	return button
 
 
 func _add_title(parent: VBoxContainer, title_text: String, body_text: String) -> void:
 	var title = Label.new()
 	title.text = title_text
-	title.add_theme_font_size_override("font_size", 24)
+	PageUIThemeScript.style_header_label(title, true)
 	parent.add_child(title)
 	var body = Label.new()
 	body.text = body_text
 	body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	PageUIThemeScript.style_body_label(body)
 	parent.add_child(body)
 
 
 func _build_category_label(category: String) -> Label:
 	var label = Label.new()
 	label.text = category
-	label.add_theme_font_size_override("font_size", 18)
+	PageUIThemeScript.style_section_label(label)
 	return label
 
 

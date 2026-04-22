@@ -2,6 +2,7 @@ class_name TravelPage
 extends RefCounted
 
 const SurvivalLoopRulesScript := preload("res://scripts/gameplay/survival_loop_rules.gd")
+const PageUIThemeScript := preload("res://scripts/ui/page_ui_theme.gd")
 
 var _game_state_manager = null
 var _data_manager = null
@@ -87,28 +88,35 @@ func _build_panel(page_host) -> void:
 	root.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	root.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_panel.add_child(root)
+	PageUIThemeScript.apply_panel_variant(_panel, "panel")
 
 	var title = Label.new()
 	title.text = "Travel"
-	title.add_theme_font_size_override("font_size", 24)
+	PageUIThemeScript.style_header_label(title, true)
 	root.add_child(title)
 
+	var summary_section := PageUIThemeScript.create_section_panel("MOVEMENT", "highlight")
+	root.add_child(summary_section.panel)
 	_summary_label = Label.new()
 	_summary_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	root.add_child(_summary_label)
+	PageUIThemeScript.style_body_label(_summary_label)
+	summary_section.root.add_child(_summary_label)
 
 	_back_button = Button.new()
 	_back_button.text = "Back to World"
 	_back_button.custom_minimum_size = Vector2(220.0, 42.0)
 	_back_button.pressed.connect(Callable(self, "_go_back"))
+	PageUIThemeScript.style_button(_back_button)
 	root.add_child(_back_button)
 
+	var movement_section := PageUIThemeScript.create_section_panel("TRAVEL OPTIONS")
+	root.add_child(movement_section.panel)
 	var grid = GridContainer.new()
 	grid.columns = 2
 	grid.add_theme_constant_override("h_separation", 10)
 	grid.add_theme_constant_override("v_separation", 10)
 	grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	root.add_child(grid)
+	movement_section.root.add_child(grid)
 
 	_go_to_camp_button = _make_button("Go to Camp", Callable(self, "_travel_to_camp"))
 	_return_to_town_button = _make_button("Return to Town", Callable(self, "_travel_to_town"))
@@ -124,6 +132,7 @@ func _make_button(label_text: String, pressed_callable: Callable) -> Button:
 	button.custom_minimum_size = Vector2(0.0, 52.0)
 	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	button.pressed.connect(pressed_callable)
+	PageUIThemeScript.style_button(button, true)
 	return button
 
 

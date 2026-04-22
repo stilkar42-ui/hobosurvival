@@ -3,6 +3,7 @@ extends RefCounted
 
 const InventoryManagerScript := preload("res://scripts/managers/inventory_manager.gd")
 const InventoryScript := preload("res://scripts/inventory/inventory.gd")
+const PageUIThemeScript := preload("res://scripts/ui/page_ui_theme.gd")
 const SurvivalLoopRulesScript := preload("res://scripts/gameplay/survival_loop_rules.gd")
 
 const MENU_MOVE_TO := 2001
@@ -17,6 +18,9 @@ const MENU_READ := 2009
 
 var _overlay: Control = null
 var _window: PanelContainer = null
+var _header: HBoxContainer = null
+var _badge_label: Label = null
+var _title_label: Label = null
 var _close_button: Button = null
 var _open_inventory_button: Button = null
 var _summary_label: Label = null
@@ -53,6 +57,9 @@ var _inventory_container_popups: Dictionary = {}
 func bootstrap(_scene_root: Control, deps: Dictionary) -> void:
 	_overlay = deps.get("overlay", null)
 	_window = deps.get("window", null)
+	_header = deps.get("header", null)
+	_badge_label = deps.get("badge_label", null)
+	_title_label = deps.get("title_label", null)
 	_close_button = deps.get("close_button", null)
 	_open_inventory_button = deps.get("open_inventory_button", null)
 	_summary_label = deps.get("summary_label", null)
@@ -98,6 +105,7 @@ func bootstrap(_scene_root: Control, deps: Dictionary) -> void:
 	if _use_button != null and not _use_button.pressed.is_connected(Callable(self, "_execute_inventory_use_action").bind(-1)):
 		_use_button.pressed.connect(Callable(self, "_execute_inventory_use_action").bind(-1))
 
+	_apply_layout_theme()
 	_connect_inventory_panel()
 	if _game_state_manager != null and not _game_state_manager.player_state_changed.is_connected(Callable(self, "refresh_from_state")):
 		_game_state_manager.player_state_changed.connect(Callable(self, "refresh_from_state"))
@@ -180,6 +188,42 @@ func _connect_inventory_panel() -> void:
 			_inventory_radial_menu.action_selected.connect(Callable(self, "_on_inventory_context_menu_id_pressed"))
 		if not _inventory_radial_menu.canceled.is_connected(Callable(self, "_on_inventory_context_menu_canceled")):
 			_inventory_radial_menu.canceled.connect(Callable(self, "_on_inventory_context_menu_canceled"))
+
+
+func _apply_layout_theme() -> void:
+	if _window != null:
+		PageUIThemeScript.apply_panel_variant(_window, "panel")
+		var actions_panel = _window.get_node_or_null("InventoryRoot/InventoryActionsPanel") as PanelContainer
+		if actions_panel != null:
+			PageUIThemeScript.apply_panel_variant(actions_panel, "alt")
+	if _badge_label != null:
+		PageUIThemeScript.style_small_label(_badge_label)
+		_badge_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		_badge_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	if _title_label != null:
+		PageUIThemeScript.style_header_label(_title_label, true)
+	if _summary_label != null:
+		PageUIThemeScript.style_body_label(_summary_label)
+	if _selected_item_label != null:
+		PageUIThemeScript.style_body_label(_selected_item_label)
+	if _hint_label != null:
+		PageUIThemeScript.style_small_label(_hint_label)
+	if _modal_status_label != null:
+		PageUIThemeScript.style_body_label(_modal_status_label)
+	if _action_summary_label != null:
+		PageUIThemeScript.style_body_label(_action_summary_label)
+	if _destination_label != null:
+		PageUIThemeScript.style_body_label(_destination_label, true)
+	for button in [
+		_close_button,
+		_move_cancel_button,
+		_transfer_button,
+		_drop_button,
+		_equip_button,
+		_unequip_button,
+		_use_button
+	]:
+		PageUIThemeScript.style_button(button, button != _close_button)
 
 
 func _open_inventory() -> void:

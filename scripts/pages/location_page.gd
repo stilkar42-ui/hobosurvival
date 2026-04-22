@@ -2,6 +2,7 @@ class_name LocationPage
 extends RefCounted
 
 const SurvivalLoopRulesScript := preload("res://scripts/gameplay/survival_loop_rules.gd")
+const PageUIThemeScript := preload("res://scripts/ui/page_ui_theme.gd")
 
 var _game_state_manager = null
 var _data_manager = null
@@ -97,6 +98,7 @@ func _build_panel(page_host) -> void:
 	root.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	root.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_panel.add_child(root)
+	PageUIThemeScript.apply_panel_variant(_panel, "panel")
 
 	for route_id in [&"jobs_board", &"send_money", &"grocery", &"hardware"]:
 		var route_panel = PanelContainer.new()
@@ -111,6 +113,7 @@ func _build_panel(page_host) -> void:
 		route_root.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		route_root.size_flags_vertical = Control.SIZE_EXPAND_FILL
 		route_panel.add_child(route_root)
+		PageUIThemeScript.apply_panel_variant(route_panel, "alt")
 		_route_roots[route_id] = route_panel
 
 	_build_jobs_board_page()
@@ -136,24 +139,29 @@ func _build_send_money_page() -> void:
 	root.add_child(_make_back_button())
 	_send_money_summary_label = Label.new()
 	_send_money_summary_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	PageUIThemeScript.style_body_label(_send_money_summary_label)
 	root.add_child(_send_money_summary_label)
 	_pending_support_label = Label.new()
 	_pending_support_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	PageUIThemeScript.style_body_label(_pending_support_label, true)
 	root.add_child(_pending_support_label)
 
 	var send_small_button = Button.new()
 	send_small_button.text = "Send Small Amount"
 	send_small_button.pressed.connect(Callable(self, "_send_simple").bind(SurvivalLoopRulesScript.ACTION_SEND_SMALL))
+	PageUIThemeScript.style_button(send_small_button, true)
 	root.add_child(send_small_button)
 
 	var send_large_button = Button.new()
 	send_large_button.text = "Send Larger Amount"
 	send_large_button.pressed.connect(Callable(self, "_send_simple").bind(SurvivalLoopRulesScript.ACTION_SEND_LARGE))
+	PageUIThemeScript.style_button(send_large_button)
 	root.add_child(send_large_button)
 
 	var custom_label = Label.new()
 	custom_label.text = "Choose an exact amount to send home."
 	custom_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	PageUIThemeScript.style_small_label(custom_label)
 	root.add_child(custom_label)
 
 	_send_amount_spinbox = SpinBox.new()
@@ -170,9 +178,11 @@ func _build_send_money_page() -> void:
 	root.add_child(row)
 	_send_mail_custom_button = Button.new()
 	_send_mail_custom_button.pressed.connect(Callable(self, "_on_send_support_pressed").bind(&"mail"))
+	PageUIThemeScript.style_button(_send_mail_custom_button, true)
 	row.add_child(_send_mail_custom_button)
 	_send_telegraph_custom_button = Button.new()
 	_send_telegraph_custom_button.pressed.connect(Callable(self, "_on_send_support_pressed").bind(&"telegraph"))
+	PageUIThemeScript.style_button(_send_telegraph_custom_button)
 	row.add_child(_send_telegraph_custom_button)
 
 
@@ -182,6 +192,7 @@ func _build_grocery_page() -> void:
 	root.add_child(_make_back_button())
 	_grocery_summary_label = Label.new()
 	_grocery_summary_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	PageUIThemeScript.style_body_label(_grocery_summary_label)
 	root.add_child(_grocery_summary_label)
 	_grocery_stock_list = VBoxContainer.new()
 	_grocery_stock_list.add_theme_constant_override("separation", 8)
@@ -194,6 +205,7 @@ func _build_hardware_page() -> void:
 	root.add_child(_make_back_button())
 	_hardware_summary_label = Label.new()
 	_hardware_summary_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	PageUIThemeScript.style_body_label(_hardware_summary_label)
 	root.add_child(_hardware_summary_label)
 	_hardware_stock_list = VBoxContainer.new()
 	_hardware_stock_list.add_theme_constant_override("separation", 8)
@@ -256,6 +268,7 @@ func _rebuild_store_stock_list(list_root: VBoxContainer, store_id: StringName, s
 		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		button.text = _format_store_stock_button_text(entry, item)
 		button.pressed.connect(Callable(self, "_on_store_stock_pressed").bind(store_id, index))
+		PageUIThemeScript.style_button(button)
 		list_root.add_child(button)
 
 
@@ -263,11 +276,13 @@ func _build_job_board_entry(job: Dictionary, availability: Dictionary) -> Contro
 	var panel = PanelContainer.new()
 	panel.custom_minimum_size = Vector2(360.0, 180.0)
 	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	PageUIThemeScript.apply_panel_variant(panel, "dark")
 	var root = VBoxContainer.new()
 	root.add_theme_constant_override("separation", 4)
 	panel.add_child(root)
 	var title = _wrapped_label(String(job.get("title", "Job")))
 	title.add_theme_font_size_override("font_size", 17)
+	PageUIThemeScript.style_section_label(title)
 	root.add_child(title)
 	root.add_child(_wrapped_label(String(job.get("summary", ""))))
 	root.add_child(_wrapped_label("%s | %s | %s | %s" % [
@@ -283,6 +298,7 @@ func _build_job_board_entry(job: Dictionary, availability: Dictionary) -> Contro
 	action_button.text = "Take Work"
 	action_button.disabled = not bool(availability.get("enabled", false))
 	action_button.pressed.connect(Callable(self, "_on_job_pressed").bind(StringName(job.get("instance_id", &""))))
+	PageUIThemeScript.style_button(action_button, true)
 	root.add_child(action_button)
 	return panel
 
@@ -330,17 +346,19 @@ func _make_back_button() -> Button:
 	button.text = "Back to World"
 	button.custom_minimum_size = Vector2(180.0, 40.0)
 	button.pressed.connect(Callable(self, "_go_back"))
+	PageUIThemeScript.style_button(button)
 	return button
 
 
 func _add_title(parent: VBoxContainer, title_text: String, body_text: String) -> void:
 	var title = Label.new()
 	title.text = title_text
-	title.add_theme_font_size_override("font_size", 24)
+	PageUIThemeScript.style_header_label(title, true)
 	parent.add_child(title)
 	var body = Label.new()
 	body.text = body_text
 	body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	PageUIThemeScript.style_body_label(body)
 	parent.add_child(body)
 
 

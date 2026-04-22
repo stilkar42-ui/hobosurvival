@@ -12,6 +12,7 @@ signal container_popup_requested(provider_id: StringName)
 const InventoryDragButtonScript := preload("res://scripts/ui/inventory_drag_button.gd")
 const InventoryProviderDropButtonScript := preload("res://scripts/ui/inventory_provider_drop_button.gd")
 const InventoryProviderDropTargetScript := preload("res://scripts/ui/inventory_provider_drop_target.gd")
+const PageUIThemeScript := preload("res://scripts/ui/page_ui_theme.gd")
 
 const SMALL_UNITS_PER_MEDIUM_SLOT := 4
 const SLOT_BACK := &"slot_back"
@@ -186,7 +187,7 @@ func _build_static_layout() -> void:
 		return
 	size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	size_flags_vertical = Control.SIZE_EXPAND_FILL
-	add_theme_stylebox_override("panel", _make_panel_style(Color("1f1c19"), Color("6a5847"), 2, 10))
+	PageUIThemeScript.apply_panel_variant(self, "dark")
 
 	_root = VBoxContainer.new()
 	_root.name = "InventoryPanelRoot"
@@ -198,16 +199,15 @@ func _build_static_layout() -> void:
 	var title_label = Label.new()
 	title_label.name = "InventoryPanelTitle"
 	title_label.text = "Carried Gear"
-	title_label.add_theme_font_size_override("font_size", 24)
-	title_label.modulate = Color("ddd3c2")
+	PageUIThemeScript.style_header_label(title_label, true)
 	_root.add_child(title_label)
 
 	_summary_label = Label.new()
 	_summary_label.text = "No inventory assigned."
-	_summary_label.modulate = Color("bda98f")
+	PageUIThemeScript.style_body_label(_summary_label)
 	_root.add_child(_summary_label)
 
-	_main_area = VBoxContainer.new()
+	_main_area = HBoxContainer.new()
 	_main_area.name = "InventoryBodyCenteredSurface"
 	_main_area.add_theme_constant_override("separation", 12)
 	_main_area.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -232,7 +232,7 @@ func _build_body_slot_panel() -> Control:
 	var panel = PanelContainer.new()
 	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	panel.add_theme_stylebox_override("panel", _make_panel_style(Color("26221d"), Color("7c6950"), 1, 8))
+	PageUIThemeScript.apply_panel_variant(panel, "panel")
 
 	var content = VBoxContainer.new()
 	content.add_theme_constant_override("separation", 8)
@@ -242,14 +242,13 @@ func _build_body_slot_panel() -> Control:
 
 	var title = Label.new()
 	title.text = "Carried Body"
-	title.add_theme_font_size_override("font_size", 18)
-	title.modulate = Color("dcd0bc")
+	PageUIThemeScript.style_section_label(title)
 	content.add_child(title)
 
 	var hint = Label.new()
 	hint.text = "Choose a body location. Items still live in the belongings ledger and storage providers."
 	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	hint.modulate = Color("bda98f")
+	PageUIThemeScript.style_small_label(hint)
 	content.add_child(hint)
 
 	_slot_grid = VBoxContainer.new()
@@ -296,9 +295,9 @@ func _build_body_slot_panel() -> Control:
 func _build_detail_panel() -> Control:
 	var panel = PanelContainer.new()
 	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	panel.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
-	panel.custom_minimum_size = Vector2(0.0, 112.0)
-	panel.add_theme_stylebox_override("panel", _make_panel_style(Color("201e1b"), Color("60554a"), 1, 8))
+	panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	panel.custom_minimum_size = Vector2(280.0, 0.0)
+	PageUIThemeScript.apply_panel_variant(panel, "highlight")
 
 	var content = VBoxContainer.new()
 	content.add_theme_constant_override("separation", 8)
@@ -307,9 +306,8 @@ func _build_detail_panel() -> Control:
 	panel.add_child(content)
 
 	var title = Label.new()
-	title.text = "Location Summary"
-	title.add_theme_font_size_override("font_size", 18)
-	title.modulate = Color("d9d2c4")
+	title.text = "Selected Item Detail"
+	PageUIThemeScript.style_section_label(title, true)
 	content.add_child(title)
 
 	var detail_scroll = ScrollContainer.new()
@@ -336,7 +334,7 @@ func _build_ground_panel() -> Control:
 	_ground_panel.custom_minimum_size = Vector2(0.0, 150.0)
 	_ground_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_ground_panel.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
-	_ground_panel.add_theme_stylebox_override("panel", _make_panel_style(Color("1d1916"), Color("705740"), 1, 8))
+	PageUIThemeScript.apply_panel_variant(_ground_panel, "alt")
 
 	var content = VBoxContainer.new()
 	content.add_theme_constant_override("separation", 8)
@@ -345,8 +343,7 @@ func _build_ground_panel() -> Control:
 
 	var title = Label.new()
 	title.text = "Ground / Nearby"
-	title.add_theme_font_size_override("font_size", 18)
-	title.modulate = Color("d9cdb8")
+	PageUIThemeScript.style_section_label(title)
 	content.add_child(title)
 
 	_ground_body = VBoxContainer.new()
@@ -438,7 +435,7 @@ func _build_silhouette_provider_map() -> Control:
 	silhouette.custom_minimum_size = Vector2(260.0, 330.0)
 	silhouette.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	silhouette.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	silhouette.add_theme_stylebox_override("panel", _make_panel_style(Color("181612"), Color("6f5c47"), 1, 8))
+	PageUIThemeScript.apply_panel_variant(silhouette, "dark")
 	map.add_child(silhouette)
 
 	var silhouette_root = VBoxContainer.new()
@@ -452,12 +449,11 @@ func _build_silhouette_provider_map() -> Control:
 	torso.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	torso.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	torso.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	torso.add_theme_font_size_override("font_size", 18)
-	torso.modulate = Color("d8cbb8")
+	PageUIThemeScript.style_section_label(torso)
 	silhouette_root.add_child(torso)
 	var feet = _build_label("items belong to providers")
 	feet.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	feet.modulate = Color("8f826f")
+	PageUIThemeScript.style_small_label(feet)
 	silhouette_root.add_child(feet)
 
 	var right_column = VBoxContainer.new()

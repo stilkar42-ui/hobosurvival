@@ -3,6 +3,7 @@ extends RefCounted
 
 const OverlayBuilderScript := preload("res://scripts/front_end/adapters/overlay_builder.gd")
 const SurvivalLoopRulesScript := preload("res://scripts/gameplay/survival_loop_rules.gd")
+const PageUIThemeScript := preload("res://scripts/ui/page_ui_theme.gd")
 
 var _overlay_builder = OverlayBuilderScript.new()
 var _game_state_manager = null
@@ -27,6 +28,9 @@ var _comb_groom_button: Button = null
 var _air_out_clothes_button: Button = null
 var _brush_clothes_button: Button = null
 var _rest_sections_root: VBoxContainer = null
+var _action_panel: PanelContainer = null
+var _camp_state_panel: PanelContainer = null
+var _stats_panel: PanelContainer = null
 
 var _current_route: StringName = &"getting_ready"
 var _selected_rest_hours := 8
@@ -60,6 +64,7 @@ func bootstrap(_scene_root: Control, deps: Dictionary) -> void:
 		_overlay.visible = false
 	if _close_button != null and not _close_button.pressed.is_connected(Callable(self, "_close")):
 		_close_button.pressed.connect(Callable(self, "_close"))
+	_build_overlay_layout()
 	_connect_action_buttons()
 	_build_rest_sections_root()
 	if _game_state_manager != null and not _game_state_manager.player_state_changed.is_connected(Callable(self, "refresh_from_state")):
@@ -133,19 +138,70 @@ func _connect_action_buttons() -> void:
 	_comb_groom_button.pressed.connect(Callable(self, "_execute_action").bind(SurvivalLoopRulesScript.ACTION_READY_COMB_GROOM))
 	_air_out_clothes_button.pressed.connect(Callable(self, "_execute_action").bind(SurvivalLoopRulesScript.ACTION_READY_AIR_OUT_CLOTHES))
 	_brush_clothes_button.pressed.connect(Callable(self, "_execute_action").bind(SurvivalLoopRulesScript.ACTION_READY_BRUSH_CLOTHES))
+	for button in [_fetch_water_button, _wash_body_button, _wash_face_hands_button, _shave_button, _comb_groom_button, _air_out_clothes_button, _brush_clothes_button, _close_button]:
+		PageUIThemeScript.style_button(button, button != _close_button)
+
+
+func _build_overlay_layout() -> void:
+	if _root == null or _root.get_node_or_null("RestPageLayout") != null:
+		return
+	var status_parent = _status_label.get_parent()
+	var stats_parent = _stats_label.get_parent()
+	status_parent.remove_child(_status_label)
+	stats_parent.remove_child(_stats_label)
+	var actions_parent = _fetch_water_button.get_parent()
+	var actions_children := [
+		_fetch_water_button,
+		_wash_body_button,
+		_wash_face_hands_button,
+		_shave_button,
+		_comb_groom_button,
+		_air_out_clothes_button,
+		_brush_clothes_button
+	]
+	for button in actions_children:
+		actions_parent.remove_child(button)
+	var layout := HBoxContainer.new()
+	layout.name = "RestPageLayout"
+	layout.add_theme_constant_override("separation", 12)
+	layout.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	layout.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_root.add_child(layout)
+	_action_panel = PageUIThemeScript.create_section_panel("CAMP ACTIONS", "alt").panel
+	_action_panel.custom_minimum_size = Vector2(260.0, 0.0)
+	var action_root: VBoxContainer = _action_panel.get_child(0)
+	var action_grid := VBoxContainer.new()
+	action_grid.name = "RestActionStack"
+	action_grid.add_theme_constant_override("separation", 8)
+	for button in actions_children:
+		action_grid.add_child(button)
+	action_root.add_child(action_grid)
+	layout.add_child(_action_panel)
+	_camp_state_panel = PageUIThemeScript.create_section_panel("CAMP STATE", "panel").panel
+	var camp_state_root: VBoxContainer = _camp_state_panel.get_child(0)
+	camp_state_root.add_child(_status_label)
+	layout.add_child(_camp_state_panel)
+	_stats_panel = PageUIThemeScript.create_section_panel("ROAD CONDITION", "highlight").panel
+	_stats_panel.custom_minimum_size = Vector2(280.0, 0.0)
+	var stats_root: VBoxContainer = _stats_panel.get_child(0)
+	stats_root.add_child(_stats_label)
+	layout.add_child(_stats_panel)
 
 
 func _build_rest_sections_root() -> void:
-	if _root == null:
+	if _camp_state_panel == null:
 		return
-	_rest_sections_root = _root.get_node_or_null("RestSectionsRoot")
+	_rest_sections_root = _camp_state_panel.get_node_or_null("RestSectionsRoot")
 	if _rest_sections_root != null:
 		return
 	_rest_sections_root = VBoxContainer.new()
 	_rest_sections_root.name = "RestSectionsRoot"
 	_rest_sections_root.add_theme_constant_override("separation", 10)
 	_rest_sections_root.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_root.add_child(_rest_sections_root)
+	_rest_sections_root.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	var camp_state_root = _camp_state_panel.get_child(0) as VBoxContainer
+	if camp_state_root != null:
+		camp_state_root.add_child(_rest_sections_root)
 
 
 func _render_rest_sections(player_state, config) -> void:
@@ -163,16 +219,18 @@ func _render_rest_sections(player_state, config) -> void:
 
 func _build_rest_section(section_model: Dictionary) -> Control:
 	var panel = PanelContainer.new()
+	PageUIThemeScript.apply_panel_variant(panel, "dark")
 	var root = VBoxContainer.new()
 	root.add_theme_constant_override("separation", 8)
 	panel.add_child(root)
 	var title = Label.new()
 	title.text = String(section_model.get("title", "Section"))
-	title.add_theme_font_size_override("font_size", 18)
+	PageUIThemeScript.style_section_label(title)
 	root.add_child(title)
 	var detail = Label.new()
 	detail.text = String(section_model.get("detail", ""))
 	detail.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	PageUIThemeScript.style_body_label(detail)
 	root.add_child(detail)
 	var layout = String(section_model.get("layout", ""))
 	var action_host: Control = HBoxContainer.new() if layout == "compact_controls" else VBoxContainer.new()
@@ -189,6 +247,7 @@ func _build_rest_section(section_model: Dictionary) -> Control:
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		button.disabled = bool(action_model.get("disabled", false))
 		button.tooltip_text = String(action_model.get("tooltip_text", ""))
+		PageUIThemeScript.style_button(button, true)
 		button.pressed.connect(Callable(self, "_on_rest_command_pressed").bind(action_model))
 		action_host.add_child(button)
 	return panel

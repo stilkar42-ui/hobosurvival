@@ -1,6 +1,7 @@
 class_name EventEncounterPage
 extends RefCounted
 
+const PageUIThemeScript := preload("res://scripts/ui/page_ui_theme.gd")
 const PlayerStateServiceScript := preload("res://scripts/player/player_state_service.gd")
 
 var _status_label: Label = null
@@ -33,6 +34,7 @@ func bootstrap(_scene_root: Control, deps: Dictionary) -> void:
 		_reset_run_button.pressed.connect(Callable(self, "_on_reset_run_pressed"))
 	if _go_debug_button != null and not _go_debug_button.pressed.is_connected(Callable(self, "_on_go_debug_pressed")):
 		_go_debug_button.pressed.connect(Callable(self, "_on_go_debug_pressed"))
+	_apply_layout_theme()
 	if _game_state_manager != null and not _game_state_manager.player_state_changed.is_connected(Callable(self, "refresh_from_state")):
 		_game_state_manager.player_state_changed.connect(Callable(self, "refresh_from_state"))
 	refresh_from_state(_game_state_manager.get_player_state() if _game_state_manager != null else null)
@@ -96,3 +98,12 @@ func _on_reset_run_pressed() -> void:
 func _on_go_debug_pressed() -> void:
 	if not _request_debug_page.is_null():
 		_request_debug_page.call()
+
+
+func _apply_layout_theme() -> void:
+	PageUIThemeScript.style_body_label(_status_label)
+	PageUIThemeScript.apply_panel_variant(_result_panel, "alt")
+	PageUIThemeScript.style_section_label(_result_title_label, true)
+	PageUIThemeScript.style_body_label(_result_body_label)
+	PageUIThemeScript.style_button(_reset_run_button, true)
+	PageUIThemeScript.style_button(_go_debug_button)
