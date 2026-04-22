@@ -272,13 +272,16 @@ func _register_pages_with_ui_manager() -> void:
 	_ui_manager.register_route(_location_manager.PAGE_TOWN, &"WorldMapPage")
 	_ui_manager.register_route(_location_manager.PAGE_CAMP, &"WorldMapPage")
 	_ui_manager.register_route(_location_manager.ROUTE_TRAVEL, &"TravelPage")
+	_ui_manager.register_route(_location_manager.ROUTE_LOCATION_PAGE, &"LocationPage")
 	_ui_manager.register_route(_location_manager.PAGE_JOBS_BOARD, &"LocationPage")
 	_ui_manager.register_route(_location_manager.PAGE_SEND_MONEY, &"LocationPage")
 	_ui_manager.register_route(_location_manager.PAGE_GROCERY, &"LocationPage")
 	_ui_manager.register_route(_location_manager.PAGE_HARDWARE, &"LocationPage")
+	_ui_manager.register_route(_location_manager.ROUTE_CRAFTING_PAGE, &"CraftingPage")
 	_ui_manager.register_route(_location_manager.PAGE_HOBOCRAFT, &"CraftingPage")
 	_ui_manager.register_route(_location_manager.PAGE_COOKING, &"CraftingPage")
 	_ui_manager.register_route(_location_manager.PAGE_GETTING_READY, &"RestCampPage")
+	_ui_manager.register_route(_location_manager.ROUTE_REST_PAGE, &"RestCampPage")
 	_ui_manager.register_route(_location_manager.PAGE_REST_CAMP, &"RestCampPage")
 	_ui_manager.register_route(_location_manager.ROUTE_INVENTORY, &"InventoryPage")
 	_ui_manager.register_route(_location_manager.ROUTE_PASSPORT, &"PassportStatsPage")
@@ -317,8 +320,8 @@ func _sync_route_with_state(player_state) -> void:
 	route = _location_manager.normalize_route_for_location(route, location_id)
 	if route == &"":
 		route = _location_manager.PAGE_TOWN
-	if not _ui_manager.switch_to(route):
-		_ui_manager.switch_to(_location_manager.PAGE_TOWN)
+	if not _ui_manager.open_page(route):
+		_ui_manager.open_page(_location_manager.PAGE_TOWN)
 	if not _location_manager.is_overlay_route(route):
 		_last_primary_route = route
 

@@ -8,6 +8,7 @@ var _passport_panel = null
 var _game_state_manager = null
 var _ui_manager = null
 var _resolve_return_route := Callable()
+var _return_route: StringName = &"town"
 
 
 func bootstrap(_scene_root: Control, deps: Dictionary) -> void:
@@ -30,6 +31,10 @@ func bootstrap(_scene_root: Control, deps: Dictionary) -> void:
 	if _game_state_manager != null and not _game_state_manager.player_state_changed.is_connected(Callable(self, "refresh_from_state")):
 		_game_state_manager.player_state_changed.connect(Callable(self, "refresh_from_state"))
 	refresh_from_state(_game_state_manager.get_player_state() if _game_state_manager != null else null)
+
+
+func set_context(context: Dictionary) -> void:
+	_return_route = StringName(context.get("return_route", _return_route))
 
 
 func set_route(_route_name: StringName) -> void:
@@ -61,10 +66,13 @@ func handle_input(event: InputEvent) -> bool:
 
 func _open() -> void:
 	if _ui_manager != null:
-		_ui_manager.switch_to(&"passport_stats")
+		_ui_manager.open_page(&"passport_stats", {"return_route": _ui_manager.get_active_route()})
 
 
 func _close() -> void:
-	if _ui_manager == null or _resolve_return_route.is_null():
+	if _ui_manager == null:
 		return
-	_ui_manager.switch_to(StringName(_resolve_return_route.call()))
+	var route = _return_route
+	if route == &"" and not _resolve_return_route.is_null():
+		route = StringName(_resolve_return_route.call())
+	_ui_manager.open_page(route)

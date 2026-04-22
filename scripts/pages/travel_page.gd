@@ -9,21 +9,13 @@ var _time_manager = null
 var _location_manager = null
 var _ui_manager = null
 var _show_status := Callable()
-var _resolve_return_route := Callable()
 
 var _panel: PanelContainer = null
 var _summary_label: Label = null
 var _back_button: Button = null
 var _go_to_camp_button: Button = null
 var _return_to_town_button: Button = null
-var _open_jobs_board_button: Button = null
-var _open_send_money_page_button: Button = null
-var _open_grocery_page_button: Button = null
-var _open_hardware_page_button: Button = null
-var _open_getting_ready_page_button: Button = null
-var _open_rest_page_button: Button = null
-var _open_hobocraft_page_button: Button = null
-var _open_cooking_page_button: Button = null
+var _return_route: StringName = &"town"
 
 
 func bootstrap(_scene_root: Control, deps: Dictionary) -> void:
@@ -33,11 +25,14 @@ func bootstrap(_scene_root: Control, deps: Dictionary) -> void:
 	_location_manager = deps.get("location_manager", null)
 	_ui_manager = deps.get("ui_manager", null)
 	_show_status = deps.get("show_status", Callable())
-	_resolve_return_route = deps.get("resolve_return_route", Callable())
 	_build_panel(deps.get("page_host", null))
 	if _game_state_manager != null and not _game_state_manager.player_state_changed.is_connected(Callable(self, "refresh_from_state")):
 		_game_state_manager.player_state_changed.connect(Callable(self, "refresh_from_state"))
 	refresh_from_state(_game_state_manager.get_player_state() if _game_state_manager != null else null)
+
+
+func set_context(context: Dictionary) -> void:
+	_return_route = StringName(context.get("return_route", _return_route))
 
 
 func set_route(_route_name: StringName) -> void:
@@ -59,29 +54,13 @@ func refresh_from_state(player_state) -> void:
 	var config = _data_manager.get_loop_config() if _data_manager != null else null
 	var in_town = _location_manager.is_town_location(player_state.loop_location_id) if _location_manager != null else true
 	var at_camp = _location_manager.is_camp_location(player_state.loop_location_id) if _location_manager != null else false
-	_summary_label.text = "Choose the next move. Movement defines distance, time cost, exposure, and which work is reachable from here."
+	_summary_label.text = "Travel only handles movement. Distance costs time, alters exposure, and changes which town or camp pressures you can act on next."
 	if _go_to_camp_button != null:
 		_go_to_camp_button.visible = in_town
 		_go_to_camp_button.text = "Go to Camp\n%s travel" % _format_duration(config.town_to_camp_travel_minutes) if config != null else "Go to Camp"
 	if _return_to_town_button != null:
 		_return_to_town_button.visible = at_camp
 		_return_to_town_button.text = "Return to Town\n%s travel" % _format_duration(config.camp_to_town_travel_minutes) if config != null else "Return to Town"
-	if _open_jobs_board_button != null:
-		_open_jobs_board_button.disabled = not in_town
-	if _open_send_money_page_button != null:
-		_open_send_money_page_button.disabled = not in_town
-	if _open_grocery_page_button != null:
-		_open_grocery_page_button.disabled = not in_town
-	if _open_hardware_page_button != null:
-		_open_hardware_page_button.disabled = not in_town
-	if _open_getting_ready_page_button != null:
-		_open_getting_ready_page_button.disabled = not at_camp
-	if _open_rest_page_button != null:
-		_open_rest_page_button.disabled = not at_camp
-	if _open_hobocraft_page_button != null:
-		_open_hobocraft_page_button.disabled = not at_camp
-	if _open_cooking_page_button != null:
-		_open_cooking_page_button.disabled = not at_camp
 
 
 func handle_input(event: InputEvent) -> bool:
@@ -133,28 +112,9 @@ func _build_panel(page_host) -> void:
 
 	_go_to_camp_button = _make_button("Go to Camp", Callable(self, "_travel_to_camp"))
 	_return_to_town_button = _make_button("Return to Town", Callable(self, "_travel_to_town"))
-	_open_jobs_board_button = _make_button("Jobs Board", Callable(self, "_open_route").bind(&"jobs_board"))
-	_open_send_money_page_button = _make_button("Send Money", Callable(self, "_open_route").bind(&"send_money"))
-	_open_grocery_page_button = _make_button("Grocery", Callable(self, "_open_route").bind(&"grocery"))
-	_open_hardware_page_button = _make_button("Hardware", Callable(self, "_open_route").bind(&"hardware"))
-	_open_getting_ready_page_button = _make_button("Getting Ready", Callable(self, "_open_route").bind(&"getting_ready"))
-	_open_rest_page_button = _make_button("Rest / Camp", Callable(self, "_open_route").bind(&"rest_camp"))
-	_open_hobocraft_page_button = _make_button("Hobocraft", Callable(self, "_open_route").bind(&"hobocraft"))
-	_open_cooking_page_button = _make_button("Cooking", Callable(self, "_open_route").bind(&"cooking"))
 
-	for button in [
-		_go_to_camp_button,
-		_return_to_town_button,
-		_open_jobs_board_button,
-		_open_send_money_page_button,
-		_open_grocery_page_button,
-		_open_hardware_page_button,
-		_open_getting_ready_page_button,
-		_open_rest_page_button,
-		_open_hobocraft_page_button,
-		_open_cooking_page_button
-	]:
-		grid.add_child(button)
+	grid.add_child(_go_to_camp_button)
+	grid.add_child(_return_to_town_button)
 
 
 func _make_button(label_text: String, pressed_callable: Callable) -> Button:
@@ -183,18 +143,12 @@ func _execute_travel(action_id: StringName) -> void:
 		_show_status.call(String(result.get("message", "No result.")))
 	var player_state = _game_state_manager.get_player_state()
 	var destination = _location_manager.get_default_route_for_location(player_state.loop_location_id) if player_state != null and _location_manager != null else &"town"
-	_ui_manager.switch_to(destination)
-
-
-func _open_route(route_id: StringName) -> void:
-	if _ui_manager != null:
-		_ui_manager.switch_to(route_id)
+	_ui_manager.open_page(destination)
 
 
 func _go_back() -> void:
-	if _ui_manager == null or _resolve_return_route.is_null():
-		return
-	_ui_manager.switch_to(StringName(_resolve_return_route.call()))
+	if _ui_manager != null:
+		_ui_manager.open_page(_return_route)
 
 
 func _format_duration(minutes: int) -> String:

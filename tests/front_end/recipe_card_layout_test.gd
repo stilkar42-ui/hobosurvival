@@ -81,7 +81,7 @@ func _run_checks(loop_page: Control) -> void:
 	var hobocraft_note = "\n".join(hobocraft_lines)
 	_expect(hobocraft_note.contains("Empty Tin Can:") and hobocraft_note.contains("/ 1"), "hobocraft note counts owned materials")
 
-	ui_manager.switch_to(&"cooking")
+	ui_manager.open_page(&"crafting_page", {"return_route": &"camp", "route_id": &"cooking"})
 	await process_frame
 	var cooking_layout = loop_page.find_child("CookingLayout", true, false)
 	var hobocraft_layout = loop_page.find_child("HobocraftLayout", true, false)

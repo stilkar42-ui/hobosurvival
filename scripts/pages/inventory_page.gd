@@ -40,6 +40,7 @@ var _data_manager = null
 var _ui_manager = null
 var _show_status := Callable()
 var _resolve_return_route := Callable()
+var _return_route: StringName = &"town"
 
 var _last_inventory_message := "Drag anything visible to a visible place. Click to inspect."
 var _inventory_move_request := {}
@@ -101,6 +102,11 @@ func bootstrap(_scene_root: Control, deps: Dictionary) -> void:
 	if _game_state_manager != null and not _game_state_manager.player_state_changed.is_connected(Callable(self, "refresh_from_state")):
 		_game_state_manager.player_state_changed.connect(Callable(self, "refresh_from_state"))
 	refresh_from_state(_game_state_manager.get_player_state() if _game_state_manager != null else null)
+
+
+func set_context(context: Dictionary) -> void:
+	_return_route = StringName(context.get("return_route", _return_route))
+	_inventory_open_context = StringName(context.get("inventory_context", _inventory_open_context))
 
 
 func set_route(route_name: StringName) -> void:
@@ -178,13 +184,16 @@ func _connect_inventory_panel() -> void:
 
 func _open_inventory() -> void:
 	if _ui_manager != null:
-		_ui_manager.switch_to(&"inventory_ui")
+		_ui_manager.open_page(&"inventory_ui", {"return_route": _ui_manager.get_active_route()})
 
 
 func _close_inventory() -> void:
-	if _ui_manager == null or _resolve_return_route.is_null():
+	if _ui_manager == null:
 		return
-	_ui_manager.switch_to(StringName(_resolve_return_route.call()))
+	var route = _return_route
+	if route == &"" and not _resolve_return_route.is_null():
+		route = StringName(_resolve_return_route.call())
+	_ui_manager.open_page(route)
 
 
 func _refresh_inventory_summary(player_state) -> void:

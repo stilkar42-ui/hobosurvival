@@ -7,6 +7,7 @@ var _pages: Dictionary = {}
 var _routes: Dictionary = {}
 var _active_page: StringName = &""
 var _active_route: StringName = &""
+var _active_context: Dictionary = {}
 
 
 func register_page(name: StringName, page) -> void:
@@ -21,13 +22,16 @@ func register_route(route_name: StringName, page_name: StringName) -> void:
 	_routes[route_name] = page_name
 
 
-func switch_to(name: StringName) -> bool:
+func open_page(name: StringName, context: Dictionary = {}) -> bool:
 	var resolved_page_name = _resolve_page_name(name)
 	if resolved_page_name == &"" or not _pages.has(resolved_page_name):
 		return false
 	_active_route = name
 	_active_page = resolved_page_name
+	_active_context = context.duplicate(true)
 	var active_page = _pages.get(_active_page, null)
+	if active_page != null and active_page.has_method("set_context"):
+		active_page.set_context(_active_context)
 	if active_page != null and active_page.has_method("set_route"):
 		active_page.set_route(name)
 	for page_name in _pages.keys():
@@ -43,12 +47,20 @@ func switch_to(name: StringName) -> bool:
 	return true
 
 
+func switch_to(name: StringName) -> bool:
+	return open_page(name, {})
+
+
 func get_active_page() -> StringName:
 	return _active_page
 
 
 func get_active_route() -> StringName:
 	return _active_route
+
+
+func get_active_context() -> Dictionary:
+	return _active_context.duplicate(true)
 
 
 func get_page(page_name: StringName):

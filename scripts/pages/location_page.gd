@@ -13,6 +13,7 @@ var _show_status := Callable()
 var _panel: PanelContainer = null
 var _route_roots: Dictionary = {}
 var _current_route: StringName = &"jobs_board"
+var _return_route: StringName = &"town"
 var _selected_send_amount_cents := 125
 
 var _jobs_list: GridContainer = null
@@ -40,8 +41,22 @@ func bootstrap(_scene_root: Control, deps: Dictionary) -> void:
 	refresh_from_state(_game_state_manager.get_player_state() if _game_state_manager != null else null)
 
 
+func set_context(context: Dictionary) -> void:
+	_return_route = StringName(context.get("return_route", _return_route))
+	var requested_route = StringName(context.get("route_id", &""))
+	if requested_route != &"":
+		_current_route = requested_route
+
+
 func set_route(route_name: StringName) -> void:
-	_current_route = route_name
+	if route_name in _route_roots:
+		_current_route = route_name
+	elif _location_manager != null and route_name == _location_manager.ROUTE_LOCATION_PAGE:
+		var player_state = _game_state_manager.get_player_state() if _game_state_manager != null else null
+		var location_id = StringName(player_state.loop_location_id) if player_state != null else SurvivalLoopRulesScript.LOCATION_TOWN
+		var default_route = _location_manager.get_default_location_route_for_location(location_id)
+		if default_route != &"":
+			_current_route = default_route
 	_apply_visibility(true)
 	refresh_from_state(_game_state_manager.get_player_state() if _game_state_manager != null else null)
 
@@ -62,8 +77,7 @@ func handle_input(event: InputEvent) -> bool:
 	if _panel == null or not _panel.visible:
 		return false
 	if event.is_action_pressed("ui_cancel"):
-		if _ui_manager != null:
-			_ui_manager.switch_to(&"travel_ui")
+		_go_back()
 		return true
 	return false
 
@@ -313,12 +327,9 @@ func _on_store_stock_pressed(store_id: StringName, stock_index: int) -> void:
 
 func _make_back_button() -> Button:
 	var button = Button.new()
-	button.text = "Back to Routes"
+	button.text = "Back to World"
 	button.custom_minimum_size = Vector2(180.0, 40.0)
-	button.pressed.connect(func() -> void:
-		if _ui_manager != null:
-			_ui_manager.switch_to(&"travel_ui")
-	)
+	button.pressed.connect(Callable(self, "_go_back"))
 	return button
 
 
@@ -453,6 +464,11 @@ func _clear_children(parent: Node) -> void:
 	for child in parent.get_children():
 		parent.remove_child(child)
 		child.queue_free()
+
+
+func _go_back() -> void:
+	if _ui_manager != null:
+		_ui_manager.open_page(_return_route)
 
 
 func _format_duration(minutes: int) -> String:

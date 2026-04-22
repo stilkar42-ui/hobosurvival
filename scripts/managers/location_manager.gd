@@ -13,14 +13,17 @@ const PAGE_GETTING_READY := &"getting_ready"
 const PAGE_REST_CAMP := &"rest_camp"
 const PAGE_HOBOCRAFT := &"hobocraft"
 const PAGE_COOKING := &"cooking"
+const ROUTE_LOCATION_PAGE := &"location_page"
+const ROUTE_CRAFTING_PAGE := &"crafting_page"
+const ROUTE_REST_PAGE := &"rest_camp_page"
 const ROUTE_INVENTORY := &"inventory_ui"
 const ROUTE_PASSPORT := &"passport_stats"
 const ROUTE_EVENT := &"event_encounter"
 const ROUTE_TRAVEL := &"travel_ui"
 
-const TOWN_ONLY_PAGES := [PAGE_TOWN, PAGE_JOBS_BOARD, PAGE_SEND_MONEY, PAGE_GROCERY, PAGE_HARDWARE]
-const CAMP_ONLY_PAGES := [PAGE_CAMP, PAGE_GETTING_READY, PAGE_REST_CAMP, PAGE_HOBOCRAFT, PAGE_COOKING]
-const CAMP_SUB_PAGES := [PAGE_GETTING_READY, PAGE_REST_CAMP, PAGE_HOBOCRAFT, PAGE_COOKING]
+const TOWN_ONLY_PAGES := [PAGE_TOWN, PAGE_JOBS_BOARD, PAGE_SEND_MONEY, PAGE_GROCERY, PAGE_HARDWARE, ROUTE_LOCATION_PAGE]
+const CAMP_ONLY_PAGES := [PAGE_CAMP, PAGE_GETTING_READY, PAGE_REST_CAMP, PAGE_HOBOCRAFT, PAGE_COOKING, ROUTE_CRAFTING_PAGE, ROUTE_REST_PAGE]
+const CAMP_SUB_PAGES := [PAGE_GETTING_READY, PAGE_REST_CAMP, PAGE_HOBOCRAFT, PAGE_COOKING, ROUTE_CRAFTING_PAGE, ROUTE_REST_PAGE]
 const OVERLAY_ROUTES := [ROUTE_INVENTORY, ROUTE_PASSPORT, ROUTE_EVENT]
 
 const CAMP_INTERACTION_PAGE_IDS := {
@@ -88,6 +91,24 @@ func get_default_route_for_location(location_id: StringName) -> StringName:
 	if is_camp_location(location_id):
 		return PAGE_CAMP
 	return PAGE_TOWN
+
+
+func get_default_location_route_for_location(location_id: StringName) -> StringName:
+	if is_town_location(location_id):
+		return PAGE_JOBS_BOARD
+	return &""
+
+
+func get_default_crafting_route_for_location(location_id: StringName) -> StringName:
+	if is_camp_location(location_id):
+		return PAGE_HOBOCRAFT
+	return &""
+
+
+func get_default_rest_route_for_location(location_id: StringName) -> StringName:
+	if is_camp_location(location_id):
+		return PAGE_REST_CAMP
+	return &""
 
 
 func normalize_route_for_location(active_route: StringName, location_id: StringName) -> StringName:

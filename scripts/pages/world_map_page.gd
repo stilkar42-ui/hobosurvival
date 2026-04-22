@@ -11,6 +11,7 @@ var _game_state_manager = null
 var _data_manager = null
 var _time_manager = null
 var _stats_manager = null
+var _location_manager = null
 var _ui_manager = null
 var _show_status := Callable()
 var _request_return_to_menu := Callable()
@@ -21,16 +22,24 @@ var _summary_stats_label: Label = null
 var _condition_stats_label: Label = null
 var _goal_label: Label = null
 var _fade_debug_label: Label = null
-var _open_routes_button: Button = null
+var _open_inventory_button: Button = null
+var _open_passport_button: Button = null
+var _open_travel_button: Button = null
 var _return_to_menu_button: Button = null
 var _quit_game_button: Button = null
 
 var _panel: PanelContainer = null
 var _status_label: Label = null
 var _route_summary_label: Label = null
+var _location_button: Button = null
+var _crafting_button: Button = null
+var _rest_button: Button = null
+var _inventory_button: Button = null
+var _passport_button: Button = null
+var _travel_button: Button = null
+var _event_button: Button = null
 var _wait_button: Button = null
 var _sell_scrap_button: Button = null
-var _rest_button: Button = null
 var _current_route: StringName = ROUTE_TOWN
 
 
@@ -39,6 +48,7 @@ func bootstrap(_scene_root: Control, deps: Dictionary) -> void:
 	_data_manager = deps.get("data_manager", null)
 	_time_manager = deps.get("time_manager", null)
 	_stats_manager = deps.get("stats_manager", null)
+	_location_manager = deps.get("location_manager", null)
 	_ui_manager = deps.get("ui_manager", null)
 	_show_status = deps.get("show_status", Callable())
 	_request_return_to_menu = deps.get("request_return_to_menu", Callable())
@@ -49,7 +59,9 @@ func bootstrap(_scene_root: Control, deps: Dictionary) -> void:
 	_condition_stats_label = deps.get("condition_stats_label", null)
 	_goal_label = deps.get("goal_label", null)
 	_fade_debug_label = deps.get("fade_debug_label", null)
-	_open_routes_button = deps.get("open_routes_button", null)
+	_open_inventory_button = deps.get("open_inventory_button", null)
+	_open_passport_button = deps.get("open_passport_button", null)
+	_open_travel_button = deps.get("open_routes_button", null)
 	_return_to_menu_button = deps.get("return_to_menu_button", null)
 	_quit_game_button = deps.get("quit_game_button", null)
 
@@ -70,6 +82,10 @@ func set_route(route_id: StringName) -> void:
 		_current_route = route_id
 	set_visible(true)
 	refresh_from_state(_game_state_manager.get_player_state() if _game_state_manager != null else null)
+
+
+func set_context(_context: Dictionary) -> void:
+	pass
 
 
 func refresh_from_state(player_state) -> void:
@@ -122,8 +138,12 @@ func refresh_from_state(player_state) -> void:
 			"+" if player_state.fade_last_daily_delta >= 0 else "",
 			player_state.fade_last_daily_delta
 		]
-	if _open_routes_button != null:
-		_open_routes_button.text = "Travel / Routes"
+	if _open_inventory_button != null:
+		_open_inventory_button.text = "Open Inventory"
+	if _open_passport_button != null:
+		_open_passport_button.text = "Open Passport"
+	if _open_travel_button != null:
+		_open_travel_button.text = "Open Travel"
 	if _return_to_menu_button != null:
 		_return_to_menu_button.text = "Exit to Menu"
 		_return_to_menu_button.visible = true
@@ -132,9 +152,28 @@ func refresh_from_state(player_state) -> void:
 
 	var in_camp = _current_route == ROUTE_CAMP
 	if _status_label != null:
-		_status_label.text = "Camp is a working camp: rest, wash, cooking, and repair." if in_camp else "Town is where leads, wages, supplies, and remittance are turned into the next move."
+		_status_label.text = "Camp is a working camp: rest, wash, crafting, and cooking keep the body usable." if in_camp else "Town is where leads, wages, supplies, and remittance are turned into the next move."
 	if _route_summary_label != null:
 		_route_summary_label.text = _build_route_summary(player_state, config, in_camp)
+
+	if _travel_button != null:
+		_travel_button.text = "Travel"
+	if _location_button != null:
+		_location_button.text = "Town Services"
+		_location_button.disabled = in_camp
+	if _crafting_button != null:
+		_crafting_button.text = "Crafting"
+		_crafting_button.disabled = not in_camp
+	if _rest_button != null:
+		_rest_button.text = "Rest / Camp"
+		_rest_button.disabled = not in_camp
+	if _inventory_button != null:
+		_inventory_button.text = "Inventory"
+	if _passport_button != null:
+		_passport_button.text = "Passport / Stats"
+	if _event_button != null:
+		_event_button.text = "Status / Result"
+
 	if _wait_button != null:
 		_wait_button.visible = not in_camp
 		_wait_button.text = "Wait %s" % _format_duration(config.wait_action_minutes) if config != null else "Wait"
@@ -145,8 +184,6 @@ func refresh_from_state(player_state) -> void:
 			_format_cents(config.sell_scrap_pay_cents),
 			config.sell_scrap_quantity
 		] if config != null else "Sell Scrap"
-	if _rest_button != null:
-		_rest_button.visible = in_camp
 
 
 func handle_input(_event: InputEvent) -> bool:
@@ -183,36 +220,59 @@ func _build_panel(page_host) -> void:
 	_route_summary_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	root.add_child(_route_summary_label)
 
+	var page_grid = GridContainer.new()
+	page_grid.name = "DirectPageGrid"
+	page_grid.columns = 2
+	page_grid.add_theme_constant_override("h_separation", 10)
+	page_grid.add_theme_constant_override("v_separation", 10)
+	page_grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	root.add_child(page_grid)
+
+	_travel_button = _make_button("Travel", Callable(self, "_open_travel"))
+	_location_button = _make_button("Town Services", Callable(self, "_open_location_page"))
+	_crafting_button = _make_button("Crafting", Callable(self, "_open_crafting_page"))
+	_rest_button = _make_button("Rest / Camp", Callable(self, "_open_rest_page"))
+	_inventory_button = _make_button("Inventory", Callable(self, "_open_inventory"))
+	_passport_button = _make_button("Passport / Stats", Callable(self, "_open_passport"))
+	_event_button = _make_button("Status / Result", Callable(self, "_open_event"))
+
+	for button in [
+		_travel_button,
+		_location_button,
+		_crafting_button,
+		_rest_button,
+		_inventory_button,
+		_passport_button,
+		_event_button
+	]:
+		page_grid.add_child(button)
+
 	var action_row = HBoxContainer.new()
 	action_row.add_theme_constant_override("separation", 8)
 	root.add_child(action_row)
 
-	var routes_button = Button.new()
-	routes_button.text = "Travel / Routes"
-	routes_button.custom_minimum_size = Vector2(220.0, 44.0)
-	routes_button.pressed.connect(Callable(self, "_open_routes"))
-	action_row.add_child(routes_button)
-
-	_wait_button = Button.new()
+	_wait_button = _make_button("Wait", Callable(self, "_on_wait_pressed"))
 	_wait_button.custom_minimum_size = Vector2(180.0, 44.0)
-	_wait_button.pressed.connect(Callable(self, "_on_wait_pressed"))
 	action_row.add_child(_wait_button)
 
-	_sell_scrap_button = Button.new()
+	_sell_scrap_button = _make_button("Sell Scrap", Callable(self, "_on_sell_scrap_pressed"))
 	_sell_scrap_button.custom_minimum_size = Vector2(220.0, 44.0)
-	_sell_scrap_button.pressed.connect(Callable(self, "_on_sell_scrap_pressed"))
 	action_row.add_child(_sell_scrap_button)
 
-	_rest_button = Button.new()
-	_rest_button.text = "Rest / Camp"
-	_rest_button.custom_minimum_size = Vector2(180.0, 44.0)
-	_rest_button.pressed.connect(Callable(self, "_open_rest"))
-	action_row.add_child(_rest_button)
+
+func _make_button(label_text: String, pressed_callable: Callable) -> Button:
+	var button = Button.new()
+	button.text = label_text
+	button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	button.custom_minimum_size = Vector2(0.0, 48.0)
+	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	button.pressed.connect(pressed_callable)
+	return button
 
 
 func _connect_buttons() -> void:
-	if _open_routes_button != null and not _open_routes_button.pressed.is_connected(Callable(self, "_open_routes")):
-		_open_routes_button.pressed.connect(Callable(self, "_open_routes"))
+	if _open_travel_button != null and not _open_travel_button.pressed.is_connected(Callable(self, "_open_travel")):
+		_open_travel_button.pressed.connect(Callable(self, "_open_travel"))
 	if _return_to_menu_button != null and not _return_to_menu_button.pressed.is_connected(Callable(self, "_return_to_menu")):
 		_return_to_menu_button.pressed.connect(Callable(self, "_return_to_menu"))
 	if _quit_game_button != null and not _quit_game_button.pressed.is_connected(Callable(self, "_quit_game")):
@@ -246,14 +306,51 @@ func _on_sell_scrap_pressed() -> void:
 	_execute_action(SurvivalLoopRulesScript.ACTION_SELL_SCRAP, "world_map.sell_scrap")
 
 
-func _open_routes() -> void:
+func _open_travel() -> void:
 	if _ui_manager != null:
-		_ui_manager.switch_to(&"travel_ui")
+		_ui_manager.open_page(&"travel_ui", {"return_route": _current_route})
 
 
-func _open_rest() -> void:
+func _open_location_page() -> void:
+	if _ui_manager == null or _location_manager == null or _current_route != ROUTE_TOWN:
+		return
+	_ui_manager.open_page(_location_manager.ROUTE_LOCATION_PAGE, {
+		"return_route": _current_route,
+		"route_id": _location_manager.get_default_location_route_for_location(SurvivalLoopRulesScript.LOCATION_TOWN)
+	})
+
+
+func _open_crafting_page() -> void:
+	if _ui_manager == null or _location_manager == null or _current_route != ROUTE_CAMP:
+		return
+	_ui_manager.open_page(_location_manager.ROUTE_CRAFTING_PAGE, {
+		"return_route": _current_route,
+		"route_id": _location_manager.get_default_crafting_route_for_location(SurvivalLoopRulesScript.LOCATION_CAMP)
+	})
+
+
+func _open_rest_page() -> void:
+	if _ui_manager == null or _location_manager == null or _current_route != ROUTE_CAMP:
+		return
+	_ui_manager.open_page(_location_manager.ROUTE_REST_PAGE, {
+		"return_route": _current_route,
+		"route_id": _location_manager.get_default_rest_route_for_location(SurvivalLoopRulesScript.LOCATION_CAMP)
+	})
+
+
+func _open_inventory() -> void:
 	if _ui_manager != null:
-		_ui_manager.switch_to(&"rest_camp")
+		_ui_manager.open_page(&"inventory_ui", {"return_route": _current_route})
+
+
+func _open_passport() -> void:
+	if _ui_manager != null:
+		_ui_manager.open_page(&"passport_stats", {"return_route": _current_route})
+
+
+func _open_event() -> void:
+	if _ui_manager != null:
+		_ui_manager.open_page(&"event_encounter", {"return_route": _current_route})
 
 
 func _return_to_menu() -> void:
@@ -273,7 +370,7 @@ func _execute_action(action_id: StringName, source: String) -> void:
 	if not _show_status.is_null():
 		_show_status.call(String(result.get("message", "No result.")))
 	if _ui_manager != null:
-		_ui_manager.switch_to(_current_route)
+		_ui_manager.open_page(_current_route)
 
 
 func _format_cents(amount_cents: int) -> String:

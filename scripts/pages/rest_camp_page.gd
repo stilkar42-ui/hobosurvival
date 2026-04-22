@@ -12,6 +12,7 @@ var _stats_manager = null
 var _ui_manager = null
 var _show_status := Callable()
 var _resolve_return_route := Callable()
+var _return_route: StringName = &"camp"
 
 var _overlay: Control = null
 var _root: VBoxContainer = null
@@ -64,6 +65,13 @@ func bootstrap(_scene_root: Control, deps: Dictionary) -> void:
 	if _game_state_manager != null and not _game_state_manager.player_state_changed.is_connected(Callable(self, "refresh_from_state")):
 		_game_state_manager.player_state_changed.connect(Callable(self, "refresh_from_state"))
 	refresh_from_state(_game_state_manager.get_player_state() if _game_state_manager != null else null)
+
+
+func set_context(context: Dictionary) -> void:
+	_return_route = StringName(context.get("return_route", _return_route))
+	var requested_route = StringName(context.get("route_id", &""))
+	if requested_route != &"":
+		_current_route = requested_route
 
 
 func set_route(route_name: StringName) -> void:
@@ -288,6 +296,9 @@ func _clear_children(node: Node) -> void:
 
 
 func _close() -> void:
-	if _ui_manager == null or _resolve_return_route.is_null():
+	if _ui_manager == null:
 		return
-	_ui_manager.switch_to(StringName(_resolve_return_route.call()))
+	var route = _return_route
+	if route == &"" and not _resolve_return_route.is_null():
+		route = StringName(_resolve_return_route.call())
+	_ui_manager.open_page(route)

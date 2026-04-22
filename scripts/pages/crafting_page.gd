@@ -30,6 +30,7 @@ var _gather_kindling_button: Button = null
 var _brew_camp_coffee_button: Button = null
 
 var _current_route: StringName = ROUTE_HOBOCRAFT
+var _return_route: StringName = &"camp"
 var _selected_hobocraft_recipe_id: StringName = &""
 var _selected_cooking_recipe_id: StringName = &""
 var _show_only_makeable_cooking := false
@@ -49,9 +50,18 @@ func bootstrap(_scene_root: Control, deps: Dictionary) -> void:
 	refresh_from_state(_game_state_manager.get_player_state() if _game_state_manager != null else null)
 
 
+func set_context(context: Dictionary) -> void:
+	_return_route = StringName(context.get("return_route", _return_route))
+	var requested_route = StringName(context.get("route_id", &""))
+	if requested_route == ROUTE_HOBOCRAFT or requested_route == ROUTE_COOKING:
+		_current_route = requested_route
+
+
 func set_route(route_name: StringName) -> void:
 	if route_name == ROUTE_HOBOCRAFT or route_name == ROUTE_COOKING:
 		_current_route = route_name
+	elif route_name == &"crafting_page" and _current_route != ROUTE_HOBOCRAFT and _current_route != ROUTE_COOKING:
+		_current_route = ROUTE_HOBOCRAFT
 	_apply_visibility(true)
 	refresh_from_state(_game_state_manager.get_player_state() if _game_state_manager != null else null)
 
@@ -71,8 +81,7 @@ func handle_input(event: InputEvent) -> bool:
 	if _panel == null or not _panel.visible:
 		return false
 	if event.is_action_pressed("ui_cancel"):
-		if _ui_manager != null:
-			_ui_manager.switch_to(&"travel_ui")
+		_go_back()
 		return true
 	return false
 
@@ -490,12 +499,9 @@ func _on_cooking_recipe_pressed(recipe_id: StringName) -> void:
 
 func _make_back_button() -> Button:
 	var button = Button.new()
-	button.text = "Back to Routes"
+	button.text = "Back to World"
 	button.custom_minimum_size = Vector2(180.0, 40.0)
-	button.pressed.connect(func() -> void:
-		if _ui_manager != null:
-			_ui_manager.switch_to(&"travel_ui")
-	)
+	button.pressed.connect(Callable(self, "_go_back"))
 	return button
 
 
@@ -634,3 +640,8 @@ func _get_loop_config():
 
 func _format_duration(minutes: int) -> String:
 	return _time_manager.format_duration(minutes) if _time_manager != null else "%d min" % minutes
+
+
+func _go_back() -> void:
+	if _ui_manager != null:
+		_ui_manager.open_page(_return_route)

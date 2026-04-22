@@ -35,32 +35,36 @@ func _run_checks(loop_page: Control) -> void:
 	_expect(ui_manager.get_active_page() == &"WorldMapPage", "page UI cutover starts on the world map page")
 	_expect(ui_manager.get_active_route() == &"town", "page UI cutover starts on the town route")
 
-	ui_manager.switch_to(&"travel_ui")
+	ui_manager.open_page(&"travel_ui", {"return_route": &"town"})
 	await process_frame
 	_expect(ui_manager.get_active_page() == &"TravelPage", "travel route resolves through UIManager")
+	var travel_panel: Control = loop_page.find_child("TravelPagePanel", true, false)
+	_expect(travel_panel != null, "travel page panel exists")
+	_expect(not _panel_has_button_text(travel_panel, "Jobs Board"), "travel page no longer acts as a navigation hub")
+	_expect(not _panel_has_button_text(travel_panel, "Grocery"), "travel page no longer exposes town page shortcuts")
 
-	ui_manager.switch_to(&"grocery")
+	ui_manager.open_page(&"location_page", {"return_route": &"town", "route_id": &"grocery"})
 	await process_frame
-	_expect(ui_manager.get_active_page() == &"LocationPage", "location routes resolve through UIManager")
-	_expect(ui_manager.get_active_route() == &"grocery", "location route stays tracked in UIManager")
+	_expect(ui_manager.get_active_page() == &"LocationPage", "direct location page route resolves through UIManager")
+	_expect(ui_manager.get_active_route() == &"location_page", "direct location page route is tracked in UIManager")
 
-	ui_manager.switch_to(&"hobocraft")
+	ui_manager.open_page(&"crafting_page", {"return_route": &"camp", "route_id": &"hobocraft"})
 	await process_frame
-	_expect(ui_manager.get_active_page() == &"CraftingPage", "crafting routes resolve through UIManager")
+	_expect(ui_manager.get_active_page() == &"CraftingPage", "direct crafting page route resolves through UIManager")
 
-	ui_manager.switch_to(&"inventory_ui")
+	ui_manager.open_page(&"inventory_ui", {"return_route": &"town"})
 	await process_frame
 	_expect(ui_manager.get_active_page() == &"InventoryPage", "inventory overlay opens through the page router")
 	_expect(inventory_overlay.visible, "inventory page controls the inventory overlay visibility")
 
-	ui_manager.switch_to(&"passport_stats")
+	ui_manager.open_page(&"passport_stats", {"return_route": &"town"})
 	await process_frame
 	_expect(ui_manager.get_active_page() == &"PassportStatsPage", "passport overlay opens through the page router")
 	_expect(passport_overlay.visible, "passport stats page controls the passport overlay visibility")
 
-	ui_manager.switch_to(&"rest_camp")
+	ui_manager.open_page(&"rest_camp_page", {"return_route": &"camp", "route_id": &"rest_camp"})
 	await process_frame
-	_expect(ui_manager.get_active_page() == &"RestCampPage", "rest camp route resolves through UIManager")
+	_expect(ui_manager.get_active_page() == &"RestCampPage", "direct rest camp page route resolves through UIManager")
 	_expect(getting_ready_overlay.visible, "rest camp page controls the camp rest overlay visibility")
 
 	_expect(loop_page.find_child("CampIsometricPlayLayer", true, false) == null, "no isometric play layer node exists in the runtime tree")
@@ -77,3 +81,10 @@ func _expect(condition: bool, message: String) -> void:
 		return
 	push_error("FAIL: %s" % message)
 	_failed = true
+
+
+func _panel_has_button_text(root: Node, text: String) -> bool:
+	for child in root.find_children("*", "Button", true, false):
+		if child is Button and child.text == text:
+			return true
+	return false
