@@ -13,6 +13,39 @@ const CAMP_TILE_ROOT := GAME_ASSET_ROOT + "camp/tiles/"
 const TOWN_TILE_ROOT := GAME_ASSET_ROOT + "town/tiles/"
 const TOWN_OBJECT_ROOT := GAME_ASSET_ROOT + "town/objects/"
 const CHARACTER_ROOT := GAME_ASSET_ROOT + "characters/"
+const DEFAULT_WORLD_ART_ZOOM := 1.65
+const SCENE_PLATE_PATHS := {
+	&"camp": CAMP_TILE_ROOT + "camp_scene_composed.png",
+	&"town": TOWN_TILE_ROOT + "town_scene_composed.png",
+}
+const SCENE_PLATE_LAYOUTS := {
+	&"camp": {
+		"anchor_pixel": Vector2(767.6, 446.3),
+		"scale": 1.0
+	},
+	&"town": {
+		"anchor_pixel": Vector2(724.0, 586.0),
+		"scale": 1.0
+	},
+}
+const SCENE_OBJECT_LAYOUTS := {
+	&"camp": {
+		&"campfire": Rect2(653.0, 340.0, 230.0, 220.0),
+		&"woodpile": Rect2(286.0, 262.0, 315.0, 222.0),
+		&"bedroll": Rect2(595.0, 210.0, 260.0, 160.0),
+		&"tool_area": Rect2(854.0, 233.0, 288.0, 205.0),
+		&"wash_line": Rect2(1034.0, 399.0, 336.0, 292.0),
+		&"trail_sign": Rect2(252.0, 426.0, 180.0, 189.0),
+		&"stash": Rect2(675.0, 557.0, 280.0, 210.0),
+	},
+	&"town": {
+		&"town_jobs_board": Rect2(170.0, 338.0, 180.0, 212.0),
+		&"town_church": Rect2(316.0, 74.0, 352.0, 420.0),
+		&"town_grocery": Rect2(809.0, 205.0, 274.0, 242.0),
+		&"town_hardware": Rect2(995.0, 238.0, 338.0, 317.0),
+		&"town_camp_road": Rect2(1256.0, 462.0, 186.0, 182.0),
+	},
+}
 const MIN_VIEW_ZOOM := 1.0
 const MAX_VIEW_ZOOM := 2.6
 const VIEW_ZOOM_STEP := 0.15
@@ -48,12 +81,12 @@ const OBJECT_TILE_PATHS := {
 	&"bedroll": CAMP_TILE_ROOT + "bedroll.png",
 	&"tool_area": CAMP_TILE_ROOT + "tool_area.png",
 	&"stash": CAMP_TILE_ROOT + "sack.png",
-	&"trail_sign": TOWN_OBJECT_ROOT + "camp_road_sign.png",
+	&"camp_exit_sign": CAMP_TILE_ROOT + "camp_exit_sign.png",
 	&"wash_line": CAMP_TILE_ROOT + "wash_line.png",
 	&"town_jobs_board": TOWN_OBJECT_ROOT + "jobs_board.png",
 	&"town_road_sign": TOWN_OBJECT_ROOT + "camp_road_sign.png",
 	&"town_church_building": TOWN_OBJECT_ROOT + "remittance_office.png",
-	&"town_grocery_building": TOWN_OBJECT_ROOT + "hardware_store.png",
+	&"town_grocery_building": TOWN_OBJECT_ROOT + "provisions_store.png",
 	&"town_hardware_building": TOWN_OBJECT_ROOT + "hardware_store.png",
 }
 const PLAYER_FRONT_FRAMES := [&"player_front_01", &"player_front_02", &"player_front_03", &"player_front_04", &"player_front_05"]
@@ -81,6 +114,7 @@ var _interactable_hit_objects: Array = []
 var _ground_textures := {}
 var _town_ground_textures := {}
 var _object_textures := {}
+var _scene_plate_textures := {}
 
 
 func _ready() -> void:
@@ -90,9 +124,22 @@ func _ready() -> void:
 
 
 func _load_ground_textures() -> void:
-	_ground_textures.clear()
-	_town_ground_textures.clear()
-	_object_textures.clear()
+	_ground_textures = _load_texture_map(GROUND_TILE_PATHS)
+	_town_ground_textures = _load_texture_map(TOWN_GROUND_TILE_PATHS)
+	_object_textures = _load_texture_map(OBJECT_TILE_PATHS)
+	_scene_plate_textures = _load_texture_map(SCENE_PLATE_PATHS)
+
+
+func _load_texture_map(path_map: Dictionary) -> Dictionary:
+	var textures := {}
+	for key in path_map.keys():
+		var texture_path = String(path_map[key])
+		if not ResourceLoader.exists(texture_path):
+			continue
+		var texture = load(texture_path)
+		if texture is Texture2D:
+			textures[key] = texture
+	return textures
 
 
 func set_world_size(new_world_size: Vector2i) -> void:
@@ -211,6 +258,9 @@ func _draw() -> void:
 
 
 func _draw_ground() -> void:
+	if _has_scene_composition():
+		_draw_scene_backplate()
+		return
 	for y in range(world_size.y):
 		for x in range(world_size.x):
 			var tile = Vector2i(x, y)
@@ -229,6 +279,52 @@ func _draw_ground_tile(tile: Vector2i, center: Vector2) -> void:
 		return
 	_draw_fallback_ground_tile(tile, center)
 	draw_texture_rect(texture, _scaled_rect(center, Vector2(-16.0, -16.0), TILE_TEXTURE_SIZE), false, Color(1.0, 1.0, 1.0, 0.56))
+
+
+func _draw_scene_backplate() -> void:
+	var rect = _get_scene_plate_rect()
+	if rect.size.x <= 0.0 or rect.size.y <= 0.0:
+		return
+	var texture: Texture2D = _scene_plate_textures.get(terrain_mode, null)
+	if texture == null:
+		return
+	draw_texture_rect(texture, rect, false)
+
+
+func _has_scene_composition() -> bool:
+	return _scene_plate_textures.has(terrain_mode)
+
+
+func _get_scene_plate_rect() -> Rect2:
+	var texture: Texture2D = _scene_plate_textures.get(terrain_mode, null)
+	if texture == null:
+		return Rect2()
+	var layout: Dictionary = SCENE_PLATE_LAYOUTS.get(terrain_mode, {})
+	var texture_size = Vector2(texture.get_size())
+	var anchor_pixel: Vector2 = layout.get("anchor_pixel", texture_size * 0.5)
+	var base_scale := float(layout.get("scale", 1.0))
+	var art_scale = (view_zoom / DEFAULT_WORLD_ART_ZOOM) * base_scale
+	var draw_size = texture_size * art_scale
+	var anchor_screen = _world_to_screen(Vector2(camp_anchor))
+	return Rect2(anchor_screen - anchor_pixel * art_scale, draw_size)
+
+
+func _get_scene_object_rect(world_object) -> Rect2:
+	if not _has_scene_composition():
+		return Rect2()
+	var layout_map: Dictionary = SCENE_OBJECT_LAYOUTS.get(terrain_mode, {})
+	if layout_map.is_empty():
+		return Rect2()
+	var object_rect: Rect2 = layout_map.get(world_object.id, layout_map.get(StringName(world_object.type), Rect2()))
+	if object_rect.size.x <= 0.0 or object_rect.size.y <= 0.0:
+		return Rect2()
+	var scene_rect = _get_scene_plate_rect()
+	var scale_x = scene_rect.size.x / 1536.0
+	var scale_y = scene_rect.size.y / 1024.0
+	return Rect2(
+		scene_rect.position + Vector2(object_rect.position.x * scale_x, object_rect.position.y * scale_y),
+		Vector2(object_rect.size.x * scale_x, object_rect.size.y * scale_y)
+	)
 
 
 func _draw_ground_clutter(tile: Vector2i, center: Vector2) -> void:
@@ -298,6 +394,8 @@ func _draw_world_objects() -> void:
 			continue
 		if not _is_object_visible(world_object):
 			continue
+		if _draw_scene_composed_object(world_object):
+			continue
 		match String(world_object.type):
 			"campfire":
 				_draw_campfire(world_object)
@@ -353,6 +451,28 @@ func _draw_world_objects() -> void:
 				_draw_town_prop(world_object, &"town_lantern_group", Vector2(-24.0, -34.0), Vector2(48.0, 38.0))
 			_:
 				_draw_generic_object(world_object)
+
+
+func _draw_scene_composed_object(world_object) -> bool:
+	if not _has_scene_composition():
+		return false
+	var hidden_types := PackedStringArray()
+	if terrain_mode == &"camp":
+		hidden_types = PackedStringArray([
+			"campfire", "woodpile", "bedroll", "stash", "tool_area", "trail_sign",
+			"wash_line", "tree", "tarp_shelter", "log", "stump", "crate"
+		])
+	else:
+		hidden_types = PackedStringArray([
+			"town_jobs_board", "town_church", "town_foreman", "town_grocery", "town_hardware",
+			"town_road_exit", "town_prop_light", "town_prop_trash", "town_prop_crate_stack",
+			"town_prop_board_stack", "town_prop_wheelbarrow", "town_prop_handcart",
+			"town_prop_lanterns", "tree"
+		])
+	if not hidden_types.has(String(world_object.type)):
+		return false
+	_draw_object_highlight(world_object, _get_object_visual_rect(world_object))
+	return true
 
 
 func _draw_player() -> void:
@@ -421,104 +541,156 @@ func _get_player_facing_marker(center: Vector2) -> PackedVector2Array:
 
 
 func _draw_campfire(world_object) -> void:
-	var base = _get_footprint_polygon(world_object)
+	var base = _scale_polygon(_get_footprint_polygon(world_object), 1.35, 1.18)
 	var center = _polygon_center(base)
-	var ring = _offset_polygon(base, Vector2(0.0, -_zf(4.0)))
-	_draw_shadow(center + _zv(Vector2(0.0, 8.0)), 52.0, 14.0, 0.24)
+	var ring = _offset_polygon(base, Vector2(0.0, -_zf(6.0)))
+	_draw_shadow(center + _zv(Vector2(0.0, 9.0)), 64.0, 16.0, 0.24)
 	draw_colored_polygon(ring, Color("4e3a2a"))
 	draw_polyline(ring, Color("8f7157"), 2.0, true)
-	for angle_index in range(8):
-		var angle = TAU * float(angle_index) / 8.0
-		var ember = center + _zv(Vector2(cos(angle) * 13.0, sin(angle) * 6.0 - 2.0))
-		draw_circle(ember, _zf(3.0), Color("7b6551"))
+	for angle_index in range(10):
+		var angle = TAU * float(angle_index) / 10.0
+		var ember = center + _zv(Vector2(cos(angle) * 17.0, sin(angle) * 9.0 - 2.0))
+		draw_circle(ember, _zf(4.2), Color("7b6551"))
 	draw_colored_polygon(PackedVector2Array([
-		center + _zv(Vector2(0.0, -38.0)),
-		center + _zv(Vector2(18.0, -6.0)),
-		center + _zv(Vector2(6.0, 12.0)),
-		center + _zv(Vector2(-2.0, -3.0)),
-		center + _zv(Vector2(-9.0, 14.0)),
-		center + _zv(Vector2(-20.0, -2.0))
+		center + _zv(Vector2(0.0, -48.0)),
+		center + _zv(Vector2(22.0, -8.0)),
+		center + _zv(Vector2(7.0, 14.0)),
+		center + _zv(Vector2(-2.0, -4.0)),
+		center + _zv(Vector2(-10.0, 16.0)),
+		center + _zv(Vector2(-24.0, -2.0))
 	]), Color("d76d25"))
 	draw_colored_polygon(PackedVector2Array([
-		center + _zv(Vector2(0.0, -25.0)),
-		center + _zv(Vector2(12.0, -4.0)),
-		center + _zv(Vector2(4.0, 8.0)),
+		center + _zv(Vector2(0.0, -32.0)),
+		center + _zv(Vector2(14.0, -5.0)),
+		center + _zv(Vector2(5.0, 10.0)),
 		center + _zv(Vector2(-1.0, -1.0)),
-		center + _zv(Vector2(-6.0, 9.0)),
-		center + _zv(Vector2(-12.0, -1.0))
+		center + _zv(Vector2(-7.0, 10.0)),
+		center + _zv(Vector2(-14.0, -1.0))
 	]), Color("f0c55c"))
-	draw_line(center + _zv(Vector2(-20.0, 12.0)), center + _zv(Vector2(18.0, -1.0)), Color("5a3a26"), _zf(3.0))
-	draw_line(center + _zv(Vector2(-16.0, -2.0)), center + _zv(Vector2(15.0, 12.0)), Color("5a3a26"), _zf(3.0))
+	draw_line(center + _zv(Vector2(-24.0, 13.0)), center + _zv(Vector2(22.0, -2.0)), Color("5a3a26"), _zf(4.0))
+	draw_line(center + _zv(Vector2(-19.0, -3.0)), center + _zv(Vector2(18.0, 14.0)), Color("5a3a26"), _zf(4.0))
 	_draw_object_highlight(world_object, _polygon_bounds(PackedVector2Array([
 		ring[0], ring[1], ring[2], ring[3],
-		center + _zv(Vector2(0.0, -38.0)),
-		center + _zv(Vector2(18.0, -6.0)),
-		center + _zv(Vector2(-20.0, -2.0))
+		center + _zv(Vector2(0.0, -48.0)),
+		center + _zv(Vector2(22.0, -8.0)),
+		center + _zv(Vector2(-24.0, -2.0))
 	])))
 
 
 func _draw_woodpile(world_object) -> void:
+	if _draw_textured_object(world_object, &"woodpile", 0.42):
+		_draw_object_highlight(world_object, _get_object_hit_rect(world_object))
+		return
 	var bounds = _polygon_bounds(_get_footprint_polygon(world_object))
 	var center = bounds.get_center()
-	_draw_shadow(center + _zv(Vector2(0.0, 6.0)), bounds.size.x * 1.25, 10.0, 0.16)
+	var pile_width = bounds.size.x / view_zoom + 34.0
+	_draw_shadow(center + _zv(Vector2(0.0, 8.0)), bounds.size.x * 1.55, 12.0, 0.18)
 	for row in range(4):
-		var log_y = -10.0 - float(row) * 6.0
-		var log_width = bounds.size.x / view_zoom + 8.0 + float(row) * 4.0
-		draw_rect(_scaled_rect(center, Vector2(-log_width * 0.5, log_y), Vector2(log_width, 7.0)), Color("7a5739"))
-		draw_circle(center + _zv(Vector2(-log_width * 0.5, log_y + 3.5)), _zf(3.2), Color("9b7857"))
-		draw_circle(center + _zv(Vector2(log_width * 0.5, log_y + 3.5)), _zf(3.2), Color("9b7857"))
+		var row_width = pile_width - float(row) * 7.0
+		var row_y = 2.0 - float(row) * 8.0
+		_draw_log_segment(center, Vector2(-row_width * 0.52, row_y + 1.0), Vector2(row_width * 0.40, row_y - 5.0), 8.5, Color("705134"), Color("a07a57"))
+		_draw_log_segment(center, Vector2(-row_width * 0.38, row_y - 3.0), Vector2(row_width * 0.53, row_y - 8.0), 8.0, Color("7c593a"), Color("b08a63"))
+	_draw_log_segment(center, Vector2(-pile_width * 0.25, 8.0), Vector2(pile_width * 0.15, 4.0), 8.0, Color("6d4f33"), Color("9a7556"))
+	_draw_log_segment(center, Vector2(-pile_width * 0.02, 10.0), Vector2(pile_width * 0.36, 4.0), 8.0, Color("6d4f33"), Color("9a7556"))
 	_draw_object_highlight(world_object, _polygon_bounds(PackedVector2Array([
-		center + _zv(Vector2(-(bounds.size.x / view_zoom + 20.0) * 0.5, -28.0)),
-		center + _zv(Vector2((bounds.size.x / view_zoom + 20.0) * 0.5, 4.0))
+		center + _zv(Vector2(-(bounds.size.x / view_zoom + 42.0) * 0.5, -42.0)),
+		center + _zv(Vector2((bounds.size.x / view_zoom + 42.0) * 0.5, 5.0))
 	])))
 
 
 func _draw_camp_dressing(world_object, texture_key: StringName, offset: Vector2, base_size: Vector2) -> void:
+	if _draw_textured_object(world_object, texture_key, 0.42):
+		_draw_object_highlight(world_object, _get_object_hit_rect(world_object))
+		return
 	var center = _get_object_anchor_screen(world_object)
 	draw_rect(_scaled_rect(center, Vector2(-10.0, -14.0), Vector2(20.0, 18.0)), Color("6f5b42"))
 	_draw_object_highlight(world_object, _scaled_rect(center, Vector2(-12.0, -16.0), Vector2(24.0, 22.0)))
 
 
 func _draw_bedroll(world_object) -> void:
+	if _draw_textured_object(world_object, &"bedroll", 0.50):
+		_draw_object_highlight(world_object, _get_object_hit_rect(world_object))
+		return
 	var bounds = _polygon_bounds(_get_footprint_polygon(world_object))
 	var center = bounds.get_center()
-	_draw_shadow(center + _zv(Vector2(0.0, 5.0)), bounds.size.x * 1.15, 9.0, 0.14)
-	draw_rect(_scaled_rect(center, Vector2(-bounds.size.x * 0.60 / view_zoom, -11.0), Vector2(bounds.size.x * 1.02 / view_zoom, 16.0)), Color("6f7f8b"))
-	draw_rect(_scaled_rect(center, Vector2(-bounds.size.x * 0.68 / view_zoom, -6.0), Vector2(bounds.size.x * 1.18 / view_zoom, 11.0)), Color("8e9aa4"))
-	draw_rect(_scaled_rect(center, Vector2(-bounds.size.x * 0.62 / view_zoom, -15.0), Vector2(14.0, 10.0)), Color("c1b6a0"))
+	var roll_width = bounds.size.x / view_zoom + 12.0
+	_draw_shadow(center + _zv(Vector2(0.0, 6.0)), bounds.size.x * 1.28, 10.0, 0.14)
+	var mat = PackedVector2Array([
+		center + _zv(Vector2(-roll_width * 0.72, 3.0)),
+		center + _zv(Vector2(-roll_width * 0.62, -6.0)),
+		center + _zv(Vector2(roll_width * 0.20, -12.0)),
+		center + _zv(Vector2(roll_width * 0.56, -2.0)),
+		center + _zv(Vector2(roll_width * 0.44, 10.0)),
+		center + _zv(Vector2(-roll_width * 0.58, 8.0))
+	])
+	draw_colored_polygon(mat, Color("6f835f"))
+	draw_polyline(mat, Color("9ead89"), 2.0, true)
+	draw_circle(center + _zv(Vector2(-roll_width * 0.50, -1.0)), _zf(10.0), Color("536148"))
+	draw_circle(center + _zv(Vector2(-roll_width * 0.50, -1.0)), _zf(6.6), Color("7f9270"))
+	draw_rect(_scaled_rect(center, Vector2(-roll_width * 0.16, -17.0), Vector2(20.0, 10.0)), Color("c1b39a"))
+	draw_line(center + _zv(Vector2(-roll_width * 0.18, 5.0)), center + _zv(Vector2(roll_width * 0.40, -1.0)), Color("44503d"), _zf(2.0))
 	_draw_object_highlight(world_object, _polygon_bounds(PackedVector2Array([
-		center + _zv(Vector2(-bounds.size.x * 0.68 / view_zoom, -15.0)),
-		center + _zv(Vector2(bounds.size.x * 0.50 / view_zoom, 6.0))
+		center + _zv(Vector2(-roll_width * 0.60, -18.0)),
+		center + _zv(Vector2(roll_width * 0.48, 7.0))
 	])))
 
 
 func _draw_stash(world_object) -> void:
-	var base = _get_footprint_polygon(world_object)
-	var top = _offset_polygon(base, Vector2(0.0, -_zf(16.0)))
+	if _draw_textured_object(world_object, &"stash", 0.47):
+		_draw_object_highlight(world_object, _get_object_hit_rect(world_object))
+		return
+	var base = _scale_polygon(_get_footprint_polygon(world_object), 1.28, 1.16)
+	var top = _offset_polygon(base, Vector2(0.0, -_zf(24.0)))
+	_draw_shadow(_polygon_center(base) + _zv(Vector2(0.0, 7.0)), _polygon_bounds(base).size.x * 1.08, 10.0, 0.16)
 	draw_colored_polygon(PackedVector2Array([top[1], top[2], base[2], base[1]]), Color("5d4a31"))
 	draw_colored_polygon(PackedVector2Array([top[2], top[3], base[3], base[2]]), Color("765c3d"))
 	draw_colored_polygon(top, Color("92724d"))
+	var lid = _scale_polygon(top, 0.86, 0.82)
+	draw_colored_polygon(PackedVector2Array([lid[1], lid[2], top[2], top[1]]), Color("7a5f3f"))
+	draw_colored_polygon(PackedVector2Array([lid[2], lid[3], top[3], top[2]]), Color("8a6c47"))
+	draw_colored_polygon(lid, Color("9d7a50"))
 	draw_line(top[0], top[2], Color("d0bc87"), _zf(2.0))
-	draw_rect(_scaled_rect(_polygon_center(top), Vector2(-3.0, -1.0), Vector2(6.0, 6.0)), Color("d3b86d"))
-	_draw_object_highlight(world_object, _get_stand_in_block_rect(world_object, 16.0))
+	draw_line(base[3], base[2], Color("4f3c28"), _zf(2.0))
+	draw_line(base[2], base[1], Color("4f3c28"), _zf(2.0))
+	draw_rect(_scaled_rect(_polygon_center(base) + _zv(Vector2(0.0, -5.0)), Vector2(-4.0, -2.0), Vector2(8.0, 10.0)), Color("d3b86d"))
+	_draw_object_highlight(world_object, _get_stand_in_block_rect(world_object, 24.0, 1.28, 1.16))
 
 
 func _draw_tool_area(world_object) -> void:
+	if _draw_textured_object(world_object, &"tool_area", 0.42):
+		_draw_object_highlight(world_object, _get_object_hit_rect(world_object))
+		return
 	var bounds = _polygon_bounds(_get_footprint_polygon(world_object))
 	var center = bounds.get_center()
-	_draw_shadow(center + _zv(Vector2(0.0, 6.0)), bounds.size.x * 1.2, 10.0, 0.14)
-	draw_rect(_scaled_rect(center, Vector2(-bounds.size.x * 0.66 / view_zoom, -8.0), Vector2(bounds.size.x * 1.30 / view_zoom, 8.0)), Color("6d553c"))
-	draw_rect(_scaled_rect(center, Vector2(-bounds.size.x * 0.58 / view_zoom, -17.0), Vector2(bounds.size.x * 0.20 / view_zoom, 7.0)), Color("8b8f75"))
-	draw_rect(_scaled_rect(center, Vector2(-3.0, -19.0), Vector2(5.0, 11.0)), Color("7e8a93"))
-	draw_line(center + _zv(Vector2(16.0, -17.0)), center + _zv(Vector2(27.0, -7.0)), Color("c0c7cc"), _zf(2.0))
-	draw_line(center + _zv(Vector2(22.0, -19.0)), center + _zv(Vector2(30.0, -8.0)), Color("c0c7cc"), _zf(2.0))
+	var bench_width = bounds.size.x / view_zoom + 24.0
+	_draw_shadow(center + _zv(Vector2(0.0, 7.0)), bounds.size.x * 1.4, 11.0, 0.14)
+	var table_top = PackedVector2Array([
+		center + _zv(Vector2(-bench_width * 0.54, -14.0)),
+		center + _zv(Vector2(bench_width * 0.06, -22.0)),
+		center + _zv(Vector2(bench_width * 0.56, -8.0)),
+		center + _zv(Vector2(-bench_width * 0.04, 0.0))
+	])
+	draw_colored_polygon(table_top, Color("75573a"))
+	draw_polyline(table_top, Color("a17e57"), 2.0, true)
+	draw_line(table_top[0], center + _zv(Vector2(-bench_width * 0.46, 14.0)), Color("59442f"), _zf(3.0))
+	draw_line(table_top[1], center + _zv(Vector2(bench_width * 0.01, 13.0)), Color("59442f"), _zf(3.0))
+	draw_line(table_top[2], center + _zv(Vector2(bench_width * 0.48, 10.0)), Color("59442f"), _zf(3.0))
+	draw_line(table_top[3], center + _zv(Vector2(-bench_width * 0.08, 14.0)), Color("59442f"), _zf(3.0))
+	draw_rect(_scaled_rect(center, Vector2(-bench_width * 0.30, -26.0), Vector2(bench_width * 0.18, 10.0)), Color("8b8f75"))
+	draw_rect(_scaled_rect(center, Vector2(-3.0, -28.0), Vector2(8.0, 16.0)), Color("7e8a93"))
+	draw_line(center + _zv(Vector2(16.0, -25.0)), center + _zv(Vector2(30.0, -12.0)), Color("c0c7cc"), _zf(2.0))
+	draw_line(center + _zv(Vector2(22.0, -28.0)), center + _zv(Vector2(34.0, -13.0)), Color("c0c7cc"), _zf(2.0))
+	draw_rect(_scaled_rect(center, Vector2(32.0, -26.0), Vector2(10.0, 14.0)), Color("69553b"))
 	_draw_object_highlight(world_object, _polygon_bounds(PackedVector2Array([
-		center + _zv(Vector2(-bounds.size.x * 0.66 / view_zoom, -19.0)),
-		center + _zv(Vector2(bounds.size.x * 0.64 / view_zoom, 2.0))
+		center + _zv(Vector2(-bench_width * 0.52, -24.0)),
+		center + _zv(Vector2(bench_width * 0.48, 12.0))
 	])))
 
 
 func _draw_trail_sign(world_object) -> void:
+	if _draw_textured_object(world_object, &"camp_exit_sign", 0.46):
+		_draw_object_highlight(world_object, _get_object_hit_rect(world_object))
+		return
 	_draw_direction_sign(world_object, Color("b7aa68"), Color("695430"), false)
 
 
@@ -566,18 +738,23 @@ func _draw_crate(world_object) -> void:
 
 
 func _draw_wash_line(world_object) -> void:
+	if _draw_textured_object(world_object, &"wash_line", 0.48):
+		_draw_object_highlight(world_object, _get_object_hit_rect(world_object))
+		return
 	var bounds = _polygon_bounds(_get_footprint_polygon(world_object))
 	var center = bounds.get_center()
-	var span = bounds.size.x / view_zoom + 18.0
-	_draw_shadow(center + _zv(Vector2(0.0, 6.0)), bounds.size.x * 1.15, 8.0, 0.12)
-	draw_line(center + _zv(Vector2(-span * 0.42, -28.0)), center + _zv(Vector2(-span * 0.42, 8.0)), Color("6f5738"), _zf(3.0))
-	draw_line(center + _zv(Vector2(span * 0.42, -25.0)), center + _zv(Vector2(span * 0.42, 10.0)), Color("6f5738"), _zf(3.0))
-	draw_line(center + _zv(Vector2(-span * 0.40, -20.0)), center + _zv(Vector2(span * 0.40, -18.0)), Color("b8b4aa"), _zf(2.0))
-	draw_rect(_scaled_rect(center, Vector2(-span * 0.22, -14.0), Vector2(10.0, 16.0)), Color("cfc8b4"))
-	draw_rect(_scaled_rect(center, Vector2(3.0, -12.0), Vector2(10.0, 14.0)), Color("9ea9b6"))
+	var span = bounds.size.x / view_zoom + 34.0
+	_draw_shadow(center + _zv(Vector2(0.0, 7.0)), bounds.size.x * 1.3, 9.0, 0.12)
+	draw_line(center + _zv(Vector2(-span * 0.44, -42.0)), center + _zv(Vector2(-span * 0.44, 9.0)), Color("6f5738"), _zf(4.0))
+	draw_line(center + _zv(Vector2(span * 0.44, -39.0)), center + _zv(Vector2(span * 0.44, 11.0)), Color("6f5738"), _zf(4.0))
+	draw_line(center + _zv(Vector2(-span * 0.42, -31.0)), center + _zv(Vector2(span * 0.42, -28.0)), Color("b8b4aa"), _zf(2.0))
+	_draw_cloth_panel(center, Vector2(-span * 0.24, -28.0), Vector2(-span * 0.10, -27.0), 24.0, Color("cfc8b4"))
+	_draw_cloth_panel(center, Vector2(-2.0, -27.0), Vector2(16.0, -26.0), 22.0, Color("9ea9b6"))
+	_draw_cloth_panel(center, Vector2(26.0, -26.0), Vector2(42.0, -26.0), 20.0, Color("d3c6a6"))
+	_draw_bucket(center, Vector2(56.0, 8.0), Color("776f63"), Color("43413e"))
 	_draw_object_highlight(world_object, _polygon_bounds(PackedVector2Array([
-		center + _zv(Vector2(-span * 0.42, -28.0)),
-		center + _zv(Vector2(span * 0.42, 10.0))
+		center + _zv(Vector2(-span * 0.44, -42.0)),
+		center + _zv(Vector2(span * 0.44, 11.0))
 	])))
 
 
@@ -588,6 +765,17 @@ func _draw_generic_object(world_object) -> void:
 
 
 func _draw_assigned_town_building(world_object, texture_key: StringName, label: String, scale: float) -> void:
+	var texture_scale := 0.54
+	match world_object.type:
+		&"town_church":
+			texture_scale = 0.56
+		&"town_grocery":
+			texture_scale = 0.55
+		&"town_hardware":
+			texture_scale = 0.53
+	if _draw_textured_object(world_object, texture_key, texture_scale):
+		_draw_object_highlight(world_object, _get_object_hit_rect(world_object))
+		return
 	var palette = _get_town_stand_in_palette(world_object.type)
 	match world_object.type:
 		&"town_church":
@@ -601,6 +789,10 @@ func _draw_assigned_town_building(world_object, texture_key: StringName, label: 
 
 
 func _draw_town_sign_object(world_object, label: String, post_color: Color, texture_key: StringName) -> void:
+	var texture_scale := 0.50 if world_object.type == &"town_jobs_board" else 0.48
+	if _draw_textured_object(world_object, texture_key, texture_scale):
+		_draw_object_highlight(world_object, _get_object_hit_rect(world_object))
+		return
 	if world_object.type == &"town_jobs_board":
 		_draw_signboard(world_object, label, post_color)
 	else:
@@ -608,6 +800,9 @@ func _draw_town_sign_object(world_object, label: String, post_color: Color, text
 
 
 func _draw_town_prop(world_object, texture_key: StringName, offset: Vector2, base_size: Vector2) -> void:
+	if _draw_textured_object(world_object, texture_key, 0.42):
+		_draw_object_highlight(world_object, _get_object_hit_rect(world_object))
+		return
 	var center = _get_object_anchor_screen(world_object)
 	draw_rect(_scaled_rect(center, Vector2(-8.0, -22.0), Vector2(16.0, 30.0)), Color("6b6658"))
 	_draw_object_highlight(world_object, _scaled_rect(center, Vector2(-10.0, -24.0), Vector2(20.0, 34.0)))
@@ -625,131 +820,149 @@ func _draw_town_label(center: Vector2, label: String, color: Color) -> void:
 
 
 func _draw_building_mass(world_object, palette: Dictionary) -> void:
-	var base = _get_footprint_polygon(world_object)
-	var top = _offset_polygon(base, Vector2(0.0, -_zf(42.0)))
+	var base = _scale_polygon(_get_footprint_polygon(world_object), 1.12, 1.08)
+	var top = _offset_polygon(base, Vector2(0.0, -_zf(58.0)))
 	var bounds = _polygon_bounds(base)
 	var center = _polygon_center(base)
-	_draw_shadow(center + _zv(Vector2(0.0, 10.0)), bounds.size.x * 1.05, maxf(bounds.size.y * 0.7, 14.0), 0.18)
+	_draw_shadow(center + _zv(Vector2(0.0, 10.0)), bounds.size.x * 1.12, maxf(bounds.size.y * 0.82, 18.0), 0.18)
 	draw_colored_polygon(PackedVector2Array([top[1], top[2], base[2], base[1]]), palette.side)
 	draw_colored_polygon(PackedVector2Array([top[2], top[3], base[3], base[2]]), palette.front)
 	draw_colored_polygon(top, palette.top)
 	var awning = _offset_polygon(PackedVector2Array([
-		top[2] + _zv(Vector2(-18.0, 4.0)),
-		top[2] + _zv(Vector2(18.0, 4.0)),
-		base[2] + _zv(Vector2(18.0, -10.0)),
-		base[2] + _zv(Vector2(-18.0, -10.0))
+		top[3] + _zv(Vector2(-10.0, 8.0)),
+		top[2] + _zv(Vector2(10.0, 8.0)),
+		base[2] + _zv(Vector2(20.0, -10.0)),
+		base[3] + _zv(Vector2(-20.0, -10.0))
 	]), Vector2.ZERO)
 	draw_colored_polygon(awning, palette.top.lightened(0.1))
-	draw_rect(_scaled_rect(center + _zv(Vector2(0.0, -4.0)), Vector2(-9.0, -12.0), Vector2(18.0, 20.0)), Color("2a2722"))
-	draw_rect(_scaled_rect(center + _zv(Vector2(-18.0, -14.0)), Vector2(-7.0, 0.0), Vector2(14.0, 11.0)), Color("94a3af"))
-	draw_rect(_scaled_rect(center + _zv(Vector2(18.0, -14.0)), Vector2(-7.0, 0.0), Vector2(14.0, 11.0)), Color("94a3af"))
-	_draw_object_highlight(world_object, _get_stand_in_block_rect(world_object, 42.0))
+	draw_polyline(top, palette.top.lightened(0.18), 2.0, true)
+	_draw_facade_door(center, Vector2(0.0, -6.0), Vector2(22.0, 30.0), Color("2a2722"), Color("b7aa8d"))
+	_draw_facade_window(center, Vector2(-25.0, -20.0), Vector2(18.0, 16.0), Color("706a60"), Color("94a3af"))
+	_draw_facade_window(center, Vector2(25.0, -20.0), Vector2(18.0, 16.0), Color("706a60"), Color("94a3af"))
+	_draw_object_highlight(world_object, _get_stand_in_block_rect(world_object, 58.0, 1.12, 1.08))
 
 
 func _draw_church_mass(world_object, palette: Dictionary) -> void:
-	var base = _get_footprint_polygon(world_object)
-	var top = _offset_polygon(base, Vector2(0.0, -_zf(54.0)))
+	var base = _scale_polygon(_get_footprint_polygon(world_object), 1.12, 1.1)
+	var top = _offset_polygon(base, Vector2(0.0, -_zf(72.0)))
 	var bounds = _polygon_bounds(base)
 	var center = _polygon_center(base)
-	_draw_shadow(center + _zv(Vector2(0.0, 10.0)), bounds.size.x * 1.20, maxf(bounds.size.y * 0.82, 18.0), 0.18)
+	_draw_shadow(center + _zv(Vector2(0.0, 10.0)), bounds.size.x * 1.24, maxf(bounds.size.y * 0.9, 20.0), 0.18)
 	draw_colored_polygon(PackedVector2Array([top[1], top[2], base[2], base[1]]), palette.side)
 	draw_colored_polygon(PackedVector2Array([top[2], top[3], base[3], base[2]]), palette.front)
 	draw_colored_polygon(top, palette.top)
-	draw_rect(_scaled_rect(center + _zv(Vector2(0.0, -8.0)), Vector2(-11.0, -16.0), Vector2(22.0, 28.0)), Color("26231f"))
-	draw_rect(_scaled_rect(center + _zv(Vector2(-22.0, -18.0)), Vector2(-7.0, 0.0), Vector2(14.0, 16.0)), Color("aeb8be"))
-	draw_rect(_scaled_rect(center + _zv(Vector2(22.0, -18.0)), Vector2(-7.0, 0.0), Vector2(14.0, 16.0)), Color("aeb8be"))
-	var tower_base = center + _zv(Vector2(18.0, -42.0))
-	draw_rect(_scaled_rect(tower_base, Vector2(-13.0, -32.0), Vector2(26.0, 42.0)), palette.top.lightened(0.08))
-	draw_rect(_scaled_rect(tower_base, Vector2(-8.0, -22.0), Vector2(16.0, 12.0)), Color("aeb8be"))
+	draw_polyline(top, palette.top.lightened(0.16), 2.0, true)
+	_draw_facade_door(center, Vector2(0.0, -10.0), Vector2(26.0, 36.0), Color("3a2d23"), Color("c7b48f"))
+	_draw_facade_window(center, Vector2(-28.0, -25.0), Vector2(14.0, 18.0), Color("867d72"), Color("b7c0c6"))
+	_draw_facade_window(center, Vector2(28.0, -25.0), Vector2(14.0, 18.0), Color("867d72"), Color("b7c0c6"))
+	draw_circle(center + _zv(Vector2(0.0, -42.0)), _zf(9.0), Color("2e2a25"))
+	draw_circle(center + _zv(Vector2(0.0, -42.0)), _zf(5.0), Color("7e7161"))
+	var tower_base = center + _zv(Vector2(20.0, -54.0))
+	draw_rect(_scaled_rect(tower_base, Vector2(-15.0, -40.0), Vector2(30.0, 54.0)), palette.top.lightened(0.08))
+	_draw_facade_window(tower_base, Vector2(0.0, -21.0), Vector2(14.0, 12.0), Color("85796c"), Color("aeb8be"))
 	draw_colored_polygon(PackedVector2Array([
-		tower_base + _zv(Vector2(0.0, -76.0)),
-		tower_base + _zv(Vector2(16.0, -25.0)),
+		tower_base + _zv(Vector2(0.0, -96.0)),
+		tower_base + _zv(Vector2(19.0, -30.0)),
 		tower_base + _zv(Vector2(0.0, -10.0)),
-		tower_base + _zv(Vector2(-16.0, -25.0))
+		tower_base + _zv(Vector2(-19.0, -30.0))
 	]), palette.side.darkened(0.08))
-	draw_line(tower_base + _zv(Vector2(0.0, -84.0)), tower_base + _zv(Vector2(0.0, -76.0)), Color("d9ccb0"), _zf(2.0))
-	draw_line(tower_base + _zv(Vector2(-4.0, -80.0)), tower_base + _zv(Vector2(4.0, -80.0)), Color("d9ccb0"), _zf(2.0))
+	draw_line(tower_base + _zv(Vector2(0.0, -106.0)), tower_base + _zv(Vector2(0.0, -96.0)), Color("d9ccb0"), _zf(2.0))
+	draw_line(tower_base + _zv(Vector2(-5.0, -101.0)), tower_base + _zv(Vector2(5.0, -101.0)), Color("d9ccb0"), _zf(2.0))
 	_draw_object_highlight(world_object, _polygon_bounds(PackedVector2Array([
 		top[0], top[1], top[2], top[3], base[0], base[1], base[2], base[3],
-		tower_base + _zv(Vector2(0.0, -76.0))
+		tower_base + _zv(Vector2(0.0, -96.0))
 	])))
 
 
 func _draw_storefront_mass(world_object, palette: Dictionary) -> void:
-	var base = _get_footprint_polygon(world_object)
-	var top = _offset_polygon(base, Vector2(0.0, -_zf(42.0)))
+	var base = _scale_polygon(_get_footprint_polygon(world_object), 1.14, 1.08)
+	var top = _offset_polygon(base, Vector2(0.0, -_zf(60.0)))
 	var bounds = _polygon_bounds(base)
 	var center = _polygon_center(base)
-	_draw_shadow(center + _zv(Vector2(0.0, 10.0)), bounds.size.x * 1.18, maxf(bounds.size.y * 0.76, 16.0), 0.18)
+	_draw_shadow(center + _zv(Vector2(0.0, 10.0)), bounds.size.x * 1.22, maxf(bounds.size.y * 0.82, 18.0), 0.18)
 	draw_colored_polygon(PackedVector2Array([top[1], top[2], base[2], base[1]]), palette.side)
 	draw_colored_polygon(PackedVector2Array([top[2], top[3], base[3], base[2]]), palette.front)
 	draw_colored_polygon(top, palette.top)
 	draw_colored_polygon(PackedVector2Array([
-		top[3] + _zv(Vector2(-6.0, 8.0)),
-		top[2] + _zv(Vector2(6.0, 8.0)),
-		base[2] + _zv(Vector2(14.0, -8.0)),
-		base[3] + _zv(Vector2(-14.0, -8.0))
+		top[3] + _zv(Vector2(-12.0, 11.0)),
+		top[2] + _zv(Vector2(12.0, 11.0)),
+		base[2] + _zv(Vector2(20.0, -10.0)),
+		base[3] + _zv(Vector2(-20.0, -10.0))
 	]), palette.top.lightened(0.14))
-	draw_rect(_scaled_rect(center + _zv(Vector2(0.0, -2.0)), Vector2(-14.0, -13.0), Vector2(28.0, 20.0)), Color("25231e"))
-	draw_rect(_scaled_rect(center + _zv(Vector2(-26.0, -10.0)), Vector2(-10.0, 0.0), Vector2(20.0, 13.0)), Color("a9b8bb"))
-	draw_rect(_scaled_rect(center + _zv(Vector2(26.0, -10.0)), Vector2(-10.0, 0.0), Vector2(20.0, 13.0)), Color("a9b8bb"))
-	draw_rect(_scaled_rect(center + _zv(Vector2(0.0, -28.0)), Vector2(-28.0, -4.0), Vector2(56.0, 7.0)), Color("e6d6aa"))
+	draw_polyline(top, palette.top.lightened(0.18), 2.0, true)
+	for stripe in range(6):
+		var stripe_x = -34.0 + float(stripe) * 11.5
+		draw_rect(_scaled_rect(center + _zv(Vector2(0.0, -37.0)), Vector2(stripe_x, -5.0), Vector2(6.5, 9.0)), Color("e6d6aa" if stripe % 2 == 0 else "7d8f5a"))
+	_draw_facade_door(center, Vector2(0.0, -3.0), Vector2(28.0, 28.0), Color("25231e"), Color("cdb78d"))
+	_draw_facade_window(center, Vector2(-31.0, -14.0), Vector2(24.0, 16.0), Color("54634b"), Color("a9b8bb"))
+	_draw_facade_window(center, Vector2(31.0, -14.0), Vector2(24.0, 16.0), Color("54634b"), Color("a9b8bb"))
+	_draw_small_crate(center, Vector2(34.0, 10.0), Vector2(12.0, 10.0), Color("7b5d3d"), Color("5b412b"))
+	_draw_small_crate(center, Vector2(46.0, 6.0), Vector2(11.0, 9.0), Color("745638"), Color("5b412b"))
+	_draw_barrel(center, Vector2(-44.0, 10.0), Vector2(10.0, 16.0), Color("7b6545"), Color("4d463a"))
 	_draw_object_highlight(world_object, _polygon_bounds(PackedVector2Array([
 		top[0], top[1], top[2], top[3],
-		base[0] + _zv(Vector2(-14.0, 0.0)),
-		base[1] + _zv(Vector2(14.0, 0.0))
+		base[0] + _zv(Vector2(-20.0, 0.0)),
+		base[1] + _zv(Vector2(20.0, 0.0))
 	])))
 
 
 func _draw_hardware_mass(world_object, palette: Dictionary) -> void:
-	var base = _get_footprint_polygon(world_object)
-	var top = _offset_polygon(base, Vector2(0.0, -_zf(44.0)))
+	var base = _scale_polygon(_get_footprint_polygon(world_object), 1.14, 1.08)
+	var top = _offset_polygon(base, Vector2(0.0, -_zf(62.0)))
 	var bounds = _polygon_bounds(base)
 	var center = _polygon_center(base)
-	_draw_shadow(center + _zv(Vector2(0.0, 10.0)), bounds.size.x * 1.18, maxf(bounds.size.y * 0.76, 16.0), 0.18)
+	_draw_shadow(center + _zv(Vector2(0.0, 10.0)), bounds.size.x * 1.22, maxf(bounds.size.y * 0.84, 18.0), 0.18)
 	draw_colored_polygon(PackedVector2Array([top[1], top[2], base[2], base[1]]), palette.side)
 	draw_colored_polygon(PackedVector2Array([top[2], top[3], base[3], base[2]]), palette.front)
 	draw_colored_polygon(top, palette.top)
-	draw_rect(_scaled_rect(center + _zv(Vector2(0.0, -4.0)), Vector2(-12.0, -14.0), Vector2(24.0, 24.0)), Color("23231f"))
-	draw_rect(_scaled_rect(center + _zv(Vector2(-25.0, -11.0)), Vector2(-8.0, 0.0), Vector2(16.0, 12.0)), Color("9daab5"))
-	draw_rect(_scaled_rect(center + _zv(Vector2(25.0, -11.0)), Vector2(-8.0, 0.0), Vector2(16.0, 12.0)), Color("9daab5"))
-	draw_rect(_scaled_rect(center + _zv(Vector2(30.0, -34.0)), Vector2(-3.0, -18.0), Vector2(6.0, 26.0)), Color("6f6a5b"))
-	draw_line(center + _zv(Vector2(-34.0, -27.0)), center + _zv(Vector2(34.0, -27.0)), Color("d3d0bf"), _zf(2.0))
-	draw_line(center + _zv(Vector2(-20.0, -27.0)), center + _zv(Vector2(-20.0, -15.0)), Color("d3d0bf"), _zf(2.0))
-	draw_line(center + _zv(Vector2(0.0, -27.0)), center + _zv(Vector2(0.0, -15.0)), Color("d3d0bf"), _zf(2.0))
-	draw_line(center + _zv(Vector2(20.0, -27.0)), center + _zv(Vector2(20.0, -15.0)), Color("d3d0bf"), _zf(2.0))
+	draw_polyline(top, palette.top.lightened(0.18), 2.0, true)
+	_draw_facade_door(center, Vector2(0.0, -4.0), Vector2(32.0, 32.0), Color("23231f"), Color("8e938f"))
+	_draw_facade_window(center, Vector2(-30.0, -14.0), Vector2(20.0, 15.0), Color("596877"), Color("9daab5"))
+	_draw_facade_window(center, Vector2(30.0, -14.0), Vector2(20.0, 15.0), Color("596877"), Color("9daab5"))
+	draw_rect(_scaled_rect(center + _zv(Vector2(36.0, -44.0)), Vector2(-4.0, -22.0), Vector2(8.0, 34.0)), Color("6f6a5b"))
+	draw_line(center + _zv(Vector2(-42.0, -35.0)), center + _zv(Vector2(42.0, -35.0)), Color("d3d0bf"), _zf(2.0))
+	draw_line(center + _zv(Vector2(-24.0, -35.0)), center + _zv(Vector2(-24.0, -18.0)), Color("d3d0bf"), _zf(2.0))
+	draw_line(center + _zv(Vector2(0.0, -35.0)), center + _zv(Vector2(0.0, -18.0)), Color("d3d0bf"), _zf(2.0))
+	draw_line(center + _zv(Vector2(24.0, -35.0)), center + _zv(Vector2(24.0, -18.0)), Color("d3d0bf"), _zf(2.0))
+	_draw_small_crate(center, Vector2(-44.0, 10.0), Vector2(12.0, 10.0), Color("725638"), Color("4d3b2a"))
+	_draw_small_crate(center, Vector2(-32.0, 5.0), Vector2(14.0, 12.0), Color("7a5d3d"), Color("4d3b2a"))
+	_draw_barrel(center, Vector2(50.0, 11.0), Vector2(10.0, 16.0), Color("72624b"), Color("45433f"))
 	_draw_object_highlight(world_object, _polygon_bounds(PackedVector2Array([
 		top[0], top[1], top[2], top[3],
-		center + _zv(Vector2(30.0, -52.0))
+		center + _zv(Vector2(36.0, -66.0))
 	])))
 
 
 func _draw_signboard(world_object, label: String, post_color: Color) -> void:
 	var base = _get_footprint_polygon(world_object)
 	var center = _polygon_center(base)
-	_draw_shadow(center + _zv(Vector2(0.0, 5.0)), 28.0, 8.0, 0.14)
-	draw_rect(_scaled_rect(center, Vector2(-4.0, -20.0), Vector2(4.0, 26.0)), post_color.darkened(0.2))
-	draw_rect(_scaled_rect(center, Vector2(-28.0, -46.0), Vector2(56.0, 30.0)), post_color.lightened(0.08))
-	draw_rect(_scaled_rect(center, Vector2(-21.0, -38.0), Vector2(42.0, 4.0)), Color("efe5c2"))
-	draw_rect(_scaled_rect(center, Vector2(-21.0, -30.0), Vector2(37.0, 3.0)), Color("efe5c2"))
-	draw_rect(_scaled_rect(center, Vector2(-21.0, -23.0), Vector2(30.0, 3.0)), Color("efe5c2"))
-	_draw_object_highlight(world_object, _get_stand_in_marker_rect(world_object, 46.0))
+	_draw_shadow(center + _zv(Vector2(0.0, 5.0)), 34.0, 9.0, 0.14)
+	draw_rect(_scaled_rect(center, Vector2(-16.0, -24.0), Vector2(5.0, 31.0)), post_color.darkened(0.2))
+	draw_rect(_scaled_rect(center, Vector2(11.0, -24.0), Vector2(5.0, 31.0)), post_color.darkened(0.2))
+	draw_line(center + _zv(Vector2(-12.0, -6.0)), center + _zv(Vector2(-24.0, -24.0)), post_color.darkened(0.28), _zf(2.0))
+	draw_line(center + _zv(Vector2(12.0, -6.0)), center + _zv(Vector2(24.0, -24.0)), post_color.darkened(0.28), _zf(2.0))
+	draw_rect(_scaled_rect(center, Vector2(-34.0, -56.0), Vector2(68.0, 38.0)), post_color.lightened(0.08))
+	draw_rect(_scaled_rect(center, Vector2(-26.0, -46.0), Vector2(52.0, 5.0)), Color("efe5c2"))
+	draw_rect(_scaled_rect(center, Vector2(-26.0, -36.0), Vector2(45.0, 4.0)), Color("efe5c2"))
+	draw_rect(_scaled_rect(center, Vector2(-26.0, -28.0), Vector2(36.0, 4.0)), Color("efe5c2"))
+	_draw_object_highlight(world_object, _get_stand_in_marker_rect(world_object, 56.0, 1.18, 1.0))
 
 
 func _draw_direction_sign(world_object, cap_color: Color, post_color: Color, arrow_right: bool) -> void:
 	var base = _get_footprint_polygon(world_object)
 	var center = _polygon_center(base)
 	var direction = 1.0 if arrow_right else -1.0
-	_draw_shadow(center + _zv(Vector2(0.0, 5.0)), 24.0, 8.0, 0.14)
-	draw_rect(_scaled_rect(center, Vector2(-3.0, -18.0), Vector2(4.0, 24.0)), post_color)
+	_draw_shadow(center + _zv(Vector2(0.0, 5.0)), 28.0, 8.0, 0.14)
+	draw_rect(_scaled_rect(center, Vector2(-4.0, -21.0), Vector2(5.0, 29.0)), post_color)
 	draw_colored_polygon(PackedVector2Array([
-		center + _zv(Vector2(-16.0 * direction, -30.0)),
-		center + _zv(Vector2(10.0 * direction, -30.0)),
-		center + _zv(Vector2(20.0 * direction, -24.0)),
-		center + _zv(Vector2(10.0 * direction, -18.0)),
-		center + _zv(Vector2(-16.0 * direction, -18.0))
+		center + _zv(Vector2(-22.0 * direction, -36.0)),
+		center + _zv(Vector2(14.0 * direction, -36.0)),
+		center + _zv(Vector2(28.0 * direction, -28.0)),
+		center + _zv(Vector2(14.0 * direction, -20.0)),
+		center + _zv(Vector2(-22.0 * direction, -20.0))
 	]), cap_color)
-	_draw_object_highlight(world_object, _get_stand_in_marker_rect(world_object, 34.0))
+	draw_line(center + _zv(Vector2(-2.0, -8.0)), center + _zv(Vector2(12.0 * direction, -20.0)), post_color.darkened(0.22), _zf(2.0))
+	_draw_object_highlight(world_object, _get_stand_in_marker_rect(world_object, 42.0, 1.16, 1.0))
 
 
 func _draw_object_highlight(world_object, rect: Rect2) -> void:
@@ -813,6 +1026,82 @@ func _offset_polygon(points: PackedVector2Array, offset: Vector2) -> PackedVecto
 	for point in points:
 		shifted.append(point + offset)
 	return shifted
+
+
+func _scale_polygon(points: PackedVector2Array, scale_x: float, scale_y: float) -> PackedVector2Array:
+	var center := _polygon_center(points)
+	var scaled := PackedVector2Array()
+	for point in points:
+		var offset = point - center
+		scaled.append(center + Vector2(offset.x * scale_x, offset.y * scale_y))
+	return scaled
+
+
+func _draw_textured_object(world_object, texture_key: StringName, base_scale: float = 1.0, offset: Vector2 = Vector2.ZERO) -> bool:
+	var texture: Texture2D = _object_textures.get(texture_key, null)
+	if texture == null:
+		return false
+	var art_scale = (view_zoom / DEFAULT_WORLD_ART_ZOOM) * base_scale
+	var draw_size = texture.get_size() * art_scale
+	var anchor = _get_object_anchor_screen(world_object) + offset * art_scale
+	var rect = Rect2(anchor + Vector2(-draw_size.x * 0.5, -draw_size.y), draw_size)
+	draw_texture_rect(texture, rect, false)
+	return true
+
+
+func _draw_log_segment(center: Vector2, start_offset: Vector2, end_offset: Vector2, thickness: float, bark_color: Color, cut_color: Color) -> void:
+	var start = center + _zv(start_offset)
+	var end = center + _zv(end_offset)
+	draw_line(start, end, bark_color, _zf(thickness))
+	draw_circle(start, _zf(thickness * 0.48), cut_color)
+	draw_circle(end, _zf(thickness * 0.48), cut_color)
+
+
+func _draw_facade_window(center: Vector2, offset: Vector2, pane_size: Vector2, frame_color: Color, pane_color: Color) -> void:
+	var window_center = center + _zv(offset)
+	draw_rect(_scaled_rect(window_center, Vector2(-pane_size.x * 0.5, -pane_size.y * 0.5), pane_size), frame_color)
+	draw_rect(_scaled_rect(window_center, Vector2(-pane_size.x * 0.37, -pane_size.y * 0.37), pane_size * 0.74), pane_color)
+	draw_line(window_center + _zv(Vector2(0.0, -pane_size.y * 0.37)), window_center + _zv(Vector2(0.0, pane_size.y * 0.37)), frame_color.darkened(0.12), _zf(1.5))
+	draw_line(window_center + _zv(Vector2(-pane_size.x * 0.37, 0.0)), window_center + _zv(Vector2(pane_size.x * 0.37, 0.0)), frame_color.darkened(0.12), _zf(1.5))
+
+
+func _draw_facade_door(center: Vector2, offset: Vector2, door_size: Vector2, door_color: Color, trim_color: Color) -> void:
+	var door_center = center + _zv(offset)
+	draw_rect(_scaled_rect(door_center, Vector2(-door_size.x * 0.5, -door_size.y * 0.5), door_size), door_color)
+	draw_rect(_scaled_rect(door_center, Vector2(-door_size.x * 0.5 - 2.0, -door_size.y * 0.5 - 2.0), Vector2(door_size.x + 4.0, 4.0)), trim_color)
+	draw_line(door_center + _zv(Vector2(0.0, -door_size.y * 0.5)), door_center + _zv(Vector2(0.0, door_size.y * 0.5)), door_color.lightened(0.08), _zf(1.5))
+	draw_circle(door_center + _zv(Vector2(door_size.x * 0.23, 1.0)), _zf(1.8), trim_color.darkened(0.1))
+
+
+func _draw_small_crate(center: Vector2, offset: Vector2, crate_size: Vector2, fill_color: Color, line_color: Color) -> void:
+	var crate_center = center + _zv(offset)
+	draw_rect(_scaled_rect(crate_center, Vector2(-crate_size.x * 0.5, -crate_size.y * 0.5), crate_size), fill_color)
+	draw_line(crate_center + _zv(Vector2(-crate_size.x * 0.34, -crate_size.y * 0.30)), crate_center + _zv(Vector2(-crate_size.x * 0.34, crate_size.y * 0.30)), line_color, _zf(1.5))
+	draw_line(crate_center + _zv(Vector2(0.0, -crate_size.y * 0.30)), crate_center + _zv(Vector2(0.0, crate_size.y * 0.30)), line_color, _zf(1.5))
+
+
+func _draw_barrel(center: Vector2, offset: Vector2, barrel_size: Vector2, body_color: Color, hoop_color: Color) -> void:
+	var barrel_center = center + _zv(offset)
+	draw_rect(_scaled_rect(barrel_center, Vector2(-barrel_size.x * 0.5, -barrel_size.y * 0.5), barrel_size), body_color)
+	draw_line(barrel_center + _zv(Vector2(-barrel_size.x * 0.5, -barrel_size.y * 0.18)), barrel_center + _zv(Vector2(barrel_size.x * 0.5, -barrel_size.y * 0.18)), hoop_color, _zf(1.5))
+	draw_line(barrel_center + _zv(Vector2(-barrel_size.x * 0.5, barrel_size.y * 0.22)), barrel_center + _zv(Vector2(barrel_size.x * 0.5, barrel_size.y * 0.22)), hoop_color, _zf(1.5))
+
+
+func _draw_cloth_panel(center: Vector2, left_anchor: Vector2, right_anchor: Vector2, drop: float, cloth_color: Color) -> void:
+	var cloth = PackedVector2Array([
+		center + _zv(left_anchor),
+		center + _zv(right_anchor),
+		center + _zv(right_anchor + Vector2(1.0, drop * 0.82)),
+		center + _zv(left_anchor + Vector2(-2.0, drop))
+	])
+	draw_colored_polygon(cloth, cloth_color)
+	draw_polyline(cloth, cloth_color.darkened(0.18), 1.5, true)
+
+
+func _draw_bucket(center: Vector2, offset: Vector2, body_color: Color, rim_color: Color) -> void:
+	var bucket_center = center + _zv(offset)
+	draw_rect(_scaled_rect(bucket_center, Vector2(-7.0, -8.0), Vector2(14.0, 12.0)), body_color)
+	draw_line(bucket_center + _zv(Vector2(-7.0, -6.0)), bucket_center + _zv(Vector2(7.0, -6.0)), rim_color, _zf(1.5))
 
 
 func _polygon_bounds(points: PackedVector2Array) -> Rect2:
@@ -966,19 +1255,34 @@ func _get_tile_polygon(tile: Vector2i) -> PackedVector2Array:
 
 
 func _get_object_hit_rect(world_object) -> Rect2:
+	var logical_rect = _get_logical_object_hit_rect(world_object)
+	var scene_rect = _get_scene_object_rect(world_object)
+	if scene_rect.size.x > 0.0 and scene_rect.size.y > 0.0:
+		return scene_rect.merge(logical_rect)
+	return logical_rect
+
+
+func _get_object_visual_rect(world_object) -> Rect2:
+	var scene_rect = _get_scene_object_rect(world_object)
+	if scene_rect.size.x > 0.0 and scene_rect.size.y > 0.0:
+		return scene_rect
+	return _get_logical_object_hit_rect(world_object)
+
+
+func _get_logical_object_hit_rect(world_object) -> Rect2:
 	match String(world_object.type):
 		"campfire":
-			return _get_stand_in_marker_rect(world_object, 28.0)
+			return _get_stand_in_marker_rect(world_object, 48.0, 1.35, 1.18)
 		"woodpile":
-			return _get_stand_in_block_rect(world_object, 18.0)
+			return _get_stand_in_block_rect(world_object, 42.0, 1.38, 1.12)
 		"bedroll":
-			return _get_stand_in_block_rect(world_object, 10.0)
+			return _get_stand_in_block_rect(world_object, 18.0, 1.2, 1.0)
 		"stash":
-			return _get_stand_in_block_rect(world_object, 18.0)
+			return _get_stand_in_block_rect(world_object, 24.0, 1.28, 1.16)
 		"tool_area":
-			return _get_stand_in_block_rect(world_object, 14.0)
+			return _get_stand_in_block_rect(world_object, 24.0, 1.16, 1.0)
 		"trail_sign":
-			return _get_stand_in_marker_rect(world_object, 28.0)
+			return _get_stand_in_marker_rect(world_object, 42.0, 1.16, 1.0)
 		"tree":
 			var center = _get_object_anchor_screen(world_object)
 			return _scaled_rect(center, Vector2(-18.0, -24.0), Vector2(36.0, 32.0))
@@ -989,11 +1293,13 @@ func _get_object_hit_rect(world_object) -> Rect2:
 			var center = _get_object_anchor_screen(world_object)
 			return _scaled_rect(center, Vector2(-20.0, -26.0), Vector2(40.0, 32.0))
 		"wash_line":
-			return _get_stand_in_block_rect(world_object, 14.0)
-		"town_church", "town_foreman", "town_grocery", "town_hardware":
-			return _get_stand_in_block_rect(world_object, 34.0)
+			return _get_stand_in_block_rect(world_object, 42.0, 1.2, 1.0)
+		"town_church":
+			return _get_stand_in_block_rect(world_object, 96.0, 1.12, 1.1)
+		"town_foreman", "town_grocery", "town_hardware":
+			return _get_stand_in_block_rect(world_object, 62.0, 1.14, 1.08)
 		"town_jobs_board", "town_road_exit":
-			return _get_stand_in_marker_rect(world_object, 28.0)
+			return _get_stand_in_marker_rect(world_object, 56.0, 1.18, 1.0)
 		_:
 			var center = _get_object_anchor_screen(world_object)
 			return _scaled_rect(center, Vector2(-18.0, -18.0), Vector2(36.0, 36.0))
@@ -1004,16 +1310,16 @@ func _get_town_building_rect(world_object) -> Rect2:
 	return _scaled_rect(center, Vector2(-58.0, -94.0), Vector2(116.0, 106.0))
 
 
-func _get_stand_in_block_rect(world_object, height_px: float) -> Rect2:
-	var base = _get_footprint_polygon(world_object)
+func _get_stand_in_block_rect(world_object, height_px: float, scale_x: float = 1.0, scale_y: float = 1.0) -> Rect2:
+	var base = _scale_polygon(_get_footprint_polygon(world_object), scale_x, scale_y)
 	var top = _offset_polygon(base, Vector2(0.0, -_zf(height_px)))
 	return _polygon_bounds(PackedVector2Array([
 		top[0], top[1], top[2], top[3], base[0], base[1], base[2], base[3]
 	]))
 
 
-func _get_stand_in_marker_rect(world_object, cap_height_px: float) -> Rect2:
-	var base = _get_footprint_polygon(world_object)
+func _get_stand_in_marker_rect(world_object, cap_height_px: float, scale_x: float = 1.0, scale_y: float = 1.0) -> Rect2:
+	var base = _scale_polygon(_get_footprint_polygon(world_object), scale_x, scale_y)
 	var cap = _offset_polygon(base, Vector2(0.0, -_zf(cap_height_px)))
 	return _polygon_bounds(PackedVector2Array([
 		cap[0], cap[1], cap[2], cap[3], base[0], base[1], base[2], base[3]

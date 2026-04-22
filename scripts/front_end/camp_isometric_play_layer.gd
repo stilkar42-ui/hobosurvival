@@ -1,6 +1,7 @@
 extends Control
 
 const CampWorldObjectScript := preload("res://scripts/front_end/camp_world_object.gd")
+const EntityManagerScript := preload("res://scripts/managers/entity_manager.gd")
 
 const INVENTORY_UI_PAGE := &"inventory_ui"
 const WORLD_BOUNDS := Rect2i(0, 0, 32, 32)
@@ -43,6 +44,7 @@ signal overlay_action_requested(command: Dictionary)
 
 var _world_objects: Array = []
 var _interaction_by_route := {}
+var _entity_manager = EntityManagerScript.new()
 var _pending_interaction_object_id: StringName = &""
 var _input_enabled := true
 var _blocked_tiles_cache := {}
@@ -577,78 +579,7 @@ func _add_town_tree_edges() -> void:
 
 
 func _apply_interaction_overrides() -> void:
-	for world_object in _world_objects:
-		if world_object == null or world_object.route_id == &"" or not _interaction_by_route.has(world_object.route_id):
-			_apply_default_object_binding(world_object)
-			continue
-		var interaction: Dictionary = _interaction_by_route.get(world_object.route_id, {})
-		world_object.action_id = StringName(interaction.get("action_id", world_object.action_id))
-		world_object.page_id = StringName(interaction.get("page_id", world_object.page_id))
-		world_object.detail_text = String(interaction.get("consequence_text", world_object.detail_text))
-		world_object.prompt_action = _resolve_prompt_action(world_object.route_id, String(interaction.get("label", world_object.prompt_action)))
-
-
-func _apply_default_object_binding(world_object) -> void:
-	if world_object == null:
-		return
-	match world_object.route_id:
-		&"rest":
-			world_object.action_id = &"sleep_rough"
-			world_object.page_id = &""
-		&"craft":
-			world_object.page_id = &"hobocraft"
-		&"cooking":
-			world_object.page_id = &"cooking"
-		&"exit":
-			world_object.action_id = &"return_to_town"
-		&"stash":
-			world_object.page_id = INVENTORY_UI_PAGE
-		&"ready":
-			world_object.page_id = &"getting_ready"
-		&"town_jobs":
-			world_object.page_id = &"jobs_board"
-		&"town_send_money":
-			world_object.page_id = &"send_money"
-		&"town_grocery":
-			world_object.page_id = &"grocery"
-		&"town_hardware":
-			world_object.page_id = &"hardware"
-		&"town_foreman":
-			world_object.page_id = &"jobs_board"
-		&"town_exit":
-			world_object.action_id = &"go_to_camp"
-
-
-func _resolve_prompt_action(route_id: StringName, label: String) -> String:
-	match route_id:
-		&"fire":
-			return "Build the Fire" if label.find("Tend") == -1 else "Tend the Fire"
-		&"rest":
-			return "Rest"
-		&"craft":
-			return "Craft"
-		&"cooking":
-			return "Cook"
-		&"exit":
-			return "Leave for Town"
-		&"stash":
-			return "Open the Stash"
-		&"ready":
-			return "Get Ready"
-		&"town_jobs":
-			return "Read the Jobs Board"
-		&"town_send_money":
-			return "Send Money Home"
-		&"town_grocery":
-			return "Buy Provisions"
-		&"town_hardware":
-			return "Buy Tools"
-		&"town_foreman":
-			return "Ask After Work"
-		&"town_exit":
-			return "Walk to Camp"
-		_:
-			return label
+	_entity_manager.apply_route_bindings(_world_objects, _interaction_by_route)
 
 
 func _sync_runtime_state() -> void:

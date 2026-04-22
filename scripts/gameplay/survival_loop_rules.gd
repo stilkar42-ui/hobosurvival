@@ -565,6 +565,122 @@ static func get_cooking_recipes() -> Array:
 	return result
 
 
+static func get_hobocraft_recipe_material_snapshot(player_state, recipe: Dictionary, item_catalog = null) -> Array:
+	var inventory = _get_inventory_state(player_state)
+	if inventory == null:
+		return []
+	var entries: Array = []
+	for input in recipe.get("inputs", []):
+		if not (input is Dictionary):
+			continue
+		var item_id := StringName(input.get("item_id", &""))
+		entries.append(_build_recipe_snapshot_entry(
+			item_id,
+			inventory.count_item(item_id),
+			max(int(input.get("quantity", 1)), 1),
+			item_catalog
+		))
+	return entries
+
+
+static func get_cooking_recipe_material_snapshot(player_state, config, recipe: Dictionary, item_catalog = null) -> Array:
+	var inventory = _get_inventory_state(player_state)
+	if inventory == null:
+		return []
+	var entries: Array = []
+	var recipe_id := StringName(recipe.get("recipe_id", &""))
+	match recipe_id:
+		&"brew_camp_coffee":
+			entries.append(_build_recipe_snapshot_entry(&"coffee_grounds", inventory.count_item(&"coffee_grounds"), 1, item_catalog))
+			entries.append({
+				"label": "Potable Water",
+				"have": get_available_potable_water_units(player_state, config),
+				"need": 1,
+				"item_id": &"potable_water"
+			})
+			entries.append(_build_recipe_snapshot_entry(&"empty_can", inventory.count_item(&"empty_can"), 1, item_catalog))
+		&"heat_beans":
+			entries.append(_build_recipe_snapshot_entry(&"beans_can", inventory.count_item(&"beans_can"), 1, item_catalog))
+		&"heat_potted_meat":
+			entries.append(_build_recipe_snapshot_entry(&"potted_meat", inventory.count_item(&"potted_meat"), 1, item_catalog))
+		&"mulligan_stew":
+			entries.append({
+				"label": "Potable Water",
+				"have": get_available_potable_water_units(player_state, config),
+				"need": 1,
+				"item_id": &"potable_water"
+			})
+			entries.append({
+				"label": "Staple Choice",
+				"have": _count_item_group(inventory, MULLIGAN_STAPLE_ITEM_IDS),
+				"need": 1,
+				"item_id": &"mulligan_staple_choice"
+			})
+			entries.append({
+				"label": "Body / Flavor Choice",
+				"have": _count_item_group(inventory, MULLIGAN_BODY_ITEM_IDS),
+				"need": 1,
+				"item_id": &"mulligan_body_choice"
+			})
+		&"boil_water":
+			entries.append({
+				"label": "Water To Work",
+				"have": int(player_state.camp_non_potable_water_units) + int(player_state.camp_potable_water_units),
+				"need": 1,
+				"item_id": &"water_to_work"
+			})
+	return entries
+
+
+static func get_recipe_relevant_item_snapshot(player_state, recipe: Dictionary, is_cooking: bool, item_catalog = null) -> Array:
+	var inventory = _get_inventory_state(player_state)
+	if inventory == null:
+		return []
+	var relevant_ids: Array = []
+	var recipe_id := StringName(recipe.get("recipe_id", &""))
+	if is_cooking:
+		if recipe_id == &"heat_beans" or recipe_id == &"heat_potted_meat" or recipe_id == &"mulligan_stew":
+			relevant_ids.append_array(COOKING_HEAT_TOOL_ITEM_IDS)
+			relevant_ids.append_array(CAN_OPENER_ITEM_IDS)
+		elif recipe_id == &"brew_camp_coffee":
+			relevant_ids.append(&"hot_coffee")
+			relevant_ids.append_array(COOKING_HEAT_TOOL_ITEM_IDS)
+	else:
+		var output_item_id := StringName(recipe.get("output_item_id", &""))
+		if output_item_id != &"":
+			relevant_ids.append(output_item_id)
+
+	var result: Array = []
+	var seen := {}
+	for item_id in relevant_ids:
+		var resolved_item_id := StringName(item_id)
+		if bool(seen.get(resolved_item_id, false)):
+			continue
+		seen[resolved_item_id] = true
+		var count = inventory.count_item(resolved_item_id)
+		if count <= 0:
+			continue
+		result.append({
+			"item_id": resolved_item_id,
+			"label": _get_recipe_snapshot_label(resolved_item_id, item_catalog),
+			"count": count
+		})
+	return result
+
+
+static func get_available_potable_water_units(player_state, config) -> int:
+	var available := 0
+	if player_state != null:
+		available += int(player_state.camp_potable_water_units)
+	var inventory = _get_inventory_state(player_state)
+	if inventory == null or config == null:
+		return available
+	var water_item_id := StringName(config.brew_camp_coffee_water_item_id)
+	if water_item_id != &"":
+		available += inventory.count_item(water_item_id)
+	return available
+
+
 static func get_appearance_tier(player_state, config) -> Dictionary:
 	if player_state == null or player_state.passport_profile == null or config == null:
 		return _get_appearance_tier_entry(&"filthy_unkept", config)
@@ -1939,6 +2055,40 @@ static func _is_post_midnight_sleep_continuation(player_state, config, previous_
 
 static func _has_any_item(inventory, item_ids: Array) -> bool:
 	return _find_first_available_item(inventory, item_ids) != &""
+
+
+static func _count_item_group(inventory, item_ids: Array) -> int:
+	var total := 0
+	if inventory == null:
+		return total
+	for item_id in item_ids:
+		total += inventory.count_item(StringName(item_id))
+	return total
+
+
+static func _get_inventory_state(player_state):
+	if player_state == null:
+		return null
+	if player_state.get("inventory_state") != null:
+		return player_state.get("inventory_state")
+	return player_state.get("inventory")
+
+
+static func _build_recipe_snapshot_entry(item_id: StringName, have: int, need: int, item_catalog = null) -> Dictionary:
+	return {
+		"item_id": item_id,
+		"label": _get_recipe_snapshot_label(item_id, item_catalog),
+		"have": have,
+		"need": need
+	}
+
+
+static func _get_recipe_snapshot_label(item_id: StringName, item_catalog = null) -> String:
+	if item_catalog != null and item_catalog.has_method("get_item"):
+		var item = item_catalog.get_item(item_id)
+		if item != null:
+			return item.display_name
+	return String(item_id).replace("_", " ").capitalize()
 
 
 static func _find_first_available_item(inventory, item_ids: Array) -> StringName:

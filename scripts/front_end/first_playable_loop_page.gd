@@ -6,12 +6,21 @@ signal request_quit_game
 
 const FadingMeterSystemScript := preload("res://scripts/gameplay/fading_meter_system.gd")
 const FirstPlayableLoopActionControllerScript := preload("res://scripts/front_end/first_playable_loop_action_controller.gd")
+const OverlayBuilderScript := preload("res://scripts/front_end/adapters/overlay_builder.gd")
 const FirstPlayableLoopLayoutControllerScript := preload("res://scripts/front_end/first_playable_loop_layout_controller.gd")
 const FirstPlayableLoopNavigationControllerScript := preload("res://scripts/front_end/first_playable_loop_navigation_controller.gd")
 const InventoryScript := preload("res://scripts/inventory/inventory.gd")
+const DataManagerScript := preload("res://scripts/managers/data_manager.gd")
+const EntityManagerScript := preload("res://scripts/managers/entity_manager.gd")
+const GameStateManagerScript := preload("res://scripts/managers/game_state_manager.gd")
+const InventoryManagerScript := preload("res://scripts/managers/inventory_manager.gd")
+const LocationManagerScript := preload("res://scripts/managers/location_manager.gd")
 const PlayerStateRuntimeScript := preload("res://scripts/player/player_state_runtime.gd")
 const PlayerStateServiceScript := preload("res://scripts/player/player_state_service.gd")
+const StatsManagerScript := preload("res://scripts/managers/stats_manager.gd")
 const SurvivalLoopRulesScript := preload("res://scripts/gameplay/survival_loop_rules.gd")
+const TimeManagerScript := preload("res://scripts/managers/time_manager.gd")
+const UIManagerScript := preload("res://scripts/managers/ui_manager.gd")
 const CampIsometricLayerScene := preload("res://scenes/front_end/camp_isometric_play_layer.tscn")
 
 const INVENTORY_MENU_MOVE_TO := 2001
@@ -219,6 +228,15 @@ var _did_apply_default_camp_start := false
 var _layout_controller = FirstPlayableLoopLayoutControllerScript.new()
 var _navigation_controller = FirstPlayableLoopNavigationControllerScript.new()
 var _action_controller = FirstPlayableLoopActionControllerScript.new()
+var _overlay_builder = OverlayBuilderScript.new()
+var _data_manager = DataManagerScript.new()
+var _game_state_manager = GameStateManagerScript.new()
+var _time_manager = TimeManagerScript.new()
+var _stats_manager = StatsManagerScript.new()
+var _inventory_manager = InventoryManagerScript.new()
+var _location_manager = LocationManagerScript.new()
+var _entity_manager = EntityManagerScript.new()
+var _ui_manager = UIManagerScript.new()
 
 
 func _ready() -> void:
@@ -252,17 +270,44 @@ func _finish_ready() -> void:
 	inventory_radial_menu.canceled.connect(Callable(self, "_on_inventory_context_menu_canceled"))
 
 	_player_state_service = PlayerStateRuntimeScript.get_or_create_service(self)
-	_action_controller.configure(_player_state_service, enable_trace_logging)
-	if _player_state_service != null:
-		if not _player_state_service.player_state_changed.is_connected(Callable(self, "_on_player_state_changed")):
-			_player_state_service.player_state_changed.connect(Callable(self, "_on_player_state_changed"))
-		if not _player_state_service.load_finished.is_connected(Callable(self, "_on_state_message")):
-			_player_state_service.load_finished.connect(Callable(self, "_on_state_message"))
-		if not _player_state_service.reset_finished.is_connected(Callable(self, "_on_state_message")):
-			_player_state_service.reset_finished.connect(Callable(self, "_on_state_message"))
-		_bind_player_state(_player_state_service.get_player_state())
+	_configure_managers()
+	_register_pages_with_ui_manager()
+	_action_controller.configure(_game_state_manager, enable_trace_logging)
+	if _game_state_manager != null:
+		if not _game_state_manager.player_state_changed.is_connected(Callable(self, "_on_player_state_changed")):
+			_game_state_manager.player_state_changed.connect(Callable(self, "_on_player_state_changed"))
+		if not _game_state_manager.load_finished.is_connected(Callable(self, "_on_state_message")):
+			_game_state_manager.load_finished.connect(Callable(self, "_on_state_message"))
+		if not _game_state_manager.reset_finished.is_connected(Callable(self, "_on_state_message")):
+			_game_state_manager.reset_finished.connect(Callable(self, "_on_state_message"))
+		_bind_player_state(_game_state_manager.get_player_state())
 		_apply_default_camp_start_if_needed()
 	_refresh_view()
+
+
+func _configure_managers() -> void:
+	_data_manager.configure(_player_state_service)
+	_game_state_manager.configure(_player_state_service)
+	_stats_manager.configure(_player_state_service)
+	_inventory_manager.configure(_player_state_service)
+
+
+func _register_pages_with_ui_manager() -> void:
+	var page_panels := {
+		PAGE_TOWN: _town_page_panel,
+		PAGE_JOBS_BOARD: _jobs_board_page_panel,
+		PAGE_SEND_MONEY: _send_money_page_panel,
+		PAGE_CAMP: _camp_page_panel,
+		PAGE_GROCERY: _grocery_page_panel,
+		PAGE_HARDWARE: _hardware_page_panel,
+		PAGE_GETTING_READY: _getting_ready_page_panel,
+		PAGE_HOBOCRAFT: _hobocraft_page_panel,
+		PAGE_COOKING: _cooking_page_panel
+	}
+	for page_id in page_panels.keys():
+		_ui_manager.register_page(StringName(page_id), page_panels.get(page_id))
+	if _active_loop_page != &"":
+		_ui_manager.switch_to(_active_loop_page)
 
 
 func _exit_tree() -> void:
@@ -422,10 +467,10 @@ func _apply_default_camp_start_if_needed() -> void:
 	if _did_apply_default_camp_start or _player_state_service == null:
 		return
 	_did_apply_default_camp_start = true
-	var current_state = _player_state_service.get_player_state()
+	var current_state = _get_player_state()
 	if current_state == null:
 		return
-	var state_origin = _player_state_service.get_state_origin() if _player_state_service.has_method("get_state_origin") else &""
+	var state_origin = _data_manager.get_state_origin()
 	if state_origin != PlayerStateServiceScript.STATE_ORIGIN_STARTER:
 		if enable_trace_logging:
 			print("[CampStart.trace] phase=skip_non_starter origin=%s location=%s active_page=%s" % [
@@ -460,8 +505,9 @@ func _on_state_message(_success: bool, message: String) -> void:
 
 
 func _set_active_loop_page(page_id: StringName, refresh_after: bool = true) -> void:
+	_ui_manager.switch_to(page_id)
 	_navigation_controller.set_active_page(page_id)
-	_active_loop_page = _navigation_controller.get_active_page()
+	_active_loop_page = _ui_manager.get_active_page() if _ui_manager.get_active_page() != &"" else _navigation_controller.get_active_page()
 	_refresh_camp_world_host_state(_get_player_state())
 	if refresh_after:
 		_refresh_view()
@@ -734,10 +780,10 @@ func _sync_active_page_with_location(player_state) -> void:
 		StringName(player_state.loop_location_id),
 		SurvivalLoopRulesScript.LOCATION_TOWN,
 		SurvivalLoopRulesScript.LOCATION_CAMP,
-		PAGE_TOWN,
-		PAGE_CAMP,
-		[PAGE_TOWN, PAGE_JOBS_BOARD, PAGE_SEND_MONEY, PAGE_GROCERY, PAGE_HARDWARE],
-		[PAGE_CAMP, PAGE_GETTING_READY, PAGE_HOBOCRAFT, PAGE_COOKING]
+		_location_manager.get_town_world_page(),
+		_location_manager.get_camp_world_page(),
+		_location_manager.get_town_only_pages(),
+		_location_manager.get_camp_only_pages()
 	)
 	_active_loop_page = _navigation_controller.get_active_page()
 
@@ -761,8 +807,8 @@ func _on_inventory_destination_focus_changed(_provider_id = &"") -> void:
 
 func _on_inventory_move_requested(request: Dictionary) -> void:
 	_inventory_move_request = {}
-	var result = _execute_state_action(
-		PlayerStateServiceScript.ACTION_INVENTORY_MOVE,
+	var result = _inventory_manager.execute_action(
+		InventoryManagerScript.ACTION_MOVE,
 		_build_action_context("inventory.drag_move", request)
 	)
 	_apply_inventory_operation_result(result)
@@ -774,9 +820,9 @@ func _on_inventory_container_popup_requested(provider_id: StringName) -> void:
 
 func _show_inventory_container_popup(provider_id: StringName) -> void:
 	var player_state = _get_player_state()
-	if player_state == null or player_state.inventory_state == null:
+	if player_state == null or _inventory_manager.get_inventory(player_state) == null:
 		return
-	var provider = player_state.inventory_state.get_storage_provider(provider_id)
+	var provider = _inventory_manager.get_storage_provider(player_state, provider_id)
 	if provider == null:
 		return
 	var popup = _inventory_container_popups.get(provider_id, null)
@@ -841,7 +887,7 @@ func _build_inventory_container_popup(provider_id: StringName, display_name: Str
 
 func _rebuild_inventory_container_popup(provider_id: StringName, popup: PanelContainer) -> void:
 	var player_state = _get_player_state()
-	var provider = player_state.inventory_state.get_storage_provider(provider_id) if player_state != null and player_state.inventory_state != null else null
+	var provider = _inventory_manager.get_storage_provider(player_state, provider_id) if player_state != null else null
 	if provider == null:
 		_close_inventory_container_popup(provider_id)
 		return
@@ -961,8 +1007,8 @@ func _try_click_move_selected_stack() -> bool:
 	if action.is_empty() or not bool(action.get("enabled", false)):
 		_refresh_view()
 		return true
-	_apply_inventory_operation_result(_execute_state_action(
-		PlayerStateServiceScript.ACTION_INVENTORY_MOVE_STACK,
+	_apply_inventory_operation_result(_inventory_manager.execute_action(
+		InventoryManagerScript.ACTION_MOVE_STACK,
 		_build_action_context("inventory.click_move", {
 			"stack_index": inventory_panel.selected_stack_index,
 			"target_provider_id": StringName(target_provider.provider_id),
@@ -976,7 +1022,7 @@ func _on_inventory_stack_context_requested(stack_index: int, screen_position: Ve
 	var player_state = _get_player_state()
 	if player_state == null:
 		return
-	var stack = player_state.inventory_state.get_stack_at(stack_index)
+	var stack = _inventory_manager.get_stack_at(player_state, stack_index)
 	if stack == null or stack.item == null:
 		return
 	inventory_panel.set_selected_stack_index(stack_index)
@@ -987,7 +1033,7 @@ func _on_inventory_container_context_requested(provider_id: StringName, screen_p
 	var player_state = _get_player_state()
 	if player_state == null:
 		return
-	var provider = player_state.inventory_state.get_storage_provider(provider_id)
+	var provider = _inventory_manager.get_storage_provider(player_state, provider_id)
 	if provider == null:
 		return
 	inventory_panel.set_selected_container_provider_id(provider_id)
@@ -1002,8 +1048,8 @@ func _on_inventory_context_menu_id_pressed(id: int) -> void:
 	inventory_radial_menu.hide_menu()
 	var context_stack_index = _get_inventory_context_stack_index()
 	var context_provider_id = _get_inventory_context_provider_id()
-	var selected_container = player_state.inventory_state.get_storage_provider(context_provider_id) if context_provider_id != &"" else null
-	var selected_stack = player_state.inventory_state.get_stack_at(context_stack_index) if context_stack_index >= 0 else null
+	var selected_container = _inventory_manager.get_storage_provider(player_state, context_provider_id) if context_provider_id != &"" else null
+	var selected_stack = _inventory_manager.get_stack_at(player_state, context_stack_index) if context_stack_index >= 0 else null
 	match id:
 		INVENTORY_MENU_MOVE_TO:
 			if context_stack_index >= 0:
@@ -1028,35 +1074,35 @@ func _on_inventory_context_menu_id_pressed(id: int) -> void:
 			_execute_inventory_use_action(context_stack_index)
 		INVENTORY_MENU_READ:
 			if selected_stack != null and selected_stack.item != null:
-				var read_result = _execute_state_action(
-					PlayerStateServiceScript.ACTION_INVENTORY_READ_STACK,
+				var read_result = _inventory_manager.execute_action(
+					InventoryManagerScript.ACTION_READ_STACK,
 					_build_action_context("inventory.radial.read", {
 						"stack_index": context_stack_index,
 						"selected_stack_index": context_stack_index
 					})
 				)
 				_last_inventory_message = String(read_result.get("message", "No result."))
-				_trace_action_result("inventory.radial.read", PlayerStateServiceScript.ACTION_INVENTORY_READ_STACK, {"stack_index": context_stack_index}, read_result)
+				_trace_action_result("inventory.radial.read", InventoryManagerScript.ACTION_READ_STACK, {"stack_index": context_stack_index}, read_result)
 				_refresh_view()
 		INVENTORY_MENU_INSPECT:
 			var inspect_result = {}
 			if selected_container != null:
-				inspect_result = _execute_state_action(
-					PlayerStateServiceScript.ACTION_INVENTORY_INSPECT_CONTAINER,
+				inspect_result = _inventory_manager.execute_action(
+					InventoryManagerScript.ACTION_INSPECT_CONTAINER,
 					_build_action_context("inventory.radial.inspect_container", {
 						"provider_id": context_provider_id
 					})
 				)
 			else:
-				inspect_result = _execute_state_action(
-					PlayerStateServiceScript.ACTION_INVENTORY_INSPECT_STACK,
+				inspect_result = _inventory_manager.execute_action(
+					InventoryManagerScript.ACTION_INSPECT_STACK,
 					_build_action_context("inventory.radial.inspect_stack", {
 						"stack_index": context_stack_index,
 						"selected_stack_index": context_stack_index
 					})
 				)
 			_last_inventory_message = String(inspect_result.get("message", "No result."))
-			_trace_action_result("inventory.radial.inspect", PlayerStateServiceScript.ACTION_INVENTORY_INSPECT_STACK, {
+			_trace_action_result("inventory.radial.inspect", InventoryManagerScript.ACTION_INSPECT_STACK, {
 				"stack_index": context_stack_index,
 				"provider_id": context_provider_id
 			}, inspect_result)
@@ -1078,8 +1124,8 @@ func _on_inventory_transfer_pressed() -> void:
 		_last_inventory_message = "Select a stack and a valid destination first."
 		_refresh_view()
 		return
-	_apply_inventory_operation_result(_execute_state_action(
-		PlayerStateServiceScript.ACTION_INVENTORY_MOVE_STACK,
+	_apply_inventory_operation_result(_inventory_manager.execute_action(
+		InventoryManagerScript.ACTION_MOVE_STACK,
 		_build_action_context("inventory.transfer_button", {
 			"stack_index": inventory_panel.selected_stack_index,
 			"selected_stack_index": inventory_panel.selected_stack_index,
@@ -1095,15 +1141,15 @@ func _on_inventory_drop_pressed(stack_index: int = -1, provider_id: StringName =
 	var resolved_provider_id = provider_id if provider_id != &"" else inventory_panel.selected_container_provider_id
 	var resolved_stack_index = stack_index if stack_index >= 0 else inventory_panel.selected_stack_index
 	if resolved_provider_id != &"":
-		_apply_inventory_container_result(_execute_state_action(
-			PlayerStateServiceScript.ACTION_INVENTORY_DROP_CONTAINER,
+		_apply_inventory_container_result(_inventory_manager.execute_action(
+			InventoryManagerScript.ACTION_DROP_CONTAINER,
 			_build_action_context("inventory.drop_container", {
 				"provider_id": resolved_provider_id
 			})
 		))
 		return
-	_apply_inventory_operation_result(_execute_state_action(
-		PlayerStateServiceScript.ACTION_INVENTORY_DROP_STACK,
+	_apply_inventory_operation_result(_inventory_manager.execute_action(
+		InventoryManagerScript.ACTION_DROP_STACK,
 		_build_action_context("inventory.drop_stack", {
 			"stack_index": resolved_stack_index,
 			"selected_stack_index": resolved_stack_index
@@ -1125,16 +1171,16 @@ func _on_inventory_equip_pressed(stack_index: int = -1, provider_id: StringName 
 				"message": String(equip_result.get("message", "Could not equip the selected container."))
 			})
 			return
-		_apply_inventory_container_result(_execute_state_action(
-			PlayerStateServiceScript.ACTION_INVENTORY_EQUIP_CONTAINER,
+		_apply_inventory_container_result(_inventory_manager.execute_action(
+			InventoryManagerScript.ACTION_EQUIP_CONTAINER,
 			_build_action_context("inventory.equip_container", {
 				"provider_id": resolved_provider_id,
 				"target_slot_id": StringName(equip_result.get("slot_id", &""))
 			})
 		))
 		return
-	_apply_inventory_operation_result(_execute_state_action(
-		PlayerStateServiceScript.ACTION_INVENTORY_EQUIP_STACK,
+	_apply_inventory_operation_result(_inventory_manager.execute_action(
+		InventoryManagerScript.ACTION_EQUIP_STACK,
 		_build_action_context("inventory.equip_stack", {
 			"stack_index": resolved_stack_index,
 			"selected_stack_index": resolved_stack_index
@@ -1148,8 +1194,8 @@ func _on_inventory_unequip_pressed(stack_index: int = -1, provider_id: StringNam
 		return
 	var resolved_provider_id = provider_id if provider_id != &"" else inventory_panel.selected_container_provider_id
 	if resolved_provider_id != &"":
-		_apply_inventory_container_result(_execute_state_action(
-			PlayerStateServiceScript.ACTION_INVENTORY_DROP_CONTAINER,
+		_apply_inventory_container_result(_inventory_manager.execute_action(
+			InventoryManagerScript.ACTION_DROP_CONTAINER,
 			_build_action_context("inventory.unequip_container", {
 				"provider_id": resolved_provider_id
 			})
@@ -1163,8 +1209,8 @@ func _on_inventory_unequip_pressed(stack_index: int = -1, provider_id: StringNam
 		_last_inventory_message = "Select a hand-held item and focus a valid storage destination first."
 		_refresh_view()
 		return
-	_apply_inventory_operation_result(_execute_state_action(
-		PlayerStateServiceScript.ACTION_INVENTORY_MOVE_STACK,
+	_apply_inventory_operation_result(_inventory_manager.execute_action(
+		InventoryManagerScript.ACTION_MOVE_STACK,
 		_build_action_context("inventory.unequip_stack", {
 			"stack_index": inventory_panel.selected_stack_index,
 			"target_provider_id": StringName(action.get("target_provider_id", &""))
@@ -1178,8 +1224,8 @@ func _open_selected_container_from_modal(player_state) -> void:
 	var provider_id = inventory_panel.selected_container_provider_id
 	if provider_id == &"":
 		return
-	var result = _execute_state_action(
-		PlayerStateServiceScript.ACTION_INVENTORY_OPEN_CONTAINER,
+	var result = _inventory_manager.execute_action(
+		InventoryManagerScript.ACTION_OPEN_CONTAINER,
 		_build_action_context("inventory.open_container", {
 			"provider_id": provider_id
 		})
@@ -1333,59 +1379,13 @@ func _refresh_camp_isometric_layer(player_state, config) -> void:
 		)
 	if _camp_isometric_layer.has_method("set_hud_snapshot"):
 		_camp_isometric_layer.set_hud_snapshot(_build_camp_hud_snapshot(player_state, config))
-	var fire_action = SurvivalLoopRulesScript.ACTION_BUILD_FIRE if int(player_state.camp_fire_level) <= 0 else SurvivalLoopRulesScript.ACTION_TEND_FIRE
-	var fire_minutes = config.build_fire_minutes if fire_action == SurvivalLoopRulesScript.ACTION_BUILD_FIRE else config.tend_fire_minutes
-	var interactions := [
-		_make_camp_interaction(
-			&"fire",
-			"Tend Fire" if fire_action == SurvivalLoopRulesScript.ACTION_TEND_FIRE else "Build Fire",
-			fire_action,
-			&"",
-			"heat / night safety",
-			"%s; affects warmth, morale, and sleep risk" % _format_duration(fire_minutes)
-		),
-		_make_camp_interaction(
-			&"rest",
-			"Bedroll / Rest",
-			SurvivalLoopRulesScript.ACTION_SLEEP_ROUGH,
-			&"",
-			"night recovery",
-			"sleep from evening or exhaustion; restores tomorrow's capacity, risks cold if camp is poor"
-		),
-		_make_camp_interaction(
-			&"craft",
-			"Craft Area",
-			&"",
-			PAGE_HOBOCRAFT,
-			"repair and makes",
-			"uses time and materials; changes future camp and cooking options"
-		),
-		_make_camp_interaction(
-			&"cooking",
-			"Water / Cooking",
-			&"",
-			PAGE_COOKING,
-			"food and boiling",
-			"trades fire, water, tools, and time for warmth, morale, and safer water"
-		),
-		_make_camp_interaction(
-			&"ready",
-			"Wash / Groom",
-			&"",
-			PAGE_GETTING_READY,
-			"be fit to be seen",
-			"uses water and time; affects appearance and job response"
-		),
-		_make_camp_interaction(
-			&"exit",
-			"Path to Town",
-			SurvivalLoopRulesScript.ACTION_RETURN_TO_TOWN,
-			&"",
-			"leave camp",
-			"%s travel; returns to work, stores, and remittance choices" % _format_duration(config.camp_to_town_travel_minutes)
-		)
-	]
-	_camp_isometric_layer.set_interactions(interactions)
+	_camp_isometric_layer.set_interactions(_entity_manager.build_camp_interactions(
+		_game_state_manager,
+		player_state,
+		config,
+		_location_manager.get_camp_interaction_page_ids(),
+		Callable(self, "_format_duration")
+	))
 	if _camp_isometric_layer.has_method("set_contextual_overlay_models"):
 		_camp_isometric_layer.set_contextual_overlay_models(_build_camp_contextual_overlay_models(player_state, config))
 
@@ -1404,150 +1404,31 @@ func _refresh_town_isometric_layer(player_state, config) -> void:
 		)
 	if _camp_isometric_layer.has_method("set_hud_snapshot"):
 		_camp_isometric_layer.set_hud_snapshot(_build_town_hud_snapshot(player_state, config))
-	var interactions := [
-		_make_camp_interaction(&"town_jobs", "Jobs Board", &"", PAGE_JOBS_BOARD, "work leads", "check posted work before the day moves on"),
-		_make_camp_interaction(&"town_foreman", "Foreman's Office", &"", PAGE_JOBS_BOARD, "ask after work", "talking to the right desk can turn time into wages"),
-		_make_camp_interaction(&"town_send_money", "Church Office", &"", PAGE_SEND_MONEY, "send money home", "turn cash into proof that the road still serves home"),
-		_make_camp_interaction(&"town_grocery", "Grocery Store", &"", PAGE_GROCERY, "buy food", "spend stake on provisions, coffee, and camp meals"),
-		_make_camp_interaction(&"town_hardware", "Hardware Store", &"", PAGE_HARDWARE, "buy tools", "small hardware makes fire, water, and repair work possible"),
-		_make_camp_interaction(
-			&"town_exit",
-			"Road to Camp",
-			SurvivalLoopRulesScript.ACTION_GO_TO_CAMP,
-			&"",
-			"leave town",
-			"%s travel; returns to your camp, stash, and preparation" % _format_duration(config.town_to_camp_travel_minutes)
-		)
-	]
-	_camp_isometric_layer.set_interactions(interactions)
+	_camp_isometric_layer.set_interactions(_entity_manager.build_town_interactions(
+		_game_state_manager,
+		config,
+		_location_manager.get_town_interaction_page_ids(),
+		Callable(self, "_format_duration")
+	))
 	if _camp_isometric_layer.has_method("set_contextual_overlay_models"):
 		_camp_isometric_layer.set_contextual_overlay_models({})
 
 
-func _make_camp_interaction(route_id: StringName, label: String, action_id: StringName, page_id: StringName, cue: String, consequence_text: String) -> Dictionary:
-	var status_text = ""
-	if action_id != &"" and _player_state_service != null:
-		var availability = _player_state_service.get_loop_action_availability(action_id)
-		if not bool(availability.get("enabled", false)):
-			status_text = " Now: %s" % String(availability.get("reason", "blocked"))
-	return {
-		"route_id": route_id,
-		"label": label,
-		"action_id": action_id,
-		"page_id": page_id,
-		"cue": cue,
-		"consequence_text": "%s%s" % [consequence_text, status_text]
-	}
-
-
 func _build_camp_contextual_overlay_models(player_state, config) -> Dictionary:
-	if player_state == null or config == null or _player_state_service == null:
+	if player_state == null or config == null or _game_state_manager == null:
 		return {}
-	return {
-		&"cooking": _build_cooking_overlay_model(player_state, config),
-		&"fire": _build_cooking_overlay_model(player_state, config),
-		&"craft": _build_hobocraft_overlay_model(player_state, config),
-		&"ready": _build_getting_ready_overlay_model(player_state, config),
-		&"rest": _build_rest_overlay_model(player_state, config)
-	}
+	_ensure_overlay_recipe_state()
+	return _overlay_builder.build_camp_contextual_overlay_models(
+		player_state,
+		config,
+		_get_overlay_builder_ui_state(),
+		_get_overlay_builder_deps()
+	)
 
 
 func _build_cooking_overlay_model(player_state, config) -> Dictionary:
-	var fire_action = SurvivalLoopRulesScript.ACTION_BUILD_FIRE if int(player_state.camp_fire_level) <= 0 else SurvivalLoopRulesScript.ACTION_TEND_FIRE
-	var fire_minutes = config.build_fire_minutes if fire_action == SurvivalLoopRulesScript.ACTION_BUILD_FIRE else config.tend_fire_minutes
-	var fire_actions := [
-		_build_camp_overlay_action_entry(
-			"Tend Fire\n%s" % _format_duration(fire_minutes) if fire_action == SurvivalLoopRulesScript.ACTION_TEND_FIRE else "Make Fire\n%s" % _format_duration(fire_minutes),
-			fire_action,
-			{},
-			_build_overlay_tooltip("", _player_state_service.get_loop_action_availability(fire_action))
-		),
-		_build_camp_overlay_action_entry(
-			"Gather Kindling\n%s" % _format_duration(config.gather_kindling_minutes),
-			SurvivalLoopRulesScript.ACTION_GATHER_KINDLING,
-			{},
-			_build_overlay_tooltip("Prepare dry kindling for fire and cooking work.", _player_state_service.get_loop_action_availability(SurvivalLoopRulesScript.ACTION_GATHER_KINDLING))
-		)
-	]
-	var recipes = SurvivalLoopRulesScript.get_cooking_recipes()
-	if _selected_cooking_recipe_id == &"" or _find_recipe(recipes, _selected_cooking_recipe_id).is_empty():
-		_selected_cooking_recipe_id = _get_first_ready_cooking_recipe_id(recipes)
-		if _selected_cooking_recipe_id == &"":
-			_selected_cooking_recipe_id = StringName(recipes[0].get("recipe_id", &"")) if not recipes.is_empty() else &""
-	var browser_entries: Array = []
-	var current_category := ""
-	_seed_overlay_category_state(&"cooking", recipes, _format_recipe_category(_find_recipe(recipes, _selected_cooking_recipe_id)))
-	for recipe in recipes:
-		if not (recipe is Dictionary):
-			continue
-		var category = _format_recipe_category(recipe)
-		if category != current_category:
-			current_category = category
-			var expanded = _is_overlay_category_expanded(&"cooking", current_category) or _has_ready_cooking_recipe_in_category(recipes, current_category)
-			browser_entries.append(_build_overlay_recipe_category_entry(&"cooking", current_category, expanded))
-			if not expanded:
-				continue
-		var recipe_id = StringName(recipe.get("recipe_id", &""))
-		var availability = _player_state_service.get_loop_action_availability_with_context(
-			SurvivalLoopRulesScript.ACTION_COOK_RECIPE,
-			_build_action_context("camp.overlay.cooking", {"recipe_id": recipe_id})
-		)
-		browser_entries.append(_build_overlay_recipe_select_entry(
-			&"cooking",
-			recipe_id,
-			"%s\n%s" % [
-				String(recipe.get("display_name", "Recipe")),
-				"ready" if bool(availability.get("enabled", false)) else String(availability.get("reason", "missing materials"))
-			],
-			_build_overlay_tooltip(String(recipe.get("summary", "")), availability),
-			recipe_id == _selected_cooking_recipe_id
-		))
-	return {
-		"title": "Fire / Cooking",
-		"subtitle": "coals, kettle, tins, and camp heat",
-		"theme": {
-			"badge_text": "FIRE",
-			"title_bar_color": "47301f",
-			"badge_color": "6a4729",
-			"body_color": "1f1712",
-			"section_color": "2a1f19",
-			"button_color": "39291e",
-			"button_hover_color": "4a3323",
-			"button_pressed_color": "573b28",
-			"border_color": "9a7243",
-			"accent_color": "efbf73"
-		},
-		"summary": "Fire %s. Kindling prepared: %s. Potable water %d, non-potable %d." % [
-			player_state.get_camp_fire_status_label(),
-			"yes" if bool(player_state.camp_kindling_prepared) else "no",
-			int(player_state.camp_potable_water_units),
-			int(player_state.camp_non_potable_water_units)
-		],
-		"layout": "recipe_browser",
-		"browser": {
-			"list_title": "Known Cooking",
-			"entries": browser_entries,
-			"detail": {
-				"title": "Camp Cooking",
-				"summary": "A good camp fire is heat, safer water, and tomorrow's working body.",
-				"workspace": _build_overlay_recipe_workspace_data(
-					_find_recipe(recipes, _selected_cooking_recipe_id),
-					player_state,
-					SurvivalLoopRulesScript.ACTION_COOK_RECIPE,
-					"camp.overlay.cooking",
-					"Cook %s",
-					true,
-					[
-						{
-							"title": "Fire Work",
-							"summary": "Heat and prepared kindling decide whether camp cooking and sleep support hold together.",
-							"actions": fire_actions
-						}
-					]
-				)
-			}
-		}
-	}
+	_ensure_overlay_recipe_state()
+	return _overlay_builder.call("build_camp_contextual_overlay_models", player_state, config, _get_overlay_builder_ui_state(), _get_overlay_builder_deps()).get(&"cooking", {})
 
 
 func _get_first_ready_cooking_recipe_id(recipes: Array) -> StringName:
@@ -1555,7 +1436,7 @@ func _get_first_ready_cooking_recipe_id(recipes: Array) -> StringName:
 		if not (recipe is Dictionary):
 			continue
 		var recipe_id = StringName(recipe.get("recipe_id", &""))
-		var availability = _player_state_service.get_loop_action_availability_with_context(
+		var availability = _game_state_manager.get_loop_action_availability_with_context(
 			SurvivalLoopRulesScript.ACTION_COOK_RECIPE,
 			_build_action_context("camp.overlay.cooking", {"recipe_id": recipe_id})
 		)
@@ -1569,7 +1450,7 @@ func _has_ready_cooking_recipe_in_category(recipes: Array, category: String) -> 
 		if not (recipe is Dictionary) or _format_recipe_category(recipe) != category:
 			continue
 		var recipe_id = StringName(recipe.get("recipe_id", &""))
-		var availability = _player_state_service.get_loop_action_availability_with_context(
+		var availability = _game_state_manager.get_loop_action_availability_with_context(
 			SurvivalLoopRulesScript.ACTION_COOK_RECIPE,
 			_build_action_context("camp.overlay.cooking", {"recipe_id": recipe_id})
 		)
@@ -1579,349 +1460,62 @@ func _has_ready_cooking_recipe_in_category(recipes: Array, category: String) -> 
 
 
 func _build_hobocraft_overlay_model(_player_state, config) -> Dictionary:
-	var recipes = SurvivalLoopRulesScript.get_hobocraft_recipes()
-	if _selected_hobocraft_recipe_id == &"" or _find_recipe(recipes, _selected_hobocraft_recipe_id).is_empty():
-		_selected_hobocraft_recipe_id = StringName(recipes[0].get("recipe_id", &"")) if not recipes.is_empty() else &""
-	var browser_entries: Array = []
-	var current_category := ""
-	_seed_overlay_category_state(&"craft", recipes, _format_recipe_category(_find_recipe(recipes, _selected_hobocraft_recipe_id)))
-	for recipe in recipes:
-		if not (recipe is Dictionary):
-			continue
-		var category = _format_recipe_category(recipe)
-		if category != current_category:
-			current_category = category
-			var expanded = _is_overlay_category_expanded(&"craft", current_category)
-			browser_entries.append(_build_overlay_recipe_category_entry(&"craft", current_category, expanded))
-			if not expanded:
-				continue
-		var recipe_id = StringName(recipe.get("recipe_id", &""))
-		var availability = _player_state_service.get_loop_action_availability_with_context(
-			SurvivalLoopRulesScript.ACTION_CRAFT_RECIPE,
-			_build_action_context("camp.overlay.craft", {"recipe_id": recipe_id})
-		)
-		browser_entries.append(_build_overlay_recipe_select_entry(
-			&"craft",
-			recipe_id,
-			"%s\n%s" % [
-				String(recipe.get("display_name", "Recipe")),
-				"ready" if bool(availability.get("enabled", false)) else String(availability.get("reason", "missing materials"))
-			],
-			_build_overlay_tooltip(String(recipe.get("summary", "")), availability),
-			recipe_id == _selected_hobocraft_recipe_id
-		))
-	return {
-		"title": "Tool Area",
-		"subtitle": "bench, scraps, cordage, and field repair",
-		"theme": {
-			"badge_text": "CRAFT",
-			"title_bar_color": "2f3622",
-			"badge_color": "4f6032",
-			"body_color": "171b14",
-			"section_color": "20261a",
-			"button_color": "2d3422",
-			"button_hover_color": "39422b",
-			"button_pressed_color": "465235",
-			"border_color": "7f9a57",
-			"accent_color": "c8dd94"
-		},
-		"summary": "Repair and makeshift gear stay local to camp because they support work, cooking, and the next day's body.",
-		"layout": "recipe_browser",
-		"browser": {
-			"list_title": "Known Makes",
-			"entries": browser_entries,
-			"detail": {
-				"title": "Hobocraft",
-				"summary": "Small camp makes preserve function rather than adding abstraction.",
-				"workspace": _build_overlay_recipe_workspace_data(
-					_find_recipe(recipes, _selected_hobocraft_recipe_id),
-					_player_state,
-					SurvivalLoopRulesScript.ACTION_CRAFT_RECIPE,
-					"camp.overlay.craft",
-					"Craft %s",
-					false
-				)
-			}
-		}
-	}
+	_ensure_overlay_recipe_state()
+	return _overlay_builder.call("build_camp_contextual_overlay_models", _player_state, config, _get_overlay_builder_ui_state(), _get_overlay_builder_deps()).get(&"craft", {})
 
 
 func _build_overlay_recipe_workspace_data(recipe: Dictionary, player_state, action_id: StringName, context_source: String, action_label_format: String, is_cooking: bool, utility_sections: Array = []) -> Dictionary:
-	if recipe.is_empty():
-		return {
-			"card": {
-				"badge_text": "NOTE",
-				"title": "Recipe Card",
-				"subtitle": "nothing selected",
-				"summary": "Pick a recipe to review materials and outcome.",
-				"sections": [],
-				"action": {}
-			},
-			"utility_sections": utility_sections
-		}
-	var recipe_id = StringName(recipe.get("recipe_id", &""))
-	var availability = _player_state_service.get_loop_action_availability_with_context(
+	return _overlay_builder.build_overlay_recipe_workspace_data(
+		recipe,
+		player_state,
+		_get_loop_config(),
 		action_id,
-		_build_action_context(context_source, {"recipe_id": recipe_id})
+		context_source,
+		action_label_format,
+		is_cooking,
+		_get_overlay_builder_deps(),
+		utility_sections
 	)
-	var card_sections: Array = [
-		{
-			"title": "Held",
-			"body": _build_overlay_recipe_material_summary(recipe, player_state, is_cooking)
-		},
-		{
-			"title": "Needs",
-			"body": _format_recipe_inputs(recipe)
-		},
-		{
-			"title": "Status",
-			"body": "Ready now" if bool(availability.get("enabled", false)) else String(availability.get("reason", "Missing materials"))
-		},
-		{
-			"title": "Tradeoff",
-			"body": _build_recipe_tradeoff_text(recipe, is_cooking)
-		},
-		{
-			"title": "Result",
-			"body": _build_recipe_result_text(recipe, player_state, is_cooking)
-		}
-	]
-	return {
-		"card": {
-			"badge_text": _get_recipe_badge_label(recipe, is_cooking),
-			"title": String(recipe.get("display_name", "Recipe")),
-			"subtitle": "written down for camp use",
-			"summary": String(recipe.get("summary", "")),
-			"sections": card_sections,
-			"action": _build_camp_overlay_action_entry(
-				action_label_format % String(recipe.get("display_name", "Recipe")),
-				action_id,
-				{"recipe_id": recipe_id},
-				_build_overlay_tooltip(String(recipe.get("summary", "")), availability),
-				context_source
-			)
-		},
-		"utility_sections": utility_sections
-	}
 
 
 func _build_overlay_recipe_material_summary(recipe: Dictionary, player_state, is_cooking: bool) -> String:
-	var lines := PackedStringArray()
-	for entry in _build_recipe_material_entries(recipe, player_state, is_cooking):
-		if not (entry is Dictionary):
-			continue
-		lines.append("%s: %d held (needs %d)" % [
-			String(entry.get("label", "Material")),
-			int(entry.get("have", 0)),
-			int(entry.get("need", 1))
-		])
-	return "\n".join(lines) if not lines.is_empty() else "No counted ingredients for this card."
+	return _overlay_builder.build_overlay_recipe_material_summary(
+		recipe,
+		player_state,
+		_get_loop_config(),
+		is_cooking,
+		_get_overlay_builder_deps()
+	)
 
 
 func _build_getting_ready_overlay_model(player_state, config) -> Dictionary:
-	var water_action_duration = config.ready_boil_water_minutes if player_state.camp_non_potable_water_units > 0 else config.ready_fetch_water_minutes
-	var ready_actions := [
-		_build_camp_overlay_action_entry(
-			"Fetch Water / Boil Water\nrequired first | %s" % _format_duration(water_action_duration),
-			SurvivalLoopRulesScript.ACTION_READY_FETCH_WATER,
-			{},
-			_build_overlay_tooltip("", _player_state_service.get_loop_action_availability(SurvivalLoopRulesScript.ACTION_READY_FETCH_WATER))
-		),
-		_build_camp_overlay_action_entry(
-			"Wash Body\n+Hygiene, +Presentability, -Stamina | %s" % _format_duration(config.ready_wash_body_minutes),
-			SurvivalLoopRulesScript.ACTION_READY_WASH_BODY,
-			{},
-			_build_overlay_tooltip("", _player_state_service.get_loop_action_availability(SurvivalLoopRulesScript.ACTION_READY_WASH_BODY))
-		),
-		_build_camp_overlay_action_entry(
-			"Wash Face / Hands\n+Hygiene, +Presentability | %s" % _format_duration(config.ready_wash_face_hands_minutes),
-			SurvivalLoopRulesScript.ACTION_READY_WASH_FACE_HANDS,
-			{},
-			_build_overlay_tooltip("", _player_state_service.get_loop_action_availability(SurvivalLoopRulesScript.ACTION_READY_WASH_FACE_HANDS))
-		),
-		_build_camp_overlay_action_entry(
-			"Shave\n+Presentability | %s" % _format_duration(config.ready_shave_minutes),
-			SurvivalLoopRulesScript.ACTION_READY_SHAVE,
-			{},
-			_build_overlay_tooltip("", _player_state_service.get_loop_action_availability(SurvivalLoopRulesScript.ACTION_READY_SHAVE))
-		),
-		_build_camp_overlay_action_entry(
-			"Comb / Groom\n+Presentability | %s" % _format_duration(config.ready_comb_groom_minutes),
-			SurvivalLoopRulesScript.ACTION_READY_COMB_GROOM,
-			{},
-			_build_overlay_tooltip("", _player_state_service.get_loop_action_availability(SurvivalLoopRulesScript.ACTION_READY_COMB_GROOM))
-		),
-		_build_camp_overlay_action_entry(
-			"Air Out Clothes\n+Hygiene, +Presentability | %s" % _format_duration(config.ready_air_out_clothes_minutes),
-			SurvivalLoopRulesScript.ACTION_READY_AIR_OUT_CLOTHES,
-			{},
-			_build_overlay_tooltip("", _player_state_service.get_loop_action_availability(SurvivalLoopRulesScript.ACTION_READY_AIR_OUT_CLOTHES))
-		),
-		_build_camp_overlay_action_entry(
-			"Brush Clothes\n+Presentability | %s" % _format_duration(config.ready_brush_clothes_minutes),
-			SurvivalLoopRulesScript.ACTION_READY_BRUSH_CLOTHES,
-			{},
-			_build_overlay_tooltip("", _player_state_service.get_loop_action_availability(SurvivalLoopRulesScript.ACTION_READY_BRUSH_CLOTHES))
-		)
-	]
-	return {
-		"title": "Wash / Get Ready",
-		"subtitle": "water, grooming, and being fit to be seen",
-		"theme": {
-			"badge_text": "READY",
-			"title_bar_color": "24353b",
-			"badge_color": "365660",
-			"body_color": "141a1d",
-			"section_color": "1d2529",
-			"button_color": "273238",
-			"button_hover_color": "31414a",
-			"button_pressed_color": "3b505a",
-			"border_color": "6fa1a8",
-			"accent_color": "b7ddd8"
-		},
-		"summary": "Water potable %d / non-potable %d. Hygiene %d / 100. Presentability %d / 100. Stamina %d / 100." % [
-			int(player_state.camp_potable_water_units),
-			int(player_state.camp_non_potable_water_units),
-			int(player_state.passport_profile.hygiene),
-			int(player_state.passport_profile.presentability),
-			_get_stamina_value(player_state)
-		],
-		"sections": [
-			{
-				"title": "Routine",
-				"detail": "Cleaning up stays close to camp because it exists to support work, town response, and dignity under pressure.",
-				"actions": ready_actions
-			}
-		]
-	}
+	return _overlay_builder.build_camp_contextual_overlay_models(
+		player_state,
+		config,
+		_get_overlay_builder_ui_state(),
+		_get_overlay_builder_deps()
+	).get(&"ready", {})
 
 
 func _build_rest_overlay_model(player_state, config) -> Dictionary:
-	var sleep_context := {"hours": _selected_rest_hours}
-	if _selected_sleep_item_id != &"":
-		sleep_context["sleep_item_id"] = _selected_sleep_item_id
-	var availability = _player_state_service.get_loop_action_availability_with_context(
-		SurvivalLoopRulesScript.ACTION_SLEEP_ROUGH,
-		_build_action_context("camp.overlay.rest", sleep_context)
-	)
-	var hour_actions: Array = [
-		{
-			"label": "-",
-			"command_type": "adjust_rest_hours",
-			"delta": -1,
-			"disabled": _selected_rest_hours <= 1,
-			"tooltip_text": "Rest one fewer hour."
-		},
-		{
-			"label": "%d hour%s" % [_selected_rest_hours, "" if _selected_rest_hours == 1 else "s"],
-			"command_type": "set_rest_hours",
-			"hours": _selected_rest_hours,
-			"disabled": true,
-			"tooltip_text": "Selected rest duration."
-		},
-		{
-			"label": "+",
-			"command_type": "adjust_rest_hours",
-			"delta": 1,
-			"disabled": _selected_rest_hours >= 12,
-			"tooltip_text": "Rest one more hour."
-		}
-	]
-	var sleep_item_actions: Array = [
-		{
-			"label": "Ground Only%s" % (" selected" if _selected_sleep_item_id == &"" else ""),
-			"command_type": "set_sleep_item",
-			"sleep_item_id": &"",
-			"tooltip_text": "Rest without bedding from the pack."
-		}
-	]
-	if player_state != null and player_state.inventory_state != null and player_state.inventory_state.has_item(&"blanket_roll", 1):
-		sleep_item_actions.append({
-			"label": "Use Bedroll%s" % (" selected" if _selected_sleep_item_id == &"blanket_roll" else ""),
-			"command_type": "set_sleep_item",
-			"sleep_item_id": &"blanket_roll",
-			"tooltip_text": "Use the blanket roll you are carrying."
-		})
-	return {
-		"title": "Bedroll",
-		"subtitle": "blankets, rough sleep, and tomorrow's strength",
-		"theme": {
-			"badge_text": "REST",
-			"title_bar_color": "2e2f39",
-			"badge_color": "44495e",
-			"body_color": "17181d",
-			"section_color": "1e2028",
-			"button_color": "2a2d38",
-			"button_hover_color": "35394a",
-			"button_pressed_color": "40455a",
-			"border_color": "8d98ba",
-			"accent_color": "d3dbf2"
-		},
-		"summary": "Rough sleep is only relief if the camp is ready enough to carry you into the next workday.",
-		"sections": [
-			{
-				"title": "Hours",
-				"detail": "Rest can happen day or night, but night sleep does more good. Current warmth outlook: %s." % _format_warmth_breakdown(SurvivalLoopRulesScript.get_sleep_warmth_breakdown(player_state, config)),
-				"layout": "compact_controls",
-				"actions": hour_actions
-			},
-			{
-				"title": "Sleeping Items",
-				"detail": "Choose whether you are laying out carried bedding or taking the ground as it is.",
-				"actions": sleep_item_actions
-			},
-			{
-				"title": "Rest",
-				"detail": "Selected rest: %d hour%s%s." % [
-					_selected_rest_hours,
-					"" if _selected_rest_hours == 1 else "s",
-					" with bedroll" if _selected_sleep_item_id == &"blanket_roll" else " on the ground"
-				],
-				"actions": [
-					_build_camp_overlay_action_entry(
-						"Sleep %d Hour%s" % [_selected_rest_hours, "" if _selected_rest_hours == 1 else "s"],
-						SurvivalLoopRulesScript.ACTION_SLEEP_ROUGH,
-						sleep_context,
-						_build_overlay_tooltip(String(availability.get("reason", "")), availability),
-						"camp.overlay.rest"
-					)
-				]
-			}
-		]
-	}
+	return _overlay_builder.build_camp_contextual_overlay_models(
+		player_state,
+		config,
+		_get_overlay_builder_ui_state(),
+		_get_overlay_builder_deps()
+	).get(&"rest", {})
 
 
 func _build_camp_overlay_action_entry(label: String, action_id: StringName, context: Dictionary = {}, tooltip_text: String = "", context_source: String = "camp.overlay") -> Dictionary:
-	return {
-		"label": label,
-		"action_id": action_id,
-		"context": context.duplicate(true),
-		"tooltip_text": tooltip_text,
-		"context_source": context_source
-	}
+	return _overlay_builder.call("_build_camp_overlay_action_entry", label, action_id, context, tooltip_text, context_source)
 
 
 func _build_overlay_recipe_select_entry(route_id: StringName, selection_id: StringName, label: String, tooltip_text: String, selected: bool) -> Dictionary:
-	return {
-		"entry_kind": "recipe",
-		"command_type": "select_overlay_recipe",
-		"route_id": route_id,
-		"selection_id": selection_id,
-		"label": label,
-		"tooltip_text": tooltip_text,
-		"selected": selected
-	}
+	return _overlay_builder.call("_build_overlay_recipe_select_entry", route_id, selection_id, label, tooltip_text, selected)
 
 
 func _build_overlay_recipe_category_entry(route_id: StringName, category_id: String, expanded: bool) -> Dictionary:
-	return {
-		"entry_kind": "category",
-		"command_type": "toggle_overlay_category",
-		"route_id": route_id,
-		"category_id": category_id,
-		"label": "%s %s" % ["[-]" if expanded else "[+]", category_id],
-		"expanded": expanded
-	}
+	return _overlay_builder.call("_build_overlay_recipe_category_entry", route_id, category_id, expanded)
 
 
 func _get_overlay_category_state_map(route_id: StringName) -> Dictionary:
@@ -1959,45 +1553,63 @@ func _toggle_overlay_category(route_id: StringName, category_id: String) -> void
 	_set_overlay_category_expanded(route_id, category_id, not _is_overlay_category_expanded(route_id, category_id))
 
 
-func _build_recipe_overlay_detail_section(recipe: Dictionary, action_id: StringName, context_source: String, action_label_format: String, input_label: String, extra_lines: Array = []) -> Dictionary:
-	if recipe.is_empty():
-		return {
-			"title": "Selection",
-			"summary": "Choose a recipe from the list to review materials, tradeoffs, and output.",
-			"lines": [],
-			"actions": []
-		}
-	var recipe_id = StringName(recipe.get("recipe_id", &""))
-	var availability = _player_state_service.get_loop_action_availability_with_context(
-		action_id,
-		_build_action_context(context_source, {"recipe_id": recipe_id})
-	)
-	var lines: Array = [
-		"Status: %s" % ("ready" if bool(availability.get("enabled", false)) else String(availability.get("reason", "missing materials"))),
-		String(recipe.get("summary", "")),
-		"%s: %s" % [input_label, _format_recipe_inputs(recipe)],
-		"Result: %s" % String(recipe.get("effects_text", "%s x%d" % [String(recipe.get("output_item_id", "")).replace("_", " "), int(recipe.get("output_quantity", 1))]))
-	]
-	for extra_line in extra_lines:
-		lines.append(String(extra_line))
+func _build_overlay_tooltip(base_text: String, availability: Dictionary) -> String:
+	return _overlay_builder.call("_build_overlay_tooltip", base_text, availability)
+
+
+func _ensure_overlay_recipe_state() -> void:
+	var cooking_recipes = SurvivalLoopRulesScript.get_cooking_recipes()
+	if _selected_cooking_recipe_id == &"" or _find_recipe(cooking_recipes, _selected_cooking_recipe_id).is_empty():
+		_selected_cooking_recipe_id = _get_first_ready_cooking_recipe_id(cooking_recipes)
+		if _selected_cooking_recipe_id == &"":
+			_selected_cooking_recipe_id = StringName(cooking_recipes[0].get("recipe_id", &"")) if not cooking_recipes.is_empty() else &""
+	_seed_overlay_category_state(&"cooking", cooking_recipes, _format_recipe_category(_find_recipe(cooking_recipes, _selected_cooking_recipe_id)))
+	for recipe in cooking_recipes:
+		if not (recipe is Dictionary):
+			continue
+		var category = _format_recipe_category(recipe)
+		if _has_ready_cooking_recipe_in_category(cooking_recipes, category):
+			_set_overlay_category_expanded(&"cooking", category, true)
+
+	var craft_recipes = SurvivalLoopRulesScript.get_hobocraft_recipes()
+	if _selected_hobocraft_recipe_id == &"" or _find_recipe(craft_recipes, _selected_hobocraft_recipe_id).is_empty():
+		_selected_hobocraft_recipe_id = StringName(craft_recipes[0].get("recipe_id", &"")) if not craft_recipes.is_empty() else &""
+	_seed_overlay_category_state(&"craft", craft_recipes, _format_recipe_category(_find_recipe(craft_recipes, _selected_hobocraft_recipe_id)))
+
+
+func _get_overlay_builder_ui_state() -> Dictionary:
 	return {
-		"title": String(recipe.get("display_name", "Recipe")),
-		"summary": "Selected recipe",
-		"lines": lines,
-		"actions": [
-			_build_camp_overlay_action_entry(
-				action_label_format % String(recipe.get("display_name", "Recipe")),
-				action_id,
-				{"recipe_id": recipe_id},
-				_build_overlay_tooltip(String(recipe.get("summary", "")), availability),
-				context_source
-			)
-		]
+		"selected_cooking_recipe_id": _selected_cooking_recipe_id,
+		"selected_hobocraft_recipe_id": _selected_hobocraft_recipe_id,
+		"selected_rest_hours": _selected_rest_hours,
+		"selected_sleep_item_id": _selected_sleep_item_id,
+		"expanded_cooking_overlay_categories": _expanded_cooking_overlay_categories.duplicate(true),
+		"expanded_hobocraft_overlay_categories": _expanded_hobocraft_overlay_categories.duplicate(true)
 	}
 
 
-func _build_overlay_tooltip(base_text: String, availability: Dictionary) -> String:
-	return _build_availability_tooltip(base_text, availability)
+func _get_overlay_builder_deps() -> Dictionary:
+	return {
+		"build_action_context": Callable(self, "_build_action_context"),
+		"format_duration": Callable(self, "_format_duration"),
+		"format_warmth_breakdown": Callable(self, "_format_warmth_breakdown"),
+		"get_action_availability": Callable(self, "_get_overlay_action_availability"),
+		"get_item_catalog": Callable(self, "_get_overlay_item_catalog"),
+		"get_item_definition": Callable(self, "_get_item_definition"),
+		"get_stamina_value": Callable(self, "_get_stamina_value")
+	}
+
+
+func _get_overlay_action_availability(action_id: StringName, context: Dictionary = {}) -> Dictionary:
+	if _game_state_manager == null:
+		return {"enabled": false, "reason": "Action is unavailable."}
+	if context.is_empty():
+		return _game_state_manager.get_loop_action_availability(action_id)
+	return _game_state_manager.get_loop_action_availability_with_context(action_id, context)
+
+
+func _get_overlay_item_catalog():
+	return _data_manager.get_item_catalog()
 
 
 func _on_job_pressed(instance_id: StringName) -> void:
@@ -2238,7 +1850,7 @@ func _refresh_view() -> void:
 			_send_amount_spinbox.value = float(_selected_send_amount_cents) / 100.0
 	if _send_mail_custom_button != null:
 		_send_mail_custom_button.text = _build_send_method_button_text(config, &"mail", _selected_send_amount_cents)
-		var send_mail_availability = _player_state_service.get_loop_action_availability_with_context(
+		var send_mail_availability = _game_state_manager.get_loop_action_availability_with_context(
 			SurvivalLoopRulesScript.ACTION_SEND_SUPPORT,
 			_build_action_context("send_money.custom.refresh", {"amount_cents": _selected_send_amount_cents, "method_id": &"mail"})
 		)
@@ -2246,7 +1858,7 @@ func _refresh_view() -> void:
 		_send_mail_custom_button.disabled = false
 	if _send_telegraph_custom_button != null:
 		_send_telegraph_custom_button.text = _build_send_method_button_text(config, &"telegraph", _selected_send_amount_cents)
-		var send_telegraph_availability = _player_state_service.get_loop_action_availability_with_context(
+		var send_telegraph_availability = _game_state_manager.get_loop_action_availability_with_context(
 			SurvivalLoopRulesScript.ACTION_SEND_SUPPORT,
 			_build_action_context("send_money.custom.refresh", {"amount_cents": _selected_send_amount_cents, "method_id": &"telegraph"})
 		)
@@ -2337,7 +1949,7 @@ func _refresh_page_navigation_buttons(player_state) -> void:
 		StringName(player_state.loop_location_id),
 		SurvivalLoopRulesScript.LOCATION_CAMP,
 		PAGE_CAMP,
-		[PAGE_GETTING_READY, PAGE_HOBOCRAFT, PAGE_COOKING]
+		_location_manager.get_camp_sub_pages()
 	)
 
 
@@ -2446,12 +2058,12 @@ func _get_condition_bar_color(ratio: float) -> Color:
 
 
 func _refresh_store_stock_sections(player_state) -> void:
-	if _player_state_service == null:
+	if _data_manager == null:
 		_clear_children(_grocery_stock_list)
 		_clear_children(_hardware_stock_list)
 		return
 	var config = _get_loop_config()
-	var item_catalog = _player_state_service.get_item_catalog()
+	var item_catalog = _data_manager.get_item_catalog()
 	var week_index = player_state.store_stock_week_index
 	supplies_summary_label.text = "Week %d town stock. It changes each week; quality and price both matter." % week_index
 	_hardware_summary_label.text = "Week %d hardware stock. Camp utility, repair bits, and small road materials." % week_index
@@ -2481,7 +2093,7 @@ func _rebuild_store_stock_list(list: VBoxContainer, store_id: StringName, stock:
 			"store_id": store_id,
 			"selected_stack_index": index
 		})
-		var availability = _player_state_service.get_loop_action_availability_with_context(SurvivalLoopRulesScript.ACTION_BUY_STORE_STOCK, context)
+		var availability = _game_state_manager.get_loop_action_availability_with_context(SurvivalLoopRulesScript.ACTION_BUY_STORE_STOCK, context)
 		button.disabled = false
 		button.tooltip_text = _build_availability_tooltip(item.get_inventory_tooltip_text() if item != null else "", availability)
 		button.pressed.connect(Callable(self, "_on_store_stock_pressed").bind(store_id, index))
@@ -2503,7 +2115,7 @@ func _format_store_stock_button_text(entry: Dictionary, item) -> String:
 func _refresh_hobocraft_recipes(player_state) -> void:
 	_clear_children(_hobocraft_recipe_list)
 	_clear_children(_hobocraft_detail_root)
-	if _player_state_service == null:
+	if _game_state_manager == null:
 		return
 	var recipes = SurvivalLoopRulesScript.get_hobocraft_recipes()
 	if recipes.is_empty():
@@ -2528,7 +2140,7 @@ func _refresh_hobocraft_recipes(player_state) -> void:
 		var context = _build_action_context("hobocraft.refresh", {
 			"recipe_id": recipe_id
 		})
-		var availability = _player_state_service.get_loop_action_availability_with_context(SurvivalLoopRulesScript.ACTION_CRAFT_RECIPE, context)
+		var availability = _game_state_manager.get_loop_action_availability_with_context(SurvivalLoopRulesScript.ACTION_CRAFT_RECIPE, context)
 		button.text = _format_recipe_button_text(recipe, availability)
 		button.disabled = false
 		button.tooltip_text = _build_availability_tooltip(String(recipe.get("summary", "")), availability)
@@ -2547,7 +2159,7 @@ func _refresh_hobocraft_detail(recipe: Dictionary, player_state) -> void:
 	var context = _build_action_context("hobocraft.detail", {
 		"recipe_id": recipe_id
 	})
-	var availability = _player_state_service.get_loop_action_availability_with_context(SurvivalLoopRulesScript.ACTION_CRAFT_RECIPE, context)
+	var availability = _game_state_manager.get_loop_action_availability_with_context(SurvivalLoopRulesScript.ACTION_CRAFT_RECIPE, context)
 	_hobocraft_detail_root.add_child(_build_recipe_workspace(
 		recipe,
 		player_state,
@@ -2566,7 +2178,7 @@ func _refresh_cooking_panel(player_state) -> void:
 		]
 	_clear_children(_cooking_recipe_list)
 	_clear_children(_cooking_detail_root)
-	if _player_state_service == null:
+	if _game_state_manager == null:
 		return
 	_cooking_filter_button.button_pressed = _show_only_makeable_cooking
 	_cooking_filter_button.text = "Showing Makeable Now" if _show_only_makeable_cooking else "Showing All Known"
@@ -2581,7 +2193,7 @@ func _refresh_cooking_panel(player_state) -> void:
 		if not (recipe is Dictionary):
 			continue
 		var recipe_id = StringName(recipe.get("recipe_id", &""))
-		var availability = _player_state_service.get_loop_action_availability_with_context(
+		var availability = _game_state_manager.get_loop_action_availability_with_context(
 			SurvivalLoopRulesScript.ACTION_COOK_RECIPE,
 			_build_action_context("cooking.refresh", {"recipe_id": recipe_id})
 		)
@@ -2604,7 +2216,7 @@ func _refresh_cooking_panel(player_state) -> void:
 			current_category = category
 			_add_recipe_category_label(_cooking_recipe_list, current_category)
 		var recipe_id = StringName(recipe.get("recipe_id", &""))
-		var availability = _player_state_service.get_loop_action_availability_with_context(
+		var availability = _game_state_manager.get_loop_action_availability_with_context(
 			SurvivalLoopRulesScript.ACTION_COOK_RECIPE,
 			_build_action_context("cooking.refresh", {"recipe_id": recipe_id})
 		)
@@ -2629,7 +2241,7 @@ func _refresh_cooking_detail(recipe: Dictionary, player_state) -> void:
 	title.text = String(recipe.get("display_name", "Cooking"))
 	title.add_theme_font_size_override("font_size", 22)
 	_cooking_detail_root.add_child(title)
-	var availability = _player_state_service.get_loop_action_availability_with_context(
+	var availability = _game_state_manager.get_loop_action_availability_with_context(
 		SurvivalLoopRulesScript.ACTION_COOK_RECIPE,
 		_build_action_context("cooking.detail", {"recipe_id": recipe_id})
 	)
@@ -2648,12 +2260,20 @@ func _build_recipe_workspace(recipe: Dictionary, player_state, availability: Dic
 	workspace.add_theme_constant_override("separation", 14)
 	workspace.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	workspace.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
-	workspace.add_child(_build_recipe_note_panel(recipe, player_state, availability, is_cooking))
-	workspace.add_child(_build_recipe_card_panel(recipe, player_state, availability, is_cooking, action_pressed))
+	var workspace_model = _overlay_builder.build_recipe_workspace_model(
+		recipe,
+		player_state,
+		_get_loop_config(),
+		availability,
+		is_cooking,
+		_get_overlay_builder_deps()
+	)
+	workspace.add_child(_build_recipe_note_panel(workspace_model.get("note", {})))
+	workspace.add_child(_build_recipe_card_panel(workspace_model.get("card", {}), action_pressed))
 	return workspace
 
 
-func _build_recipe_note_panel(recipe: Dictionary, player_state, availability: Dictionary, is_cooking: bool) -> Control:
+func _build_recipe_note_panel(note_model: Dictionary) -> Control:
 	var panel = PanelContainer.new()
 	panel.name = "RecipeInventoryNote"
 	panel.custom_minimum_size = Vector2(270.0, 0.0)
@@ -2666,18 +2286,18 @@ func _build_recipe_note_panel(recipe: Dictionary, player_state, availability: Di
 	panel.add_child(root)
 
 	var title = Label.new()
-	title.text = "Camp Note"
+	title.text = String(note_model.get("title", "Camp Note"))
 	title.add_theme_font_size_override("font_size", 20)
 	title.modulate = Color("fbf7f0")
 	root.add_child(title)
 
 	var status = Label.new()
-	status.text = "Ready now" if bool(availability.get("enabled", false)) else String(availability.get("reason", "Missing materials"))
+	status.text = String(note_model.get("status", "Missing materials"))
 	status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	status.modulate = Color("ddd6ca")
 	root.add_child(status)
 
-	for line in _build_recipe_inventory_note_lines(recipe, player_state, is_cooking):
+	for line in note_model.get("lines", PackedStringArray()):
 		var label = Label.new()
 		label.text = String(line)
 		label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -2687,7 +2307,7 @@ func _build_recipe_note_panel(recipe: Dictionary, player_state, availability: Di
 	return panel
 
 
-func _build_recipe_card_panel(recipe: Dictionary, player_state, availability: Dictionary, is_cooking: bool, action_pressed: Callable) -> Control:
+func _build_recipe_card_panel(card_model: Dictionary, action_pressed: Callable) -> Control:
 	var panel = PanelContainer.new()
 	panel.name = "RecipeIndexCard"
 	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -2708,7 +2328,7 @@ func _build_recipe_card_panel(recipe: Dictionary, player_state, availability: Di
 	header.add_child(badge)
 
 	var badge_label = Label.new()
-	badge_label.text = _get_recipe_badge_label(recipe, is_cooking)
+	badge_label.text = String(card_model.get("badge_text", "CARD"))
 	badge_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	badge_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	badge_label.add_theme_font_size_override("font_size", 16)
@@ -2721,39 +2341,39 @@ func _build_recipe_card_panel(recipe: Dictionary, player_state, availability: Di
 	header.add_child(title_column)
 
 	var title = Label.new()
-	title.text = String(recipe.get("display_name", "Recipe"))
+	title.text = String(card_model.get("title", "Recipe"))
 	title.add_theme_font_size_override("font_size", 24)
 	title.modulate = Color("16120e")
 	title_column.add_child(title)
 
 	var subtitle = Label.new()
-	subtitle.text = "written down for camp use"
+	subtitle.text = String(card_model.get("subtitle", "written down for camp use"))
 	subtitle.modulate = Color("4f4336")
 	title_column.add_child(subtitle)
 
 	var summary = Label.new()
-	summary.text = String(recipe.get("summary", ""))
+	summary.text = String(card_model.get("summary", ""))
 	summary.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	summary.modulate = Color("231d17")
 	root.add_child(summary)
 
-	root.add_child(_build_recipe_card_section("Needs", _format_recipe_inputs(recipe), Color("221c16")))
-	root.add_child(_build_recipe_card_section("Status", "Ready now" if bool(availability.get("enabled", false)) else String(availability.get("reason", "Missing materials")), Color("221c16")))
-
-	var tradeoff_text = _build_recipe_tradeoff_text(recipe, is_cooking)
-	root.add_child(_build_recipe_card_section("Tradeoff", tradeoff_text, Color("221c16")))
-
-	var result_text = _build_recipe_result_text(recipe, player_state, is_cooking)
-	root.add_child(_build_recipe_card_section("Result", result_text, Color("221c16")))
+	for section_model in card_model.get("sections", []):
+		if not (section_model is Dictionary):
+			continue
+		root.add_child(_build_recipe_card_section(
+			String(section_model.get("title", "")),
+			String(section_model.get("body", "")),
+			section_model.get("font_color", Color("221c16"))
+		))
 
 	var action_button = Button.new()
 	action_button.custom_minimum_size = Vector2(0.0, 54.0)
-	action_button.text = ("Cook " if is_cooking else "Craft ") + String(recipe.get("display_name", "Recipe"))
-	action_button.disabled = not bool(availability.get("enabled", false))
-	action_button.tooltip_text = _build_availability_tooltip(String(recipe.get("summary", "")), availability)
+	action_button.text = String(card_model.get("action_label", "Act"))
+	action_button.disabled = bool(card_model.get("action_disabled", false))
+	action_button.tooltip_text = String(card_model.get("action_tooltip", ""))
 	action_button.pressed.connect(action_pressed)
 	_apply_inventory_modal_button_style(action_button, Color("3d3022"), Color("8e6c42"))
-	var output_item = _get_item_definition(StringName(recipe.get("output_item_id", &"")))
+	var output_item = _get_item_definition(StringName(card_model.get("output_item_id", &"")))
 	_apply_tier_text_color(action_button, output_item, 1)
 	root.add_child(action_button)
 
@@ -2780,195 +2400,13 @@ func _build_recipe_card_section(title_text: String, body_text: String, font_colo
 
 
 func _build_recipe_inventory_note_lines(recipe: Dictionary, player_state, is_cooking: bool) -> PackedStringArray:
-	var lines := PackedStringArray()
-	var inventory = _get_player_inventory(player_state)
-	if inventory == null:
-		lines.append("Pack record unavailable.")
-		return lines
-
-	lines.append("Materials on hand:")
-	var material_entries = _build_recipe_material_entries(recipe, player_state, is_cooking)
-	if material_entries.is_empty():
-		lines.append("No counted materials for this note.")
-	else:
-		for entry in material_entries:
-			lines.append(_format_recipe_material_line(entry))
-
-	var relevant_lines = _build_recipe_relevant_item_lines(recipe, player_state, is_cooking)
-	if not relevant_lines.is_empty():
-		lines.append("")
-		lines.append("Relevant kit already carried:")
-		for line in relevant_lines:
-			lines.append(line)
-
-	if is_cooking and player_state != null and player_state.has_method("get_camp_fire_status_label"):
-		lines.append("")
-		lines.append("Camp fire: %s" % String(player_state.get_camp_fire_status_label()))
-
-	return lines
-
-
-func _build_recipe_material_entries(recipe: Dictionary, player_state, is_cooking: bool) -> Array:
-	var entries: Array = []
-	var inventory = _get_player_inventory(player_state)
-	if inventory == null:
-		return entries
-	var recipe_id = StringName(recipe.get("recipe_id", &""))
-	if not is_cooking:
-		for input in recipe.get("inputs", []):
-			if not (input is Dictionary):
-				continue
-			var item_id = StringName(input.get("item_id", &""))
-			var item = _get_item_definition(item_id)
-			entries.append({
-				"label": item.display_name if item != null else String(item_id).replace("_", " ").capitalize(),
-				"have": inventory.count_item(item_id),
-				"need": max(int(input.get("quantity", 1)), 1)
-			})
-		return entries
-
-	var config = _get_loop_config()
-	match recipe_id:
-		&"brew_camp_coffee":
-			entries.append(_build_item_count_entry(&"coffee_grounds", 1, inventory))
-			entries.append({
-				"label": "Potable Water",
-				"have": _count_available_potable_water(player_state, inventory, config),
-				"need": 1
-			})
-			entries.append(_build_item_count_entry(&"empty_can", 1, inventory))
-		&"heat_beans":
-			entries.append(_build_item_count_entry(&"beans_can", 1, inventory))
-		&"heat_potted_meat":
-			entries.append(_build_item_count_entry(&"potted_meat", 1, inventory))
-		&"mulligan_stew":
-			entries.append({
-				"label": "Potable Water",
-				"have": _count_available_potable_water(player_state, inventory, config),
-				"need": 1
-			})
-			entries.append({
-				"label": "Staple Choice",
-				"have": _count_item_group(inventory, SurvivalLoopRulesScript.MULLIGAN_STAPLE_ITEM_IDS),
-				"need": 1
-			})
-			entries.append({
-				"label": "Body / Flavor Choice",
-				"have": _count_item_group(inventory, SurvivalLoopRulesScript.MULLIGAN_BODY_ITEM_IDS),
-				"need": 1
-			})
-		&"boil_water":
-			entries.append({
-				"label": "Water To Work",
-				"have": int(player_state.get("camp_non_potable_water_units")) + int(player_state.get("camp_potable_water_units")),
-				"need": 1
-			})
-	return entries
-
-
-func _build_recipe_relevant_item_lines(recipe: Dictionary, player_state, is_cooking: bool) -> PackedStringArray:
-	var lines := PackedStringArray()
-	var inventory = _get_player_inventory(player_state)
-	if inventory == null:
-		return lines
-	var relevant_ids: Array = []
-	var recipe_id = StringName(recipe.get("recipe_id", &""))
-	if is_cooking:
-		if recipe_id == &"heat_beans" or recipe_id == &"heat_potted_meat" or recipe_id == &"mulligan_stew":
-			relevant_ids.append_array(SurvivalLoopRulesScript.COOKING_HEAT_TOOL_ITEM_IDS)
-			relevant_ids.append_array(SurvivalLoopRulesScript.CAN_OPENER_ITEM_IDS)
-		elif recipe_id == &"brew_camp_coffee":
-			relevant_ids.append(&"hot_coffee")
-			relevant_ids.append_array(SurvivalLoopRulesScript.COOKING_HEAT_TOOL_ITEM_IDS)
-	else:
-		var output_item_id = StringName(recipe.get("output_item_id", &""))
-		if output_item_id != &"":
-			relevant_ids.append(output_item_id)
-
-	var seen: Dictionary = {}
-	for item_id in relevant_ids:
-		var resolved_item_id = StringName(item_id)
-		if seen.get(resolved_item_id, false):
-			continue
-		seen[resolved_item_id] = true
-		var count = inventory.count_item(resolved_item_id)
-		if count <= 0:
-			continue
-		var item = _get_item_definition(resolved_item_id)
-		lines.append("%s x%d" % [item.display_name if item != null else String(resolved_item_id).replace("_", " ").capitalize(), count])
-	return lines
-
-
-func _build_item_count_entry(item_id: StringName, needed: int, inventory) -> Dictionary:
-	var item = _get_item_definition(item_id)
-	return {
-		"label": item.display_name if item != null else String(item_id).replace("_", " ").capitalize(),
-		"have": inventory.count_item(item_id),
-		"need": needed
-	}
-
-
-func _format_recipe_material_line(entry: Dictionary) -> String:
-	return "%s: %d / %d" % [
-		String(entry.get("label", "Material")),
-		int(entry.get("have", 0)),
-		int(entry.get("need", 1))
-	]
-
-
-func _get_recipe_badge_label(recipe: Dictionary, is_cooking: bool) -> String:
-	if is_cooking:
-		var category = String(recipe.get("category", "")).to_upper()
-		if category.contains("WATER"):
-			return "TIN"
-		if category.contains("DRINK"):
-			return "CUP"
-		if category.contains("HOT"):
-			return "PAN"
-		return "COOK"
-	var craft_category = String(recipe.get("category", "")).to_upper()
-	if craft_category.contains("FIRE"):
-		return "HEAT"
-	if craft_category.contains("REPAIR"):
-		return "MEND"
-	return "MAKE"
-
-
-func _build_recipe_tradeoff_text(recipe: Dictionary, is_cooking: bool) -> String:
-	var config = _get_loop_config()
-	if is_cooking:
-		return "Costs camp time, depends on heat, and wears improvised cooking tools down."
-	if config == null:
-		return "Consumes listed materials and turns them into one hard-used camp tool."
-	return "Costs %s, consumes listed materials, and turns them into one more useful camp make." % _format_duration(config.hobocraft_action_minutes)
-
-
-func _build_recipe_result_text(recipe: Dictionary, player_state, is_cooking: bool) -> String:
-	if is_cooking:
-		var result_text = String(recipe.get("effects_text", "")).strip_edges()
-		if result_text == "":
-			result_text = "Changes camp condition."
-		if player_state != null:
-			var warmth_breakdown = SurvivalLoopRulesScript.get_sleep_warmth_breakdown(player_state, _get_loop_config())
-			result_text += "\nSleep warmth now: %s" % _format_warmth_breakdown(warmth_breakdown)
-		return result_text
-	var output_item_id = StringName(recipe.get("output_item_id", &""))
-	var output_item = _get_item_definition(output_item_id)
-	return "%s x%d" % [
-		output_item.display_name if output_item != null else String(output_item_id).replace("_", " "),
-		int(recipe.get("output_quantity", 1))
-	]
-
-
-func _count_available_potable_water(player_state, inventory, config) -> int:
-	var available := 0
-	if player_state != null:
-		available += int(player_state.get("camp_potable_water_units"))
-	if config != null:
-		var water_item_id = StringName(config.get("brew_camp_coffee_water_item_id"))
-		if water_item_id != &"" and inventory != null:
-			available += inventory.count_item(water_item_id)
-	return available
+	return _overlay_builder.build_recipe_inventory_note_lines(
+		recipe,
+		player_state,
+		_get_loop_config(),
+		is_cooking,
+		_get_overlay_builder_deps()
+	)
 
 
 func _get_player_inventory(player_state):
@@ -3051,17 +2489,7 @@ func _add_recipe_category_label(parent: Control, category: String) -> void:
 
 
 func _format_recipe_inputs(recipe: Dictionary) -> String:
-	if String(recipe.get("inputs_text", "")).strip_edges() != "":
-		return String(recipe.get("inputs_text", ""))
-	var parts: Array[String] = []
-	for input in recipe.get("inputs", []):
-		if input is Dictionary:
-			var item = _get_item_definition(StringName(input.get("item_id", &"")))
-			var item_name = item.display_name if item != null else String(input.get("item_id", "")).replace("_", " ")
-			parts.append("%s x%d" % [item_name, int(input.get("quantity", 1))])
-	if parts.is_empty():
-		return "No material inputs."
-	return " + ".join(parts)
+	return _overlay_builder.format_recipe_inputs(recipe, _get_overlay_builder_deps())
 
 
 func _format_warmth_breakdown(breakdown: Dictionary) -> String:
@@ -3275,7 +2703,7 @@ func _rebuild_job_board(player_state) -> void:
 		if not (job is Dictionary):
 			continue
 		var instance_id = StringName(job.get("instance_id", &""))
-		var availability = _player_state_service.get_job_action_availability(instance_id) if _player_state_service != null else {"enabled": false, "reason": "Unavailable"}
+		var availability = _game_state_manager.get_job_action_availability(instance_id) if _game_state_manager != null else {"enabled": false, "reason": "Unavailable"}
 		var entry = _build_job_board_entry(job, availability)
 		_trace_action_availability("job.button", PlayerStateServiceScript.ACTION_PERFORM_JOB, availability, {
 			"instance_id": instance_id
@@ -3407,11 +2835,11 @@ func _clear_children_except(parent: Node, kept_children: Array) -> void:
 
 
 func _refresh_action_button(button: Button, action_id: StringName) -> void:
-	if _player_state_service == null:
+	if _game_state_manager == null:
 		button.disabled = true
 		return
 	var selected_stack_index = inventory_panel.selected_stack_index if action_id == SurvivalLoopRulesScript.ACTION_USE_SELECTED else -1
-	var availability = _player_state_service.get_loop_action_availability(action_id, selected_stack_index)
+	var availability = _game_state_manager.get_loop_action_availability(action_id, selected_stack_index)
 	var base_tooltip = String(button.get_meta("base_tooltip", ""))
 	# Let the authoritative action service report failures on click instead of
 	# allowing stale UI gating to swallow a real action silently.
@@ -3687,8 +3115,8 @@ func _attempt_inventory_move_destination() -> void:
 		_refresh_view()
 		return
 
-	var result = _execute_state_action(
-		PlayerStateServiceScript.ACTION_INVENTORY_MOVE_STACK,
+	var result = _inventory_manager.execute_action(
+		InventoryManagerScript.ACTION_MOVE_STACK,
 		_build_action_context("inventory.move_destination", {
 			"stack_index": inventory_panel.selected_stack_index,
 			"selected_stack_index": inventory_panel.selected_stack_index,
@@ -3732,7 +3160,7 @@ func _build_inventory_move_destination_text(player_state) -> String:
 func _build_inventory_inspect_message(player_state) -> String:
 	var selected_container = _get_selected_container_provider(player_state)
 	if selected_container != null:
-		var container_profile = player_state.inventory_state.get_container_profile(selected_container.provider_id)
+		var container_profile = _inventory_manager.get_container_profile(player_state, selected_container.provider_id)
 		var capacity_text = "No container profile." if container_profile == null else container_profile.get_capacity_label()
 		return "Inspecting %s in %s. %s" % [
 			selected_container.display_name,
@@ -3751,9 +3179,9 @@ func _build_inventory_inspect_message(player_state) -> String:
 
 
 func _get_inventory_use_availability(stack_index: int) -> Dictionary:
-	if _player_state_service == null:
+	if _inventory_manager == null:
 		return {"enabled": false, "reason": "Shared player state is unavailable."}
-	return _player_state_service.get_loop_action_availability(
+	return _inventory_manager.get_action_availability(
 		SurvivalLoopRulesScript.ACTION_USE_SELECTED,
 		stack_index
 	)
@@ -3770,7 +3198,7 @@ func _execute_inventory_use_action(stack_index: int) -> void:
 	_trace_action_result("inventory.radial.use", SurvivalLoopRulesScript.ACTION_USE_SELECTED, context, result)
 	if bool(result.get("success", false)):
 		var player_state = _get_player_state()
-		if player_state != null and player_state.inventory_state.get_stack_at(resolved_stack_index) == null:
+		if player_state != null and _inventory_manager.get_stack_at(player_state, resolved_stack_index) == null:
 			inventory_panel.set_selected_stack_index(-1)
 	_refresh_view()
 	_trace_ui_refresh("inventory.radial.use", SurvivalLoopRulesScript.ACTION_USE_SELECTED, result)
@@ -3798,13 +3226,13 @@ func _find_potential_stack_destination_provider_ids(player_state) -> Array:
 	if selected_stack == null or selected_stack.item == null:
 		return provider_ids
 
-	for provider_id in player_state.inventory_state.get_storage_provider_ids():
+	for provider_id in _inventory_manager.get_storage_provider_ids(player_state):
 		var target_provider_id = StringName(provider_id)
 		if target_provider_id == InventoryScript.CARRY_GROUND:
 			continue
 		if target_provider_id == StringName(selected_stack.carry_zone):
 			continue
-		if _provider_can_potentially_receive_stack(player_state.inventory_state, target_provider_id, selected_stack):
+		if _provider_can_potentially_receive_stack(_inventory_manager.get_inventory(player_state), target_provider_id, selected_stack):
 			provider_ids.append(target_provider_id)
 	return provider_ids
 
@@ -3831,7 +3259,7 @@ func _find_valid_stack_destination_provider_ids(player_state, required_verb: Str
 	if selected_stack == null or selected_stack.item == null:
 		return valid_provider_ids
 
-	for provider_id in player_state.inventory_state.get_storage_provider_ids():
+	for provider_id in _inventory_manager.get_storage_provider_ids(player_state):
 		var target_provider_id = StringName(provider_id)
 		if target_provider_id == InventoryScript.CARRY_GROUND:
 			continue
@@ -4031,13 +3459,11 @@ func _resolve_container_equip_target(player_state, provider_id: StringName) -> D
 
 
 func _simulate_stack_move(player_state, target_provider_id: StringName) -> Dictionary:
-	var inventory_copy = player_state.inventory_state.duplicate_inventory()
-	return inventory_copy.move_stack_to_zone(inventory_panel.selected_stack_index, target_provider_id)
+	return _inventory_manager.simulate_stack_move(player_state, inventory_panel.selected_stack_index, target_provider_id)
 
 
 func _simulate_container_equip(player_state, provider_id: StringName, target_slot_id: StringName) -> Dictionary:
-	var inventory_copy = player_state.inventory_state.duplicate_inventory()
-	return inventory_copy.equip_container_to_slot(provider_id, target_slot_id)
+	return _inventory_manager.simulate_container_equip(player_state, provider_id, target_slot_id)
 
 
 func _apply_inventory_operation_result(result: Dictionary) -> void:
@@ -4076,7 +3502,7 @@ func _get_selected_container_provider(player_state):
 		return null
 	if inventory_panel.selected_container_provider_id == &"":
 		return null
-	return player_state.inventory_state.get_storage_provider(inventory_panel.selected_container_provider_id)
+	return _inventory_manager.get_storage_provider(player_state, inventory_panel.selected_container_provider_id)
 
 
 func _get_focused_destination_provider(player_state):
@@ -4084,7 +3510,7 @@ func _get_focused_destination_provider(player_state):
 		return null
 	if inventory_panel.focused_destination_provider_id == &"":
 		return null
-	return player_state.inventory_state.get_storage_provider(inventory_panel.focused_destination_provider_id)
+	return _inventory_manager.get_storage_provider(player_state, inventory_panel.focused_destination_provider_id)
 
 
 func _get_provider_location_label(inventory, provider_id: StringName) -> String:
@@ -4269,7 +3695,7 @@ func _build_availability_tooltip(base_tooltip: String, availability: Dictionary)
 func _describe_stack_debug(player_state, stack_index: int) -> String:
 	if player_state == null or stack_index < 0:
 		return "none"
-	var stack = player_state.inventory_state.get_stack_at(stack_index)
+	var stack = _inventory_manager.get_stack_at(player_state, stack_index)
 	if stack == null or stack.item == null:
 		return "none"
 	return "%s x%d in %s" % [
@@ -4293,9 +3719,9 @@ func _clear_inventory_context_menu_context() -> void:
 
 
 func _get_player_state():
-	if _player_state_service == null:
+	if _game_state_manager == null:
 		return null
-	return _player_state_service.get_player_state()
+	return _game_state_manager.get_player_state()
 
 
 func _get_getting_ready_buttons() -> Array:
@@ -4321,32 +3747,19 @@ func _is_getting_ready_action(action_id: StringName) -> bool:
 
 
 func _get_stamina_value(player_state) -> int:
-	if player_state == null or player_state.passport_profile == null:
-		return 0
-	if player_state.passport_profile.has_method("get_stamina"):
-		return player_state.passport_profile.get_stamina()
-	return clampi(100 - player_state.passport_profile.fatigue, 0, 100)
+	return _stats_manager.get_stamina(player_state)
 
 
 func _get_loop_config():
-	if _player_state_service == null:
-		return null
-	return _player_state_service.get_loop_config()
+	return _data_manager.get_loop_config()
 
 
 func _get_item_definition(item_id: StringName):
-	if _player_state_service == null:
-		return null
-	var item_catalog = _player_state_service.get_item_catalog()
-	if item_catalog == null:
-		return null
-	return item_catalog.get_item(item_id)
+	return _data_manager.get_item_definition(item_id)
 
 
 func _get_selected_stack(player_state):
-	if player_state == null:
-		return null
-	return player_state.inventory_state.get_stack_at(inventory_panel.selected_stack_index)
+	return _inventory_manager.get_stack_at(player_state, inventory_panel.selected_stack_index)
 
 
 func _configure_purchase_button(button: Button, title_text: String, price_cents: int, item) -> void:
@@ -4479,8 +3892,4 @@ func _format_cents(amount_cents: int) -> String:
 
 
 func _format_duration(minutes: int) -> String:
-	if minutes >= 60 and minutes % 60 == 0:
-		return "%dh" % int(minutes / 60)
-	if minutes >= 60:
-		return "%dh %02dm" % [int(minutes / 60), minutes % 60]
-	return "%dm" % minutes
+	return _time_manager.format_duration(minutes)

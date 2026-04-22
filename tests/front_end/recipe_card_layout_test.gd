@@ -26,11 +26,13 @@ func _run_checks(root: Window, loop_page: Control) -> void:
 	var player_state_service = PlayerStateRuntimeScript.get_or_create_service(loop_page)
 	var player_state = player_state_service.get_player_state() if player_state_service != null else null
 	var item_catalog = player_state_service.get_item_catalog() if player_state_service != null else null
+	var loop_config = player_state_service.get_loop_config() if player_state_service != null else null
 	_expect(player_state_service != null, "loop page resolves player state service")
 	_expect(player_state != null, "loop page exposes player state")
 	_expect(item_catalog != null, "loop page exposes item catalog")
+	_expect(loop_config != null, "loop page exposes loop config")
 
-	if player_state == null or item_catalog == null:
+	if player_state == null or item_catalog == null or loop_config == null:
 		quit(1)
 		return
 
@@ -40,6 +42,41 @@ func _run_checks(root: Window, loop_page: Control) -> void:
 	player_state.inventory.add_item(item_catalog.get_item(&"empty_can"), 1, &"pack")
 	player_state.inventory.add_item(item_catalog.get_item(&"dry_kindling"), 1, &"pack")
 	player_state.inventory.add_item(item_catalog.get_item(&"baling_wire"), 1, &"pack")
+
+	var cooking_material_snapshot = SurvivalLoopRulesScript.get_cooking_recipe_material_snapshot(player_state, loop_config, {
+		"recipe_id": &"heat_beans"
+	}, item_catalog)
+	_expect(cooking_material_snapshot.size() == 1, "cooking snapshot returns the expected counted ingredient rows")
+	if cooking_material_snapshot.size() == 1:
+		var beans_entry: Dictionary = cooking_material_snapshot[0]
+		_expect(StringName(beans_entry.get("item_id", &"")) == &"beans_can", "cooking snapshot keeps the same material identity")
+		_expect(int(beans_entry.get("have", 0)) >= 1 and int(beans_entry.get("need", 0)) == 1, "cooking snapshot preserves held and needed bean counts")
+
+	var hobocraft_material_snapshot = SurvivalLoopRulesScript.get_hobocraft_recipe_material_snapshot(player_state, {
+		"recipe_id": &"wire_braced_tin_can_heater",
+		"inputs": [
+			{"item_id": &"empty_can", "quantity": 1},
+			{"item_id": &"dry_kindling", "quantity": 1},
+			{"item_id": &"baling_wire", "quantity": 1}
+		]
+	}, item_catalog)
+	_expect(hobocraft_material_snapshot.size() == 3, "hobocraft snapshot returns one row per explicit input")
+	if hobocraft_material_snapshot.size() == 3:
+		_expect(int(hobocraft_material_snapshot[0].get("have", 0)) == 1, "hobocraft snapshot counts owned empty cans")
+		_expect(int(hobocraft_material_snapshot[1].get("have", 0)) == 1, "hobocraft snapshot counts owned dry kindling")
+		_expect(int(hobocraft_material_snapshot[2].get("have", 0)) == 1, "hobocraft snapshot counts owned baling wire")
+
+	var relevant_cooking_items = SurvivalLoopRulesScript.get_recipe_relevant_item_snapshot(player_state, {
+		"recipe_id": &"heat_beans"
+	}, true, item_catalog)
+	_expect(relevant_cooking_items.size() >= 1, "relevant cooking item snapshot stays available for UI notes")
+	if relevant_cooking_items.size() >= 1:
+		_expect(String(relevant_cooking_items[0].get("label", "")).contains("Pocket Knife"), "relevant cooking item snapshot preserves carried opener labels")
+
+	_expect(
+		SurvivalLoopRulesScript.get_available_potable_water_units(player_state, loop_config) == int(player_state.camp_potable_water_units),
+		"potable water snapshot reports current camp potable water without mutation"
+	)
 
 	var cooking_lines: PackedStringArray = loop_page.call("_build_recipe_inventory_note_lines", {
 		"recipe_id": &"heat_beans",

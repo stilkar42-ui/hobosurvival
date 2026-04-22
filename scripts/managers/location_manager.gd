@@ -1,0 +1,86 @@
+class_name LocationManager
+extends RefCounted
+
+const SurvivalLoopRulesScript := preload("res://scripts/gameplay/survival_loop_rules.gd")
+
+const PAGE_TOWN := &"town"
+const PAGE_JOBS_BOARD := &"jobs_board"
+const PAGE_SEND_MONEY := &"send_money"
+const PAGE_CAMP := &"camp"
+const PAGE_GROCERY := &"grocery"
+const PAGE_HARDWARE := &"hardware"
+const PAGE_GETTING_READY := &"getting_ready"
+const PAGE_HOBOCRAFT := &"hobocraft"
+const PAGE_COOKING := &"cooking"
+
+const TOWN_ONLY_PAGES := [PAGE_TOWN, PAGE_JOBS_BOARD, PAGE_SEND_MONEY, PAGE_GROCERY, PAGE_HARDWARE]
+const CAMP_ONLY_PAGES := [PAGE_CAMP, PAGE_GETTING_READY, PAGE_HOBOCRAFT, PAGE_COOKING]
+const CAMP_SUB_PAGES := [PAGE_GETTING_READY, PAGE_HOBOCRAFT, PAGE_COOKING]
+
+const CAMP_INTERACTION_PAGE_IDS := {
+	&"hobocraft": PAGE_HOBOCRAFT,
+	&"cooking": PAGE_COOKING,
+	&"getting_ready": PAGE_GETTING_READY
+}
+
+const TOWN_INTERACTION_PAGE_IDS := {
+	&"jobs_board": PAGE_JOBS_BOARD,
+	&"send_money": PAGE_SEND_MONEY,
+	&"grocery": PAGE_GROCERY,
+	&"hardware": PAGE_HARDWARE
+}
+
+const ROUTE_DESTINATIONS := {
+	&"rest": {"action_id": &"sleep_rough", "page_id": &""},
+	&"craft": {"action_id": &"", "page_id": PAGE_HOBOCRAFT},
+	&"cooking": {"action_id": &"", "page_id": PAGE_COOKING},
+	&"exit": {"action_id": &"return_to_town", "page_id": &""},
+	&"stash": {"action_id": &"", "page_id": &"inventory_ui"},
+	&"ready": {"action_id": &"", "page_id": PAGE_GETTING_READY},
+	&"town_jobs": {"action_id": &"", "page_id": PAGE_JOBS_BOARD},
+	&"town_send_money": {"action_id": &"", "page_id": PAGE_SEND_MONEY},
+	&"town_grocery": {"action_id": &"", "page_id": PAGE_GROCERY},
+	&"town_hardware": {"action_id": &"", "page_id": PAGE_HARDWARE},
+	&"town_foreman": {"action_id": &"", "page_id": PAGE_JOBS_BOARD},
+	&"town_exit": {"action_id": &"go_to_camp", "page_id": &""}
+}
+
+
+func get_town_world_page() -> StringName:
+	return PAGE_TOWN
+
+
+func get_camp_world_page() -> StringName:
+	return PAGE_CAMP
+
+
+func get_town_only_pages() -> Array:
+	return TOWN_ONLY_PAGES.duplicate()
+
+
+func get_camp_only_pages() -> Array:
+	return CAMP_ONLY_PAGES.duplicate()
+
+
+func get_camp_sub_pages() -> Array:
+	return CAMP_SUB_PAGES.duplicate()
+
+
+func get_camp_interaction_page_ids() -> Dictionary:
+	return CAMP_INTERACTION_PAGE_IDS.duplicate(true)
+
+
+func get_town_interaction_page_ids() -> Dictionary:
+	return TOWN_INTERACTION_PAGE_IDS.duplicate(true)
+
+
+func get_route_destination(route_id: StringName) -> Dictionary:
+	return ROUTE_DESTINATIONS.get(route_id, {}).duplicate(true)
+
+
+func is_town_location(location_id: StringName) -> bool:
+	return location_id == SurvivalLoopRulesScript.LOCATION_TOWN
+
+
+func is_camp_location(location_id: StringName) -> bool:
+	return location_id == SurvivalLoopRulesScript.LOCATION_CAMP
