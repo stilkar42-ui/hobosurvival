@@ -49,6 +49,7 @@ func get_condition_snapshot(player_state = null) -> Dictionary:
 		"hygiene": passport_profile.hygiene,
 		"presentability": passport_profile.presentability,
 		"warmth": passport_profile.warmth,
+		"dampness": passport_profile.dampness,
 		"stamina": get_stamina(player_state)
 	}
 

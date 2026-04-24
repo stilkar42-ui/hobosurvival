@@ -1,0 +1,37 @@
+Hobo Survival World Doctrine v1
+
+Core Principle:
+The game world is not literal historical America.
+It is a fictional mirrored nation inspired by the structural realities of America circa 1890–1935.
+
+Design Rules:
+
+1. Structural Authenticity Over Literal Accuracy
+
+* Systems, pressures, economics, and social dynamics should feel historically grounded.
+* Exact real-world events, people, towns, and politics are not binding.
+
+2. Mirrored Historical Logic
+
+* Equivalent wars, migrations, industrialization, labor struggles, and expansion may exist in altered fictional form.
+* The setting should preserve analogous historical pressures without recreating exact history.
+
+3. Fictional Geography
+
+* Towns, cities, states/regions, rail lines, and landmarks are fictionalized.
+* Geographic logic should resemble a believable continental industrial nation.
+
+4. Flexible Narrative Canon
+
+* Historical inspirations may be recombined, altered, or compressed to serve narrative/gameplay.
+* No requirement to adhere to exact historical chronology.
+
+5. Tone Preservation
+
+* Despite fictionalization, the world should maintain grounded material reality.
+* Avoid cartoon alt-history or exaggerated steampunk/fantasy drift.
+
+6. Research Usage Rule
+
+* Historical research informs systemic realism, social dynamics, labor patterns, and material culture.
+* Research does not dictate literal lore unless intentionally adopted.

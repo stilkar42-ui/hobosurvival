@@ -1487,7 +1487,6 @@ func _on_slot_pressed(slot_id: StringName) -> void:
 		selected_slot_id = _get_slot_for_provider(slot_container_provider_id)
 		_render()
 		container_selected.emit(selected_container_provider_id)
-		container_popup_requested.emit(slot_container_provider_id)
 		return
 	_render()
 
@@ -1528,7 +1527,6 @@ func _on_container_pressed(provider_id: StringName) -> void:
 		_select_slot_for_provider(provider_id)
 		_render()
 		container_selected.emit(selected_container_provider_id)
-		container_popup_requested.emit(provider_id)
 		return
 	set_selected_container_provider_id(provider_id)
 

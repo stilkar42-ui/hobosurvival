@@ -16,6 +16,70 @@ Core truth:
 - Survival supports purpose; it is not the purpose.
 - Money is not progression. Money is time converted into family stability.
 
+## Current Code Architecture Truth
+
+These notes describe the current active repository architecture. They override older planning docs when there is a conflict.
+
+### Active Runtime
+
+- Main scene: `scenes/front_end/title_front_end.tscn`.
+- Active playable scene: `scenes/front_end/first_playable_loop_page.tscn`.
+- Active playable controller: `scripts/front_end/first_playable_loop_shell.gd`.
+- `scripts/front_end/first_playable_loop_page.gd` is legacy/inactive. Do not treat it as active architecture unless the task explicitly asks for that legacy path.
+
+### Game Bible / Reference Docs
+
+- Design and reference bibles live in `docs/game_bibles/`.
+- Start with `docs/game_bibles/README.md` before opening individual bible files.
+- Open only the specific bible files relevant to the task.
+- Do not paste, ingest, or summarize all bibles by default unless the task explicitly requires full design synthesis.
+- Bibles provide design intent, examples, lore, mechanics, and long-term direction.
+- Current code architecture and tests override older design docs when they conflict.
+- If a bible suggests a major architecture change, preserve the current architecture and report the conflict before changing code.
+
+### Managers
+
+- Managers live under `scripts/managers`.
+- Managers are manually instantiated `RefCounted` classes in the active shell, not autoload singletons, unless the code is explicitly changed later.
+- `project.godot` currently has no `[autoload]` manager architecture.
+- Treat managers as facades, helpers, and routers unless a task explicitly changes authority boundaries.
+
+### State And Rule Authority
+
+- `PlayerStateService` and `PlayerStateData` are the authoritative runtime state layer.
+- `SurvivalLoopRules` is the authoritative gameplay validation and mutation layer.
+- Pages and widgets must not become simulation authorities.
+
+### Pages, Widgets, And Routes
+
+- Active page controllers live under `scripts/pages`.
+- Pages follow `bootstrap(deps)`, `set_context(context)`, `set_route(route_id)`, `set_visible(visible)`, `refresh_from_state(player_state)`, and optional `handle_input(event)`, where applicable.
+- `UIManager` owns page routing through `open_page(id, context)`.
+- New page routes should be registered in `scripts/front_end/first_playable_loop_shell.gd` and routed through `UIManager`.
+- Reusable widgets live under `scripts/ui/widgets`.
+- Widgets should remain mostly passive: setters in, signals out.
+- Widgets should not call `PlayerStateService`, `GameStateManager`, or `SurvivalLoopRules` directly.
+- `InventoryPanel` is a heavier UI component, but authoritative actions still flow through `InventoryPage`, managers, and rules.
+- Prefer `LocationManager` constants for route IDs.
+- Do not add new hardcoded route strings when a `LocationManager` constant belongs there.
+- Avoid duplicating route authority across pages.
+
+### Legacy And Inactive Paths
+
+- Do not copy patterns from `scripts/front_end/first_playable_loop_page.gd`.
+- Do not assume `camp_isometric_play_layer.tscn` is active.
+- Do not treat `tmp/prototype_reset_backups` as active source.
+- Debug scenes are tools, not production page architecture.
+
+### Feature Placement
+
+- Gameplay rules: `SurvivalLoopRules` / `SurvivalLoopConfig`.
+- Runtime state: `PlayerStateData` / `PlayerStateService`.
+- Page UI: `scripts/pages`.
+- Reusable UI: `scripts/ui/widgets` or `scripts/ui`.
+- Data catalogs/resources: `scripts/data` or `data` resources.
+- Design/lore/mechanics references: `docs/game_bibles`.
+
 ## Core Fantasy
 
 The player is not surviving for himself alone.

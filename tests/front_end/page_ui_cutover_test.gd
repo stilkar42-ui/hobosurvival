@@ -27,6 +27,7 @@ func _run_checks(loop_page: Control) -> void:
 	var inventory_overlay: Control = loop_page.get_node("InventoryOverlay")
 	var passport_overlay: Control = loop_page.get_node("PassportOverlay")
 	var getting_ready_overlay: Control = loop_page.get_node("GettingReadyOverlay")
+	var world_map_panel: Control = loop_page.find_child("WorldMapPagePanel", true, false)
 
 	_expect(player_state_service != null, "page UI cutover resolves shared player state service")
 	_expect(ui_manager != null, "page UI cutover exposes UIManager")
@@ -34,6 +35,8 @@ func _run_checks(loop_page: Control) -> void:
 	_expect(not viewport_host.visible, "page UI cutover keeps the legacy viewport host inactive")
 	_expect(ui_manager.get_active_page() == &"WorldMapPage", "page UI cutover starts on the world map page")
 	_expect(ui_manager.get_active_route() == &"town", "page UI cutover starts on the town route")
+	_expect(world_map_panel != null, "world map page panel exists")
+	_expect(not _panel_has_button_text(world_map_panel, "Status / Result"), "world map no longer exposes the ambiguous status/result route")
 
 	ui_manager.open_page(&"travel_ui", {"return_route": &"town"})
 	await process_frame
@@ -47,10 +50,26 @@ func _run_checks(loop_page: Control) -> void:
 	await process_frame
 	_expect(ui_manager.get_active_page() == &"LocationPage", "direct location page route resolves through UIManager")
 	_expect(ui_manager.get_active_route() == &"location_page", "direct location page route is tracked in UIManager")
+	var grocery_list = loop_page.find_child("GroceryListWidget", true, false)
+	_expect(grocery_list != null and grocery_list.get_item_count() > 0, "grocery route renders visible stock cards")
+
+	ui_manager.open_page(&"hardware", {"return_route": &"town"})
+	await process_frame
+	var hardware_list = loop_page.find_child("HardwareListWidget", true, false)
+	_expect(hardware_list != null and hardware_list.get_item_count() > 0, "hardware route renders visible stock cards")
+
+	ui_manager.open_page(&"jobs_board", {"return_route": &"town"})
+	await process_frame
+	var jobs_list = loop_page.find_child("JobsListWidget", true, false)
+	_expect(jobs_list != null and jobs_list.get_item_count() > 0, "jobs board renders posted work cards")
 
 	ui_manager.open_page(&"crafting_page", {"return_route": &"camp", "route_id": &"hobocraft"})
 	await process_frame
 	_expect(ui_manager.get_active_page() == &"CraftingPage", "direct crafting page route resolves through UIManager")
+
+	ui_manager.open_page(&"cooking", {"return_route": &"camp"})
+	await process_frame
+	_expect(ui_manager.get_active_page() == &"CookingPage", "cooking route resolves through UIManager")
 
 	ui_manager.open_page(&"inventory_ui", {"return_route": &"town"})
 	await process_frame
@@ -61,6 +80,15 @@ func _run_checks(loop_page: Control) -> void:
 	await process_frame
 	_expect(ui_manager.get_active_page() == &"PassportStatsPage", "passport overlay opens through the page router")
 	_expect(passport_overlay.visible, "passport stats page controls the passport overlay visibility")
+	var passport_panel: Control = loop_page.get_node("PassportOverlay/PassportMargin/PassportWindow/PassportRoot/PassportPanel")
+	var passport_buttons := passport_panel.find_children("*", "Button", true, false)
+	for button in passport_buttons:
+		if button is Button and button.text != "Close":
+			button.emit_signal("pressed")
+			break
+	await process_frame
+	await process_frame
+	_expect(passport_overlay.visible, "passport interactions do not freeze or collapse the overlay")
 
 	ui_manager.open_page(&"rest_camp_page", {"return_route": &"camp", "route_id": &"rest_camp"})
 	await process_frame

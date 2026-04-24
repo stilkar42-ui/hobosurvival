@@ -27,15 +27,17 @@ func _run_checks(loop_page: Control) -> void:
 	var item_catalog = player_state_service.get_item_catalog() if player_state_service != null else null
 	var loop_config = player_state_service.get_loop_config() if player_state_service != null else null
 	var crafting_page = loop_page.get("_crafting_page")
+	var cooking_page = loop_page.get("_cooking_page")
 	var ui_manager = loop_page.get("_ui_manager")
 	_expect(player_state_service != null, "loop page resolves player state service")
 	_expect(player_state != null, "loop page exposes player state")
 	_expect(item_catalog != null, "loop page exposes item catalog")
 	_expect(loop_config != null, "loop page exposes loop config")
 	_expect(crafting_page != null, "loop page exposes the crafting page controller")
+	_expect(cooking_page != null, "loop page exposes the cooking page controller")
 	_expect(ui_manager != null, "loop page exposes UIManager")
 
-	if player_state == null or item_catalog == null or loop_config == null or crafting_page == null or ui_manager == null:
+	if player_state == null or item_catalog == null or loop_config == null or crafting_page == null or cooking_page == null or ui_manager == null:
 		quit(1)
 		return
 
@@ -61,7 +63,7 @@ func _run_checks(loop_page: Control) -> void:
 	}, item_catalog)
 	_expect(hobocraft_material_snapshot.size() == 3, "hobocraft snapshot returns one row per explicit input")
 
-	var cooking_lines: PackedStringArray = crafting_page.build_recipe_inventory_note_lines({
+	var cooking_lines: PackedStringArray = cooking_page.build_recipe_inventory_note_lines({
 		"recipe_id": &"heat_beans",
 		"display_name": "Heat Can of Beans"
 	}, player_state, true)
@@ -81,7 +83,7 @@ func _run_checks(loop_page: Control) -> void:
 	var hobocraft_note = "\n".join(hobocraft_lines)
 	_expect(hobocraft_note.contains("Empty Tin Can:") and hobocraft_note.contains("/ 1"), "hobocraft note counts owned materials")
 
-	ui_manager.open_page(&"crafting_page", {"return_route": &"camp", "route_id": &"cooking"})
+	ui_manager.open_page(&"cooking", {"return_route": &"camp"})
 	await process_frame
 	var cooking_layout = loop_page.find_child("CookingLayout", true, false)
 	var hobocraft_layout = loop_page.find_child("HobocraftLayout", true, false)
@@ -94,7 +96,7 @@ func _run_checks(loop_page: Control) -> void:
 		SurvivalLoopRulesScript.ACTION_COOK_RECIPE,
 		{"source": "recipe.card.test", "recipe_id": &"heat_beans"}
 	)
-	var cooking_workspace: Control = crafting_page.build_recipe_workspace({
+	var cooking_workspace: Control = cooking_page.build_recipe_workspace({
 		"recipe_id": &"heat_beans",
 		"display_name": "Heat Can of Beans",
 		"summary": "Warm a can of beans over the fire and eat it hot instead of cold from the tin.",
@@ -106,7 +108,7 @@ func _run_checks(loop_page: Control) -> void:
 	_expect(cooking_workspace.get_child(0).name == "RecipeInventoryNote", "workspace left column is the inventory note")
 	_expect(cooking_workspace.get_child(1).name == "RecipeIndexCard", "workspace right column is the recipe card")
 
-	var overlay_workspace_data: Dictionary = crafting_page.build_overlay_recipe_workspace_data({
+	var overlay_workspace_data: Dictionary = cooking_page.build_overlay_recipe_workspace_data({
 		"recipe_id": &"heat_beans",
 		"display_name": "Heat Can of Beans",
 		"summary": "Warm a can of beans over the fire and eat it hot instead of cold from the tin."

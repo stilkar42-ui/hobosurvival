@@ -1,0 +1,106 @@
+Campcraft — Survival & Shelter Trees v1.5
+Shared General Tree (Road-Born Fundamentals)
+(Counts toward keystone unlocks in both Survival and Shelter trees)
+Tier 1
+
+Road Legs
+General Keystone (1 choice only):
+Spark of the Road – Minor movement speed and fatigue reduction.
+
+
+Tier 2
+
+Scavenger’s Eye
+General Keystone (1 choice only):
+Eye for Value – Slight increase to material quality found while scavenging.
+
+
+Tier 3
+
+Hobo Sign Reader
+General Keystone (1 choice only):
+Whisper of the Rails – Basic train schedule intuition and safer hitchhiking.
+
+
+Tier 4
+
+Quiet Dignity
+General Keystone (1 choice only):
+Steady Hand – Small passive reduction to Fading Meter.
+
+
+Tier 5
+
+Road-Born Keystone (final cross-tree benefit)
+
+Tree A1: Survival Tree
+Minor Keystones at Start (choose 1 of 2 when you first put any point into Survival Tree)
+
+Minor: Spark – Fire Starting always succeeds on first try in normal conditions.
+Minor: Forager’s Luck – Foraging has +20% chance to find extra edible items.
+
+Tier 1
+
+Fire Starting
+Foraging
+Cooking
+Water Purification
+
+Tier 2 (unlocked by 5 points in any Tier 1)
+
+Cold Weather Resistance
+Pack Management
+Exhaustion Management
+Keystone at Tier 2 (choose 1 of 3)
+Firekeeper – Campfires never fail in bad weather; +25% warmth radius.
+Wild Forager – Foraging always yields one tier higher quality food.
+Enduring Soul – Exhaustion and cold decay 30% slower.
+
+Tier 3 (unlocked by 5 points in any Tier 2)
+
+Advanced Foraging & Preservation
+Emergency Shelter Repair
+Heat / Cold Adaptation
+Keystone at Tier 3 (choose 1 of 3 – higher importance)
+Master Firekeeper – Campfires provide healing over time and boost morale for nearby NPCs.
+Supreme Forager – Foraging can yield rare legendary ingredients.
+Unbreakable Will – Near-zero exhaustion in extreme weather; strong synergy with Pack Management and any Shelter picks.
+
+Tree A2: Shelter Tree
+Minor Keystones at Start (choose 1 of 2 when you first put any point into Shelter Tree)
+
+Minor: Quick Pitch – Tarp Setup and lean-tos build 50% faster.
+Minor: Sturdy Frame – Basic shelters have +30% durability from the start.
+
+Tier 1
+
+Basic Lean-To
+Tarp Setup
+Quick Windbreak
+
+Tier 2 (unlocked by 5 points in any Tier 1)
+
+Tarp Tent Mastery
+Quinzhee / Snow Shelter
+Material Reinforcement
+Keystone at Tier 2 (choose 1 of 3)
+Shelter Architect – All shelters last 50% longer and give +1 rest quality.
+Winter Carver – Quinzhee builds faster and never collapses early.
+Safe Haven – Sleeping in your own shelter grants minor Fading Meter reduction.
+
+Tier 3 (unlocked by 5 points in any Tier 2)
+
+Permanent Camp Upgrades
+Hidden Cache Building
+Weatherproofing
+Keystone at Tier 3 (choose 1 of 3 – higher importance)
+Master Architect – Shelters provide bonus morale and minor healing while resting.
+Eternal Winter Fort – Quinzhee becomes near-permanent in cold biomes.
+True Haven – Sleeping in your shelter greatly reduces Fading Meter and grants dream bonuses (synergy with Survival Enduring Soul and General Quiet Dignity).
+
+Unlocking Rules
+
+5 points in any Tier 1 skill → unlocks Tier 2 for that tree.
+5 points in any Tier 2 skill → unlocks Tier 3 for that tree.
+Points in Shared General Tree count toward thresholds.
+Minor keystones chosen at tree entry. Main keystones chosen at Tier 2 and Tier 3 (synergy considered for power).

@@ -1,4 +1,4 @@
-class_name CraftingPage
+class_name CookingPage
 extends RefCounted
 
 const OverlayBuilderScript := preload("res://scripts/front_end/adapters/overlay_builder.gd")
@@ -6,11 +6,12 @@ const SurvivalLoopRulesScript := preload("res://scripts/gameplay/survival_loop_r
 const PageUIThemeScript := preload("res://scripts/ui/page_ui_theme.gd")
 const ActionButtonWidgetScript := preload("res://scripts/ui/widgets/action_button_widget.gd")
 const ActionCardWidgetScript := preload("res://scripts/ui/widgets/action_card_widget.gd")
+const BasePanelWidgetScript := preload("res://scripts/ui/widgets/base_panel_widget.gd")
 const DataPanelWidgetScript := preload("res://scripts/ui/widgets/data_panel_widget.gd")
 const DetailPanelWidgetScript := preload("res://scripts/ui/widgets/detail_panel_widget.gd")
 const VerticalListWidgetScript := preload("res://scripts/ui/widgets/vertical_list_widget.gd")
 
-const ROUTE_HOBOCRAFT := &"hobocraft"
+const ROUTE_COOKING := &"cooking"
 
 var _overlay_builder = OverlayBuilderScript.new()
 var _game_state_manager = null
@@ -21,13 +22,16 @@ var _ui_manager = null
 var _show_status := Callable()
 
 var _panel: PanelContainer = null
-var _status_widget = null
+var _context_widget = null
+var _prep_actions_widget = null
 var _recipe_list_widget = null
 var _detail_widget = null
 var _back_button = null
+var _filter_toggle: CheckButton = null
 
 var _return_route: StringName = &"camp"
-var _selected_hobocraft_recipe_id: StringName = &""
+var _selected_recipe_id: StringName = &""
+var _show_only_makeable := false
 
 
 func bootstrap(_scene_root: Control, deps: Dictionary) -> void:
@@ -49,7 +53,7 @@ func set_context(context: Dictionary) -> void:
 
 
 func set_route(route_name: StringName) -> void:
-	if route_name == ROUTE_HOBOCRAFT or route_name == &"crafting_page":
+	if route_name == ROUTE_COOKING:
 		set_visible(true)
 	refresh_from_state(_game_state_manager.get_player_state() if _game_state_manager != null else null)
 
@@ -60,9 +64,19 @@ func set_visible(visible: bool) -> void:
 
 
 func refresh_from_state(player_state) -> void:
-	if player_state == null or _status_widget == null:
+	if player_state == null or _context_widget == null:
 		return
-	_status_widget.set_data("Portable camp makes keep tools, fire work, and food prep within reach without turning the camp into a workshop fantasy.")
+	var config = _get_loop_config()
+	_context_widget.set_data([
+		"Heat source: %s" % player_state.get_camp_fire_status_label(),
+		"Water ready %d | raw %d | kindling %s" % [
+			int(player_state.camp_potable_water_units),
+			int(player_state.camp_non_potable_water_units),
+			"yes" if bool(player_state.camp_kindling_prepared) else "no"
+		],
+		"Cooking here is camp work done by hand: fire, tins, and whatever the pack can spare."
+	])
+	_refresh_prep_actions(player_state, config)
 	_refresh_recipe_cards(player_state)
 
 
@@ -115,7 +129,7 @@ func _build_panel(page_host) -> void:
 	if page_host == null:
 		return
 	_panel = PanelContainer.new()
-	_panel.name = "CraftingPagePanel"
+	_panel.name = "CookingPagePanel"
 	_panel.visible = false
 	_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -129,12 +143,12 @@ func _build_panel(page_host) -> void:
 	_panel.add_child(root)
 
 	var title = Label.new()
-	title.text = "Hobocraft"
+	title.text = "Cooking"
 	PageUIThemeScript.style_header_label(title, true)
 	root.add_child(title)
 
 	var subtitle = Label.new()
-	subtitle.text = "Portable, improvised camp makes built from salvage, bought materials, and what the road can spare."
+	subtitle.text = "Fire, water, and a tin in hand. Meals here are set to heat, watched, and worked through by hand."
 	subtitle.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	PageUIThemeScript.style_body_label(subtitle)
 	root.add_child(subtitle)
@@ -146,100 +160,157 @@ func _build_panel(page_host) -> void:
 	_back_button.pressed.connect(Callable(self, "_on_nav_pressed"))
 	root.add_child(_back_button)
 
-	_status_widget = DataPanelWidgetScript.new()
-	_status_widget.set_title("Portable Tool Work", true)
-	_status_widget.set_variant("alt")
-	root.add_child(_status_widget)
+	_context_widget = DataPanelWidgetScript.new()
+	_context_widget.set_title("Heat / Water", true)
+	_context_widget.set_variant("alt")
+	root.add_child(_context_widget)
+
+	_prep_actions_widget = BasePanelWidgetScript.new()
+	_prep_actions_widget.set_title("Camp Work")
+	_prep_actions_widget.set_variant("dark")
+	root.add_child(_prep_actions_widget)
+
+	_filter_toggle = CheckButton.new()
+	_filter_toggle.text = "Show only what can be set to heat now"
+	_filter_toggle.toggled.connect(Callable(self, "_on_filter_toggled"))
+	_prep_actions_widget.get_content_root().add_child(_filter_toggle)
 
 	var layout = HBoxContainer.new()
-	layout.name = "HobocraftLayout"
+	layout.name = "CookingLayout"
 	layout.add_theme_constant_override("separation", 14)
 	layout.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	layout.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	root.add_child(layout)
 
 	_recipe_list_widget = VerticalListWidgetScript.new()
-	_recipe_list_widget.set_title("Known Makes")
+	_recipe_list_widget.set_title("Fireside Work")
 	_recipe_list_widget.custom_minimum_size = Vector2(320.0, 0.0)
 	_recipe_list_widget.set_variant("dark")
 	layout.add_child(_recipe_list_widget)
 
 	_detail_widget = DetailPanelWidgetScript.new()
-	_detail_widget.set_title("Recipe Detail", true)
+	_detail_widget.set_title("Meal Detail", true)
 	_detail_widget.set_variant("highlight")
 	layout.add_child(_detail_widget)
 
 
+func _refresh_prep_actions(player_state, config) -> void:
+	var content_root = _prep_actions_widget.get_content_root()
+	for child in content_root.get_children():
+		if child == _filter_toggle:
+			continue
+		content_root.remove_child(child)
+		child.queue_free()
+
+	_filter_toggle.button_pressed = _show_only_makeable
+	for action_data in [
+		{
+			"action_id": SurvivalLoopRulesScript.ACTION_BUILD_FIRE,
+			"label": "Build Fire",
+			"tooltip": "Lay a fire so water and food can be worked over heat."
+		},
+		{
+			"action_id": SurvivalLoopRulesScript.ACTION_TEND_FIRE,
+			"label": "Tend Fire",
+			"tooltip": "Keep the heat steady enough for cooking and warmth."
+		},
+		{
+			"action_id": SurvivalLoopRulesScript.ACTION_GATHER_KINDLING,
+			"label": "Gather Kindling",
+			"tooltip": "Prepare the small dry stuff before the fire goes flat."
+		},
+		{
+			"action_id": SurvivalLoopRulesScript.ACTION_BREW_CAMP_COFFEE,
+			"label": "Brew Camp Coffee",
+			"tooltip": "Turn grounds, water, and tin into something hot enough to steady the body."
+		}
+	]:
+		var availability = _game_state_manager.get_loop_action_availability(action_data.action_id)
+		var button = ActionButtonWidgetScript.new()
+		button.set_action_id(action_data.action_id)
+		button.set_label("%s\n%s" % [
+			action_data.label,
+			"ready" if bool(availability.get("enabled", false)) else String(availability.get("reason", "unavailable"))
+		])
+		button.set_action_tooltip(String(action_data.tooltip))
+		button.pressed.connect(Callable(self, "_on_prep_action_pressed"))
+		content_root.add_child(button)
+
+
 func _refresh_recipe_cards(player_state) -> void:
 	_recipe_list_widget.clear_items()
-	var recipes = _data_manager.get_recipes_by_category("hobocraft") if _data_manager != null else []
-	if recipes.is_empty():
-		var empty_widget = DataPanelWidgetScript.new()
-		empty_widget.set_title("No Makes")
-		empty_widget.set_data("No known camp makes are available.")
-		_recipe_list_widget.add_item(empty_widget)
-		_show_hobocraft_detail({}, player_state)
-		return
-
-	if _selected_hobocraft_recipe_id == &"" or _find_recipe(recipes, _selected_hobocraft_recipe_id).is_empty():
-		_selected_hobocraft_recipe_id = StringName(recipes[0].get("recipe_id", &""))
-
+	var recipes = _data_manager.get_recipes_by_category("cooking") if _data_manager != null else []
+	var visible_recipes: Array = []
 	for recipe in recipes:
 		if not (recipe is Dictionary):
 			continue
 		var recipe_id = StringName(recipe.get("recipe_id", &""))
 		var availability = _game_state_manager.get_loop_action_availability_with_context(
-			SurvivalLoopRulesScript.ACTION_CRAFT_RECIPE,
-			{"source": "crafting.hobocraft", "recipe_id": recipe_id}
+			SurvivalLoopRulesScript.ACTION_COOK_RECIPE,
+			{"source": "cooking.page", "recipe_id": recipe_id}
 		)
+		if _show_only_makeable and not bool(availability.get("enabled", false)):
+			continue
+		visible_recipes.append(recipe)
 		var card = ActionCardWidgetScript.new()
 		card.set_data({
 			"action_id": recipe_id,
 			"title": String(recipe.get("display_name", "Recipe")),
 			"description": String(recipe.get("summary", "")),
 			"requirements": [
-				"Needs: %s" % _format_recipe_inputs(recipe),
-				"Use: %s" % String(recipe.get("category", "Camp Utility"))
+				"Needs: %s" % _format_cooking_needs(recipe),
+				"Result: %s" % _format_cooking_result(recipe)
 			],
-			"status": "Ready now" if bool(availability.get("enabled", false)) else String(availability.get("reason", "Missing materials")),
+			"status": "Ready to set over the fire." if bool(availability.get("enabled", false)) else "Held up: %s" % String(availability.get("reason", "missing setup")),
 			"enabled": true,
-			"action_label": "Review Make",
+			"action_label": "Review Meal",
 			"tooltip_text": String(recipe.get("summary", ""))
 		})
 		card.selected.connect(Callable(self, "_on_recipe_selected"))
 		_recipe_list_widget.add_item(card)
 
-	_show_hobocraft_detail(_find_recipe(recipes, _selected_hobocraft_recipe_id), player_state)
+	if visible_recipes.is_empty():
+		var empty_widget = DataPanelWidgetScript.new()
+		empty_widget.set_title("Nothing Ready")
+		empty_widget.set_data("Nothing is ready to set over the fire. Heat, water, or the right tinwork may still be missing.")
+		_recipe_list_widget.add_item(empty_widget)
+		_show_recipe_detail({}, player_state)
+		return
+
+	if _selected_recipe_id == &"" or _find_recipe(visible_recipes, _selected_recipe_id).is_empty():
+		_selected_recipe_id = StringName(visible_recipes[0].get("recipe_id", &""))
+
+	_show_recipe_detail(_find_recipe(visible_recipes, _selected_recipe_id), player_state)
 
 
-func _show_hobocraft_detail(recipe: Dictionary, player_state) -> void:
+func _show_recipe_detail(recipe: Dictionary, player_state) -> void:
 	_detail_widget.clear_detail_content()
 	if recipe.is_empty():
 		_detail_widget.set_detail({
-			"title": "No Make Selected",
-			"summary": "Pick a known make to review materials and output.",
+			"title": "No Recipe Selected",
+			"summary": "Pick a camp meal to review what it needs and what it yields.",
 			"blocks": []
 		})
 		return
 	var recipe_id = StringName(recipe.get("recipe_id", &""))
 	var availability = _game_state_manager.get_loop_action_availability_with_context(
-		SurvivalLoopRulesScript.ACTION_CRAFT_RECIPE,
-		{"source": "crafting.hobocraft.detail", "recipe_id": recipe_id}
+		SurvivalLoopRulesScript.ACTION_COOK_RECIPE,
+		{"source": "cooking.recipe.detail", "recipe_id": recipe_id}
 	)
 	_detail_widget.set_detail({
-		"title": String(recipe.get("display_name", "Recipe")),
+		"title": String(recipe.get("display_name", "Cooking")),
 		"summary": String(recipe.get("summary", "")),
 		"blocks": [
-			"Category: %s" % String(recipe.get("category", "Camp Utility")),
-			"Materials: %s" % _format_recipe_inputs(recipe)
+			"Needs: %s" % _format_cooking_needs(recipe),
+			"Result: %s" % _format_cooking_result(recipe)
 		]
 	})
 	_detail_widget.set_detail_content(build_recipe_workspace(
 		recipe,
 		player_state,
 		availability,
-		false,
-		Callable(self, "_on_craft_recipe_pressed").bind(recipe_id)
+		true,
+		Callable(self, "_on_cooking_recipe_pressed").bind(recipe_id)
 	))
 
 
@@ -250,7 +321,7 @@ func _build_recipe_note_panel(note_model: Dictionary) -> Control:
 	widget.set_title(String(note_model.get("title", "Camp Note")), true)
 	widget.set_variant("dark")
 	var lines: PackedStringArray = note_model.get("lines", PackedStringArray())
-	var blocks: Array[String] = [String(note_model.get("status", "Missing materials"))]
+	var blocks: Array[String] = [String(note_model.get("status", "Missing setup"))]
 	for line in lines:
 		blocks.append(String(line))
 	widget.set_data(blocks)
@@ -328,14 +399,25 @@ func _on_nav_pressed(_action_id: StringName) -> void:
 	_go_back()
 
 
-func _on_recipe_selected(recipe_id: StringName) -> void:
-	_selected_hobocraft_recipe_id = recipe_id
+func _on_prep_action_pressed(action_id: StringName) -> void:
+	var result = _game_state_manager.execute_action(String(action_id), {"source": "cooking.prep"})
+	if not _show_status.is_null():
+		_show_status.call(String(result.get("message", "No result.")))
+
+
+func _on_filter_toggled(button_pressed: bool) -> void:
+	_show_only_makeable = button_pressed
 	refresh_from_state(_game_state_manager.get_player_state() if _game_state_manager != null else null)
 
 
-func _on_craft_recipe_pressed(recipe_id: StringName) -> void:
-	var result = _game_state_manager.execute_action(String(SurvivalLoopRulesScript.ACTION_CRAFT_RECIPE), {
-		"source": "crafting.recipe",
+func _on_recipe_selected(recipe_id: StringName) -> void:
+	_selected_recipe_id = recipe_id
+	refresh_from_state(_game_state_manager.get_player_state() if _game_state_manager != null else null)
+
+
+func _on_cooking_recipe_pressed(recipe_id: StringName) -> void:
+	var result = _game_state_manager.execute_action(String(SurvivalLoopRulesScript.ACTION_COOK_RECIPE), {
+		"source": "cooking.recipe",
 		"recipe_id": recipe_id
 	})
 	if not _show_status.is_null():
@@ -344,6 +426,20 @@ func _on_craft_recipe_pressed(recipe_id: StringName) -> void:
 
 func _format_recipe_inputs(recipe: Dictionary) -> String:
 	return _overlay_builder.format_recipe_inputs(recipe, _get_overlay_builder_deps())
+
+
+func _format_cooking_needs(recipe: Dictionary) -> String:
+	var needs_text = String(recipe.get("inputs_text", "")).strip_edges()
+	if needs_text != "":
+		return needs_text
+	return _format_recipe_inputs(recipe)
+
+
+func _format_cooking_result(recipe: Dictionary) -> String:
+	var result_text = String(recipe.get("effects_text", "")).strip_edges()
+	if result_text != "":
+		return result_text
+	return "prepared food or drink"
 
 
 func _format_warmth_breakdown(breakdown: Dictionary) -> String:

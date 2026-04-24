@@ -22,6 +22,7 @@ extends Resource
 @export_range(0, 100, 1) var hygiene := 36
 @export_range(0, 100, 1) var presentability := 32
 @export_range(0, 100, 1) var warmth := 63
+@export_range(0, 100, 1) var dampness := 18
 
 @export_group("Skills")
 @export_range(0, 10, 1) var hobo_lore := 3
@@ -84,7 +85,8 @@ func get_condition_fields() -> Array:
 		_make_condition_field(&"morale", "Morale", morale, "A rough measure of hope, steadiness, and whether the road still feels survivable."),
 		_make_condition_field(&"hygiene", "Hygiene", hygiene, "Later this can influence illness, first impressions, police attention, and job access."),
 		_make_condition_field(&"presentability", "Presentability", presentability, "How ready he appears for hiring lines, social contact, and being treated as a working man rather than trouble."),
-		_make_condition_field(&"warmth", "Warmth", warmth, "Warmth reflects cold exposure, shelter quality, clothing, and fire access.")
+		_make_condition_field(&"warmth", "Warmth", warmth, "Warmth reflects cold exposure, shelter quality, clothing, and fire access."),
+		_make_condition_field(&"dampness", "Dampness", dampness, "Dampness marks how much wet cloth, dew, rain, and soaked gear are clinging to the body. Effects can be layered in later.")
 	]
 
 
@@ -144,6 +146,7 @@ func to_save_data() -> Dictionary:
 		"hygiene": hygiene,
 		"presentability": presentability,
 		"warmth": warmth,
+		"dampness": dampness,
 		"hobo_lore": hobo_lore,
 		"labor": labor,
 		"fighting": fighting,
@@ -179,6 +182,7 @@ func from_save_data(data: Dictionary) -> void:
 	hygiene = clampi(int(data.get("hygiene", hygiene)), 0, 100)
 	presentability = clampi(int(data.get("presentability", presentability)), 0, 100)
 	warmth = clampi(int(data.get("warmth", warmth)), 0, 100)
+	dampness = clampi(int(data.get("dampness", dampness)), 0, 100)
 
 	hobo_lore = clampi(int(data.get("hobo_lore", hobo_lore)), 0, 10)
 	labor = clampi(int(data.get("labor", labor)), 0, 10)

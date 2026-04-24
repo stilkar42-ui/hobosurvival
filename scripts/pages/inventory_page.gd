@@ -5,6 +5,8 @@ const InventoryManagerScript := preload("res://scripts/managers/inventory_manage
 const InventoryScript := preload("res://scripts/inventory/inventory.gd")
 const PageUIThemeScript := preload("res://scripts/ui/page_ui_theme.gd")
 const SurvivalLoopRulesScript := preload("res://scripts/gameplay/survival_loop_rules.gd")
+const DetailPanelWidgetScript := preload("res://scripts/ui/widgets/detail_panel_widget.gd")
+const ItemSlotWidgetScript := preload("res://scripts/ui/widgets/item_slot_widget.gd")
 
 const MENU_MOVE_TO := 2001
 const MENU_DROP := 2002
@@ -52,6 +54,8 @@ var _inventory_context_stack_index := -1
 var _inventory_context_provider_id: StringName = &""
 var _inventory_open_context: StringName = &"carried"
 var _inventory_container_popups: Dictionary = {}
+var _selected_item_widget = null
+var _inventory_state_widget = null
 
 
 func bootstrap(_scene_root: Control, deps: Dictionary) -> void:
@@ -106,6 +110,7 @@ func bootstrap(_scene_root: Control, deps: Dictionary) -> void:
 		_use_button.pressed.connect(Callable(self, "_execute_inventory_use_action").bind(-1))
 
 	_apply_layout_theme()
+	_build_inventory_widgets()
 	_connect_inventory_panel()
 	if _game_state_manager != null and not _game_state_manager.player_state_changed.is_connected(Callable(self, "refresh_from_state")):
 		_game_state_manager.player_state_changed.connect(Callable(self, "refresh_from_state"))
@@ -226,6 +231,32 @@ func _apply_layout_theme() -> void:
 		PageUIThemeScript.style_button(button, button != _close_button)
 
 
+func _build_inventory_widgets() -> void:
+	if _window == null:
+		return
+	var actions_root = _window.get_node_or_null("InventoryRoot/InventoryActionsPanel/InventoryActionsRoot") as VBoxContainer
+	if actions_root == null or _selected_item_widget != null:
+		return
+
+	_selected_item_widget = ItemSlotWidgetScript.new()
+	_selected_item_widget.name = "SelectedItemWidget"
+	_selected_item_widget.slot_selected.connect(Callable(self, "_on_selected_item_widget_pressed"))
+	actions_root.add_child(_selected_item_widget)
+
+	_inventory_state_widget = DetailPanelWidgetScript.new()
+	_inventory_state_widget.name = "InventoryStateWidget"
+	_inventory_state_widget.set_title("Move / Condition")
+	_inventory_state_widget.set_variant("dark")
+	actions_root.add_child(_inventory_state_widget)
+
+	if _selected_item_label != null:
+		_selected_item_label.visible = false
+	if _action_summary_label != null:
+		_action_summary_label.visible = false
+	if _destination_label != null:
+		_destination_label.visible = false
+
+
 func _open_inventory() -> void:
 	if _ui_manager != null:
 		_ui_manager.open_page(&"inventory_ui", {"return_route": _ui_manager.get_active_route()})
@@ -257,9 +288,33 @@ func _refresh_inventory_summary(player_state) -> void:
 	]
 
 	var selected_stack = _get_selected_stack(player_state)
+	var selected_container = _get_selected_container_provider(player_state)
 	if selected_stack == null:
-		_selected_item_label.text = "No item selected.\nOpen inventory to choose food, coffee, tobacco, soap, papers, or other carried items for direct use."
-		_selected_item_label.tooltip_text = ""
+		if selected_container != null:
+			_selected_item_label.text = _build_selected_container_text(player_state, selected_container)
+			_selected_item_label.tooltip_text = "Selected container."
+			if _selected_item_widget != null:
+				_selected_item_widget.set_item_data({
+					"item_id": selected_container.source_item_id,
+					"title": selected_container.display_name,
+					"summary": _build_selected_container_text(player_state, selected_container),
+					"tags": _build_selected_container_tags(player_state, selected_container),
+					"enabled": true,
+					"action_label": "Inspect Selected Bag",
+					"tooltip_text": "Inspect the selected container. Use Open from actions to lay out its contents."
+				})
+		else:
+			_selected_item_label.text = "No item selected.\nLeft-click an item or bag to select it. Right-click for actions. Use Open on a bag to lay out its contents."
+			_selected_item_label.tooltip_text = ""
+			if _selected_item_widget != null:
+				_selected_item_widget.set_item_data({
+					"item_id": &"",
+					"title": "No item selected",
+					"summary": "Left-click an item or bag to select it. Right-click for actions. Use Open on a bag to lay out its contents.",
+					"tags": ["selection first"],
+					"enabled": false,
+					"action_label": "Inspect Selected"
+				})
 		_hint_label.text = "Inventory and passport access."
 		return
 	var detail_text = _build_selected_item_text(selected_stack)
@@ -268,6 +323,16 @@ func _refresh_inventory_summary(player_state) -> void:
 	_selected_item_label.text = detail_text
 	_selected_item_label.tooltip_text = selected_stack.item.get_inventory_tooltip_text() if selected_stack.item != null else ""
 	_selected_item_label.modulate = selected_stack.get_quality_color() if selected_stack.has_method("get_quality_color") else Color("d9e2e6")
+	if _selected_item_widget != null:
+		_selected_item_widget.set_item_data({
+			"item_id": selected_stack.item.item_id if selected_stack.item != null else &"",
+			"title": "%s x%d" % [selected_stack.item.display_name, selected_stack.quantity],
+			"summary": detail_text,
+			"tags": _build_selected_item_tags(player_state, selected_stack),
+			"enabled": true,
+			"action_label": "Inspect Selected Item",
+			"tooltip_text": selected_stack.item.get_inventory_tooltip_text() if selected_stack.item != null else ""
+		})
 	_hint_label.text = "Inventory and passport access."
 
 
@@ -277,6 +342,15 @@ func _refresh_inventory_modal(player_state) -> void:
 	_modal_status_label.text = _build_inventory_modal_status(player_state)
 	_action_summary_label.text = _build_inventory_action_summary(player_state)
 	_destination_label.text = _build_inventory_destination_text(player_state)
+	if _inventory_state_widget != null:
+		_inventory_state_widget.set_detail({
+			"title": "Inventory Status",
+			"summary": _build_inventory_action_summary(player_state),
+			"blocks": [
+				_build_inventory_destination_text(player_state),
+				_build_inventory_modal_status(player_state)
+			]
+		})
 	if _move_cancel_button != null:
 		_move_cancel_button.visible = not _inventory_move_request.is_empty()
 
@@ -314,6 +388,7 @@ func _show_inventory_container_popup(provider_id: StringName) -> void:
 	var provider = _inventory_manager.get_storage_provider(player_state, provider_id)
 	if provider == null:
 		return
+	_close_all_inventory_container_popups()
 	var popup = _inventory_container_popups.get(provider_id, null)
 	if popup == null or not is_instance_valid(popup):
 		popup = _build_inventory_container_popup(provider_id, provider.display_name)
@@ -562,6 +637,7 @@ func _open_selected_container() -> void:
 	)
 	_apply_inventory_result(result)
 	if bool(result.get("success", false)):
+		_close_all_inventory_container_popups()
 		_inventory_panel.open_container(provider_id)
 
 
@@ -665,14 +741,14 @@ func _build_inventory_modal_status(player_state) -> String:
 		return "%s\n%s" % [_last_inventory_message, _build_inventory_move_destination_text(player_state)]
 	var selected_container = _get_selected_container_provider(player_state)
 	if selected_container != null:
-		return "%s\nSelected container: %s in %s." % [
+		return "%s\nSelected container: %s in %s. Right-click for actions or use Open to lay out its contents." % [
 			_last_inventory_message,
 			selected_container.display_name,
 			_get_provider_location_label(player_state.inventory_state, selected_container.provider_id)
 		]
 	var selected_stack = _get_selected_stack(player_state)
 	if selected_stack == null:
-		return "%s\nDetailed inventory management. Left-click to inspect. Right-click an item or container for actions." % _last_inventory_message
+		return "%s\nDetailed inventory management. Left-click to select. Right-click an item or container for actions." % _last_inventory_message
 	return "%s\nSelected %s in %s." % [
 		_last_inventory_message,
 		selected_stack.item.display_name,
@@ -688,12 +764,12 @@ func _build_inventory_action_summary(player_state) -> String:
 	var selected_stack = _get_selected_stack(player_state)
 	var selected_container = _get_selected_container_provider(player_state)
 	if selected_container != null:
-		return "Selected container: %s in %s." % [
+		return "Selected container: %s in %s. Inspect it here, or use Open to spread out what it is carrying." % [
 			selected_container.display_name,
 			_get_provider_location_label(player_state.inventory_state, selected_container.provider_id)
 		]
 	if selected_stack == null or selected_stack.item == null:
-		return "Left-click an item to inspect it. Right-click an item or container for actions."
+		return "Left-click an item or bag to select it. Right-click an item or container for actions."
 	var readied_suffix = " (readied)" if player_state.has_method("is_stack_equipped") and player_state.is_stack_equipped(_inventory_panel.selected_stack_index) else ""
 	return "Selected item: %s x%d%s in %s." % [
 		selected_stack.item.display_name,
@@ -933,6 +1009,62 @@ func _build_selected_item_text(selected_stack) -> String:
 
 func _build_item_effect_summary(item) -> String:
 	return ", ".join(item.get_consumable_effect_lines()) if item != null else ""
+
+
+func _build_selected_item_tags(player_state, selected_stack) -> Array:
+	var tags: Array = []
+	if selected_stack == null or selected_stack.item == null:
+		return tags
+	tags.append("stored: %s" % String(selected_stack.carry_zone).replace("_", " "))
+	if selected_stack.item.can_use():
+		tags.append("usable")
+	if selected_stack.item.can_equip():
+		tags.append("equipable")
+	if selected_stack.item.can_read():
+		tags.append("readable")
+	if player_state != null and player_state.has_method("is_stack_equipped") and player_state.is_stack_equipped(_inventory_panel.selected_stack_index):
+		tags.append("readied")
+	return tags
+
+
+func _on_selected_item_widget_pressed(_item_id: StringName) -> void:
+	var player_state = _get_player_state()
+	if player_state == null:
+		return
+	var selected_container = _get_selected_container_provider(player_state)
+	if selected_container != null:
+		_execute_inventory_inspect_action(-1, selected_container.provider_id)
+		return
+	var selected_stack = _get_selected_stack(player_state)
+	if selected_stack != null:
+		_execute_inventory_inspect_action(_inventory_panel.selected_stack_index, &"")
+		return
+	refresh_from_state(player_state)
+
+
+func _build_selected_container_text(player_state, provider) -> String:
+	if provider == null:
+		return "No container selected."
+	var inventory = player_state.inventory_state if player_state != null else null
+	var carry_label = _get_provider_location_label(inventory, provider.provider_id) if inventory != null else "nowhere"
+	var weight_kg = inventory.get_provider_weight_kg(provider.provider_id) if inventory != null else 0.0
+	return "%s\nMounted in %s.\n%s | %.2f kg." % [
+		provider.display_name,
+		carry_label,
+		provider.get_access_speed_name(),
+		weight_kg
+	]
+
+
+func _build_selected_container_tags(player_state, provider) -> Array:
+	var tags: Array = []
+	if provider == null:
+		return tags
+	tags.append("mounted: %s" % _get_provider_location_label(player_state.inventory_state, provider.provider_id))
+	tags.append("access: %s" % provider.get_access_speed_name())
+	if provider.source_item_id != &"":
+		tags.append("openable")
+	return tags
 
 
 func _count_item_group(inventory, item_ids: Array) -> int:

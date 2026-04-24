@@ -1,0 +1,406 @@
+HOBO SURVIVAL
+Mechanics Bible v1
+Historically Grounded Core Systems Framework
+1. CORE GAME FANTASY
+
+Survive as a migratory laborer in industrial America by preserving your body, your stake, and your reputation while navigating a harsh seasonal labor ecosystem.
+
+Player fantasy is not:
+
+being homeless for flavor
+random misery simulator
+rail-riding sandbox
+
+Player fantasy is:
+
+surviving the labor road
+mastering hobocraft
+reading the labor market
+building and protecting your stake
+learning how to live efficiently in a hostile system
+2. PRIMARY GAME LOOP
+Travel / Arrive
+↓
+Gather Information
+↓
+Secure Work / Income Opportunity
+↓
+Perform Labor / Risk Body
+↓
+Manage Survival Needs / Camp / Spend
+↓
+Preserve Stake / Avoid Loss
+↓
+Choose Next Move
+↓
+Repeat
+3. CORE SYSTEM PILLARS
+A. BODY ECONOMY
+Principle:
+
+Your body is your true currency.
+
+Core Stats:
+Nutrition
+Fatigue
+Warmth
+Hygiene
+Morale
+Injury / Wounds
+Sickness / Disease (later)
+Design Rule:
+
+Most systems should pressure body preservation, not HP.
+
+B. STAKE ECONOMY
+Principle:
+
+Earning money is easier than keeping it.
+
+Stake Drains:
+Food
+Lodging
+Transit
+Theft
+Drink / Vice
+Repairs
+Job Fees / Agency Fees
+Medical Costs
+Design Goal:
+
+Player should feel:
+
+“I made money… where did it go?”
+
+Historically authentic.
+
+C. INFORMATION ECONOMY
+Principle:
+
+Knowledge is a resource.
+
+Information Types:
+Job leads
+Seasonal forecasts
+Wage expectations
+Bull/police activity
+Safe camp locations
+Scam warnings
+Local hostility
+Rail timing / route intel
+Mechanics:
+Rumor system
+Confidence / reliability values
+False leads / misinformation
+NPC intel brokers
+D. SOCIAL SURVIVAL
+Principle:
+
+How others view you matters.
+
+Reputation Tracks:
+Camp Reputation
+Employer Reputation
+Railroad Reputation
+Town / Law Heat
+Effects:
+Better job offers
+Camp access / exclusion
+Theft targeting
+Law scrutiny
+Help from NPCs
+E. SEASONAL WORLD PRESSURE
+Principle:
+
+The world changes around you.
+
+Systems:
+Seasonal job tables
+Regional job shifts
+Weather impacts
+Economic downturn modifiers
+Boom/bust events
+4. JOB SYSTEM FRAMEWORK
+Job Categories
+Casual Urban Labor
+
+Short duration / low commitment / city-based
+
+Examples:
+
+Loading Dock
+Kitchen Cleanup
+Cart Hauling
+Coal Shoveling
+Market Porter
+
+Traits:
+
+Fast access
+Lower pay
+Flexible timing
+High competition
+Skilled Casual Labor
+
+Requires gear / traits / reputation
+
+Examples:
+
+Carpentry Assist
+Form Work
+Tool Repair
+Foreman Helper
+Clerk Runner
+
+Traits:
+
+Better pay
+Appearance matters more
+Tool gate
+Seasonal Migratory Labor
+
+Major income spikes
+
+Examples:
+
+Harvest Hand
+Fruit Picking
+Cotton Picking
+Beet Work
+Hop Picking
+
+Traits:
+
+High payoff
+Travel commitment
+Timing critical
+Heavy Camp / Industrial Labor
+
+Longer term / dangerous
+
+Examples:
+
+Logging Camp
+Rail Gang
+Dam Work
+Oil Field
+Mine Labor
+
+Traits:
+
+Better pay
+High injury risk
+Longer contracts
+Hustles / Desperation Income
+
+Fallback systems
+
+Examples:
+
+Peddling
+Panhandling
+Small Scams
+Scrap Selling
+Odd Fixes
+
+Traits:
+
+Law heat
+Low reliability
+Morale / reputation effects
+5. CAMP SYSTEM
+Camp Prep Actions
+
+Modular—not one “Make Camp” button.
+
+Core Actions:
+Build Fire
+Tend Fire
+Set Sleeping Spot
+Deploy Bedroll
+Wash Up
+Eat Meal
+Quiet Comfort
+Read / Reflect
+Repair Gear
+Camp Philosophy
+
+Player builds evening routine dynamically.
+
+Example:
+
+Cold Rain Night:
+
+Build Fire
+Deploy Bedroll
+Eat Hot Stew
+Sleep Early
+
+Warm Summer Night:
+
+Wash Up
+Eat Bread
+Read
+Sleep Without Fire
+Sleep Rules
+
+Sleep quality based on prep:
+
+Base Sleep
++ Bedroll
++ Fire
++ Warmth
++ Comfort
++ Hygiene
+- Weather Exposure
+- Noise / Danger
+- Injury
+6. TRAVEL SYSTEM
+Travel Is Gameplay
+
+Travel costs:
+
+Nutrition
+Fatigue
+Time
+Exposure
+Random Events
+Travel Risks
+Missed timing / arrive late
+No jobs available
+Bull encounter
+Theft
+Injury
+Weather exposure
+7. INVENTORY / GEAR PHILOSOPHY
+Gear Is Lifestyle Choice
+
+Not loot treadmill.
+
+Tradeoffs:
+Mobility vs Comfort
+Capacity vs Awkwardness
+Warmth vs Weight
+Presentability vs Utility
+Important Gear Categories
+Bedroll / Blanket
+Cookware
+Food Stores
+Tools
+Clothing Layers
+Shelter Gear
+Trade Goods
+Hygiene Supplies
+Comfort Items
+8. APPEARANCE / PRESENTABILITY
+Separate From Hygiene
+Hygiene:
+
+Physical cleanliness / smell / disease
+
+Presentability:
+
+Visual/social impression
+
+Affected By:
+
+Clothing condition
+Grooming
+Dirt / stains
+Proper layering
+Equipment organization
+Gameplay Effects:
+Employer reaction
+Foreman jobs
+Town suspicion
+Camp respect
+Social encounters
+9. LAW / HEAT SYSTEM
+
+Separate enforcement categories.
+
+Town Law
+
+Punishes:
+
+Loitering
+Panhandling
+Disorder
+Visible destitution
+Railroad Bulls
+
+Punish:
+
+Trespass
+Riding Freight
+Rail Theft
+Camp Enforcement
+
+Punish:
+
+Freeloading
+Theft
+Rule Breaking
+Endangering Camp
+10. LONG-TERM PROGRESSION
+Player Growth Should Be:
+
+Not XP levels.
+
+Instead:
+
+Soft Progression:
+Better Gear
+Better Reputation
+Better Knowledge
+Better Routes
+Better Contacts
+Better Survival Habits
+Hard Progression:
+Permanent Injury
+Reputation Gains/Losses
+Learned Routes
+Unlock Job Access
+11. MVP IMPLEMENTATION PRIORITY
+Phase 1 — Prototype Core
+Survival stats
+Basic jobs
+Camp prep
+Inventory/gear
+Time passage
+Stake economy
+Phase 2 — Systemic Depth
+Reputation
+Travel map
+Seasonal jobs
+Rumor system
+Law heat
+Phase 3 — Advanced Simulation
+Injury permanence
+Dynamic economy
+Weather regions
+NPC camp politics
+Long-term route planning
+12. DESIGN NORTH STAR
+
+The player should feel like success comes from competence, foresight, and discipline—not luck.
+
+If the player thrives, it should be because they:
+
+packed smart
+read the season
+preserved their body
+kept themselves presentable
+learned the labor routes
+protected their stake
+Final Assessment
+
+This research confirms your concept has real depth potential.
+
+You are not making:
+
+“hobo Oregon Trail”
+
+You are making:
+
+A labor-road survival sim with social/economic systems rarely explored in games.

@@ -1,0 +1,399 @@
+# HOBO SURVIVAL — CODEX IMPLEMENTATION BRIEF v1
+
+## Project Intent
+
+Build a historically grounded migratory labor survival RPG/sim set in industrial America (1890–1935 inspired), where the player survives by managing body condition, gear, reputation, and money while moving through a seasonal labor ecosystem.
+
+This document translates design intent into implementation-facing architecture guidance.
+
+---
+
+## CORE GAME LOOP
+
+Travel / Arrive
+→ Gather Information
+→ Secure Work Opportunity
+→ Perform Labor
+→ Manage Survival / Camp / Spend
+→ Preserve Stake
+→ Choose Next Move
+→ Repeat
+
+---
+
+## PRIMARY SYSTEM DOMAINS
+
+### 1. Body Economy
+
+Player condition is the primary survival resource.
+
+Implement tracked stats:
+
+* Nutrition
+* Fatigue
+* Warmth
+* Hygiene
+* Morale
+* Injury (future)
+* Sickness (future)
+
+Rules:
+
+* Most actions consume or restore body stats.
+* Failed body management should gate opportunities before causing death.
+* Body stats should influence job eligibility/performance.
+
+---
+
+### 2. Stake Economy
+
+Money should be difficult to preserve.
+
+Implement recurring drains:
+
+* Food purchases
+* Lodging / shelter costs
+* Travel costs
+* Repairs / maintenance
+* Job placement fees (future)
+* Medical costs (future)
+* Theft / loss events (future)
+
+Design Goal:
+
+* Earnings should feel meaningful but fragile.
+
+---
+
+### 3. Information Economy
+
+Knowledge is a gameplay resource.
+
+Future systems should support:
+
+* Job rumors/leads
+* Wage expectations
+* Seasonal demand intel
+* Law/police warnings
+* Rail / travel route information
+* Scam / false lead misinformation
+
+Implementation Note:
+
+* Structure rumor/intel data similarly to items/jobs so it can become tradable/queryable state later.
+
+---
+
+### 4. Social / Reputation Systems
+
+Track multiple independent reputation values.
+
+Future reputation categories:
+
+* Camp Reputation
+* Employer Reputation
+* Railroad Reputation
+* Town Law Heat
+
+These should affect:
+
+* Job access
+* Camp access
+* NPC interactions
+* Theft targeting
+* Enforcement likelihood
+
+---
+
+### 5. Seasonal World Pressure
+
+World state should alter labor availability.
+
+Future world systems:
+
+* Seasonal job pools
+* Regional labor demand modifiers
+* Weather/event modifiers
+* Economic downturn/boom events
+
+---
+
+## JOB SYSTEM ARCHITECTURE
+
+Implement jobs as data-driven templates with tags.
+
+Suggested job fields:
+
+* id
+* display_name
+* category
+* duration_minutes
+* pay_cash
+* pay_items
+* nutrition_cost
+* fatigue_cost
+* warmth_cost
+* morale_delta
+* hygiene_delta
+* injury_risk
+* requirements[]
+* reputation_effects[]
+* seasonal_tags[]
+* region_tags[]
+
+---
+
+## JOB CATEGORIES
+
+### Casual Urban Labor
+
+Short jobs, flexible timing.
+Examples:
+
+* Loading
+* Kitchen Cleanup
+* Yard Scrounge
+* Porter Work
+
+### Skilled Casual Labor
+
+Requires tools/reputation/presentability.
+Examples:
+
+* Carpentry Assist
+* Clerk Runner
+* Form Work
+
+### Seasonal Migratory Labor
+
+High reward, travel-gated.
+Examples:
+
+* Harvest Hand
+* Fruit Picking
+* Beet Work
+
+### Heavy Industrial / Camp Labor
+
+Longer, dangerous contracts.
+Examples:
+
+* Rail Gang
+* Logging Camp
+* Mine Labor
+* Dam Work
+
+### Desperation Income
+
+Fallback / low legitimacy.
+Examples:
+
+* Peddling
+* Panhandling
+* Scrap Hustle
+
+---
+
+## CAMP SYSTEM
+
+Camp prep should remain modular, not collapsed into one button.
+
+Implement camp actions as independent tasks:
+
+* Build Fire
+* Tend Fire
+* Set Sleeping Spot
+* Deploy Bedroll
+* Wash Up
+* Eat Meal
+* Quiet Comfort
+* Repair Gear
+* Read / Reflect (future)
+
+Sleep quality calculation should derive from prep state.
+
+Suggested formula:
+sleep_quality =
+base_sleep
+
+* fire_bonus
+* bedroll_bonus
+* shelter_bonus
+* warmth_bonus
+* hygiene_bonus
+
+- exposure_penalty
+- injury_penalty
+
+---
+
+## INVENTORY / GEAR DESIGN
+
+Gear is not loot progression.
+Gear represents survival strategy tradeoffs.
+
+Track per-item:
+
+* weight
+* warmth
+* awkwardness
+* access_speed
+* durability (future)
+* presentability (future)
+* comfort (future)
+
+Important gear categories:
+
+* Bedding
+* Shelter
+* Food
+* Tools
+* Clothing
+* Hygiene Supplies
+* Comfort Items
+* Trade Goods
+
+---
+
+## APPEARANCE / PRESENTABILITY
+
+Separate from hygiene.
+
+Hygiene:
+
+* Cleanliness / smell / disease pressure
+
+Presentability:
+
+* Social/employer perception of readiness/discipline
+
+Presentability influenced by:
+
+* Clothing condition
+* Grooming
+* Dirt/stains
+* Equipment organization
+* Proper dress for context
+
+Future Effects:
+
+* Better jobs require presentability thresholds
+* Town suspicion scales with appearance
+* Camp respect influenced by discipline markers
+
+---
+
+## TRAVEL SYSTEM
+
+Travel should not be free transition.
+
+Travel consumes:
+
+* Nutrition
+* Fatigue
+* Time
+* Warmth / Exposure
+
+Travel can trigger:
+
+* Bull encounters
+* Theft
+* Injury
+* Weather events
+* Missed opportunities
+* No-work arrival outcomes
+
+---
+
+## LAW / ENFORCEMENT SYSTEM
+
+Keep enforcement categories separate.
+
+Town Law:
+
+* Loitering / panhandling / disorder
+
+Railroad Bulls:
+
+* Trespass / freight riding / rail theft
+
+Camp Enforcement:
+
+* Theft / freeloading / camp rule violations
+
+Each should maintain separate heat/reputation values.
+
+---
+
+## PROGRESSION MODEL
+
+Avoid RPG leveling.
+
+Primary progression vectors:
+
+* Better Gear
+* Better Reputation
+* Better Knowledge / Route Familiarity
+* Better Contacts
+* Better Job Access
+
+Negative progression:
+
+* Injury
+* Reputation Damage
+* Debt / Lost Stake
+* Permanent Physical Degradation (future)
+
+---
+
+## CURRENT MVP PRIORITIES
+
+1. Stabilize 1D prototype loop completely
+2. Finalize:
+
+   * Working job board
+   * Working camp prep loop
+   * Working inventory / item use
+   * Working passport / character sheet
+   * Correct save/load/state management
+3. Tighten economic balance
+4. Validate loop fun/challenge
+5. THEN move to 2D/isometric implementation
+
+---
+
+## DEVELOPMENT RULES
+
+* Do not add new complexity before current prototype systems function reliably.
+* Prefer data-driven configuration over hardcoded values.
+* Preserve modularity for future seasonal/world simulation expansion.
+* Every mechanic should tie back to one of the core pillars:
+
+  * Body Economy
+  * Stake Economy
+  * Information Economy
+  * Social Survival
+  * Seasonal Pressure
+
+---
+
+## DESIGN NORTH STAR
+
+Player success should come from:
+
+* Competence
+* Planning
+* Discipline
+* Efficient resource use
+* Good information
+* Strategic movement
+
+NOT from:
+
+* Grinding
+* Random luck
+* Level scaling
+* Arbitrary power fantasy
+
+End Goal:
+Create a survival sim where mastery feels like learning how to truly live on the road.

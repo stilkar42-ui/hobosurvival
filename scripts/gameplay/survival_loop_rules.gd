@@ -7,6 +7,7 @@ const FadingMeterSystemScript := preload("res://scripts/gameplay/fading_meter_sy
 const InventoryScript := preload("res://scripts/inventory/inventory.gd")
 const ItemDefinitionScript := preload("res://scripts/inventory/item_definition.gd")
 const ItemQualityRulesScript := preload("res://scripts/gameplay/item_quality_rules.gd")
+const RecipeCatalogScript := preload("res://scripts/data/recipe_catalog.gd")
 
 const LOCATION_TOWN := &"town"
 const LOCATION_CAMP := &"camp"
@@ -552,17 +553,11 @@ static func get_store_stock(player_state, config, item_catalog, store_id: String
 
 
 static func get_hobocraft_recipes() -> Array:
-	var result: Array = []
-	for recipe in HOBOCRAFT_RECIPES:
-		result.append(recipe.duplicate(true))
-	return result
+	return RecipeCatalogScript.get_recipes_by_category("hobocraft")
 
 
 static func get_cooking_recipes() -> Array:
-	var result: Array = []
-	for recipe in COOKING_RECIPES:
-		result.append(recipe.duplicate(true))
-	return result
+	return RecipeCatalogScript.get_recipes_by_category("cooking")
 
 
 static func get_hobocraft_recipe_material_snapshot(player_state, recipe: Dictionary, item_catalog = null) -> Array:
@@ -1799,17 +1794,17 @@ static func _get_store_stock_entry(player_state, store_id: StringName, stock_ind
 
 
 static func _get_recipe_by_id(recipe_id: StringName) -> Dictionary:
-	for recipe in HOBOCRAFT_RECIPES:
-		if StringName(recipe.get("recipe_id", &"")) == recipe_id:
-			return recipe.duplicate(true)
-	return {}
+	var recipe = RecipeCatalogScript.get_recipe(recipe_id)
+	if String(recipe.get("recipe_category", "")).to_lower() != "hobocraft":
+		return {}
+	return recipe
 
 
 static func _get_cooking_recipe_by_id(recipe_id: StringName) -> Dictionary:
-	for recipe in COOKING_RECIPES:
-		if StringName(recipe.get("recipe_id", &"")) == recipe_id:
-			return recipe.duplicate(true)
-	return {}
+	var recipe = RecipeCatalogScript.get_recipe(recipe_id)
+	if String(recipe.get("recipe_category", "")).to_lower() != "cooking":
+		return {}
+	return recipe
 
 
 static func _collect_recipe_input_quality_entries(inventory, recipe: Dictionary) -> Array:

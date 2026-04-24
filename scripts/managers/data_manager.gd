@@ -1,6 +1,8 @@
 class_name DataManager
 extends RefCounted
 
+const RecipeCatalogScript := preload("res://scripts/data/recipe_catalog.gd")
+
 var _player_state_service = null
 
 
@@ -26,6 +28,18 @@ func get_item_definition(item_id: StringName):
 	if item_catalog == null:
 		return null
 	return item_catalog.get_item(item_id)
+
+
+func get_all_recipes() -> Array:
+	return RecipeCatalogScript.get_all_recipes()
+
+
+func get_recipe(recipe_id: StringName) -> Dictionary:
+	return RecipeCatalogScript.get_recipe(recipe_id)
+
+
+func get_recipes_by_category(category: String) -> Array:
+	return RecipeCatalogScript.get_recipes_by_category(category)
 
 
 func get_state_origin() -> StringName:

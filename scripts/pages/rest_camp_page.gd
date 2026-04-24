@@ -4,6 +4,7 @@ extends RefCounted
 const OverlayBuilderScript := preload("res://scripts/front_end/adapters/overlay_builder.gd")
 const SurvivalLoopRulesScript := preload("res://scripts/gameplay/survival_loop_rules.gd")
 const PageUIThemeScript := preload("res://scripts/ui/page_ui_theme.gd")
+const ConditionStripWidgetScript := preload("res://scripts/ui/widgets/condition_strip_widget.gd")
 
 var _overlay_builder = OverlayBuilderScript.new()
 var _game_state_manager = null
@@ -31,6 +32,7 @@ var _rest_sections_root: VBoxContainer = null
 var _action_panel: PanelContainer = null
 var _camp_state_panel: PanelContainer = null
 var _stats_panel: PanelContainer = null
+var _condition_widget = null
 
 var _current_route: StringName = &"getting_ready"
 var _selected_rest_hours := 8
@@ -108,6 +110,8 @@ func refresh_from_state(player_state) -> void:
 		player_state.passport_profile.morale,
 		player_state.get_time_of_day_label()
 	]
+	if _condition_widget != null:
+		_condition_widget.set_conditions(_build_condition_surface_data(player_state))
 	if config == null:
 		return
 	var water_action_duration = config.ready_boil_water_minutes if player_state.camp_non_potable_water_units > 0 else config.ready_fetch_water_minutes
@@ -185,6 +189,11 @@ func _build_overlay_layout() -> void:
 	_stats_panel.custom_minimum_size = Vector2(280.0, 0.0)
 	var stats_root: VBoxContainer = _stats_panel.get_child(0)
 	stats_root.add_child(_stats_label)
+	_condition_widget = ConditionStripWidgetScript.new()
+	_condition_widget.set_title("Working Condition")
+	_condition_widget.set_variant("dark")
+	_condition_widget.set_columns(2)
+	stats_root.add_child(_condition_widget)
 	layout.add_child(_stats_panel)
 
 
@@ -344,6 +353,49 @@ func _format_warmth_breakdown(breakdown: Dictionary) -> String:
 			parts.append("%s %+d" % [String(entry.get("label", "warmth")), int(entry.get("value", 0))])
 	parts.append("net %+d" % int(breakdown.get("net_warmth_change", 0)))
 	return ", ".join(parts)
+
+
+func _build_condition_surface_data(player_state) -> Array:
+	var conditions: Array = []
+	if player_state == null or player_state.passport_profile == null:
+		return conditions
+	var passport = player_state.passport_profile
+	var inventory = player_state.inventory_state
+	var max_weight = inventory.max_total_weight_kg if inventory != null else 0.0
+	var total_weight = inventory.get_total_weight_kg() if inventory != null else 0.0
+	conditions.append(_make_condition_entry(&"warmth", "Warmth", passport.warmth))
+	conditions.append(_make_condition_entry(&"stamina", "Stamina", _stats_manager.get_stamina(player_state) if _stats_manager != null else 0))
+	conditions.append(_make_condition_entry(&"nutrition", "Nutrition", passport.nutrition))
+	conditions.append({
+		"stat_id": &"water",
+		"label": "Water",
+		"value_text": "ready %d | raw %d" % [int(player_state.camp_potable_water_units), int(player_state.camp_non_potable_water_units)],
+		"note": "Camp water on hand for washing, coffee, and cooking.",
+		"display_as_bar": false
+	})
+	conditions.append(_make_condition_entry(&"morale", "Morale", passport.morale))
+	conditions.append(_make_condition_entry(&"presentability", "Presentability", passport.presentability))
+	conditions.append(_make_condition_entry(&"hygiene", "Hygiene", passport.hygiene))
+	conditions.append({
+		"stat_id": &"weight",
+		"label": "Weight",
+		"value_text": "%.1f / %.1f kg" % [total_weight, max_weight],
+		"note": "Carry weight still matters when breaking or making camp.",
+		"display_as_bar": false
+	})
+	conditions.append(_make_condition_entry(&"dampness", "Dampness", passport.dampness))
+	return conditions
+
+
+func _make_condition_entry(stat_id: StringName, label: String, value: int) -> Dictionary:
+	return {
+		"stat_id": stat_id,
+		"label": label,
+		"value_text": "%d / 100" % clampi(value, 0, 100),
+		"current": clampi(value, 0, 100),
+		"max": 100,
+		"display_as_bar": true
+	}
 
 
 func _clear_children(node: Node) -> void:

@@ -8,7 +8,11 @@ var _close_button: Button = null
 var _open_passport_button: Button = null
 var _passport_panel = null
 var _game_state_manager = null
+var _stats_manager = null
+var _inventory_manager = null
+var _location_manager = null
 var _ui_manager = null
+var _character_rules = null
 var _resolve_return_route := Callable()
 var _return_route: StringName = &"town"
 
@@ -19,7 +23,11 @@ func bootstrap(_scene_root: Control, deps: Dictionary) -> void:
 	_open_passport_button = deps.get("open_passport_button", null)
 	_passport_panel = deps.get("passport_panel", null)
 	_game_state_manager = deps.get("game_state_manager", null)
+	_stats_manager = deps.get("stats_manager", null)
+	_inventory_manager = deps.get("inventory_manager", null)
+	_location_manager = deps.get("location_manager", null)
 	_ui_manager = deps.get("ui_manager", null)
+	_character_rules = deps.get("character_rules", null)
 	_resolve_return_route = deps.get("resolve_return_route", Callable())
 
 	if _overlay != null:
@@ -54,8 +62,18 @@ func refresh_from_state(player_state) -> void:
 		return
 	if player_state == null:
 		_passport_panel.set_passport_data(null)
+		_passport_panel.set_external_sections([])
 		return
 	_passport_panel.set_passport_data(player_state.passport_profile)
+	var external_sections: Array = _build_surface_sections(player_state)
+	if _character_rules != null and _character_rules.has_method("get_derived_snapshot") and _character_rules.has_method("build_passport_sections"):
+		var derived_snapshot = _character_rules.get_derived_snapshot(player_state, {
+			"stats_manager": _stats_manager,
+			"inventory_manager": _inventory_manager,
+			"location_manager": _location_manager
+		})
+		external_sections.append_array(_character_rules.build_passport_sections(derived_snapshot))
+	_passport_panel.set_external_sections(external_sections)
 
 
 func handle_input(event: InputEvent) -> bool:
@@ -92,3 +110,32 @@ func _close() -> void:
 	if route == &"" and not _resolve_return_route.is_null():
 		route = StringName(_resolve_return_route.call())
 	_ui_manager.open_page(route)
+
+
+func _build_surface_sections(player_state) -> Array:
+	var sections: Array = []
+	if player_state == null:
+		return sections
+	var inventory = _inventory_manager.get_inventory(player_state) if _inventory_manager != null else null
+	var total_weight = inventory.get_total_weight_kg() if inventory != null else 0.0
+	var max_weight = inventory.max_total_weight_kg if inventory != null else 0.0
+	sections.append({
+		"id": &"road_surface",
+		"title": "Road Surface",
+		"summary": "Some conditions live in the carried stake and camp setup, not only in the body itself.",
+		"fields": [
+			{
+				"id": &"water_surface",
+				"label": "Water",
+				"value": "Potable %d | Raw %d" % [int(player_state.camp_potable_water_units), int(player_state.camp_non_potable_water_units)],
+				"notes": "Water here means what camp can presently work with for washing, cooking, and coffee."
+			},
+			{
+				"id": &"carry_weight",
+				"label": "Weight",
+				"value": "%.2f / %.2f kg" % [total_weight, max_weight],
+				"notes": "Carry weight is not just storage. It is road drag, fatigue burden, and travel readiness."
+			}
+		]
+	})
+	return sections

@@ -6,6 +6,7 @@ signal request_quit_game
 
 const FirstPlayableLoopActionControllerScript := preload("res://scripts/front_end/first_playable_loop_action_controller.gd")
 const OverlayBuilderScript := preload("res://scripts/front_end/adapters/overlay_builder.gd")
+const CharacterRulesScript := preload("res://scripts/gameplay/character_rules.gd")
 const DataManagerScript := preload("res://scripts/managers/data_manager.gd")
 const EntityManagerScript := preload("res://scripts/managers/entity_manager.gd")
 const GameStateManagerScript := preload("res://scripts/managers/game_state_manager.gd")
@@ -16,6 +17,7 @@ const ReputationManagerScript := preload("res://scripts/managers/reputation_mana
 const StatsManagerScript := preload("res://scripts/managers/stats_manager.gd")
 const TimeManagerScript := preload("res://scripts/managers/time_manager.gd")
 const UIManagerScript := preload("res://scripts/managers/ui_manager.gd")
+const CookingPageScript := preload("res://scripts/pages/cooking_page.gd")
 const CraftingPageScript := preload("res://scripts/pages/crafting_page.gd")
 const EventEncounterPageScript := preload("res://scripts/pages/event_encounter_page.gd")
 const InventoryPageScript := preload("res://scripts/pages/inventory_page.gd")
@@ -109,11 +111,13 @@ var _location_manager = LocationManagerScript.new()
 var _reputation_manager = ReputationManagerScript.new()
 var _entity_manager = EntityManagerScript.new()
 var _ui_manager = UIManagerScript.new()
+var _character_rules = CharacterRulesScript.new()
 var _world_map_page = WorldMapPageScript.new()
 var _travel_page = TravelPageScript.new()
 var _location_page = LocationPageScript.new()
 var _inventory_page = InventoryPageScript.new()
 var _crafting_page = CraftingPageScript.new()
+var _cooking_page = CookingPageScript.new()
 var _passport_stats_page = PassportStatsPageScript.new()
 var _event_encounter_page = EventEncounterPageScript.new()
 var _rest_camp_page = RestCampPageScript.new()
@@ -286,6 +290,7 @@ func _bootstrap_pages() -> void:
 		"reputation_manager": _reputation_manager,
 		"entity_manager": _entity_manager,
 		"ui_manager": _ui_manager,
+		"character_rules": _character_rules,
 		"overlay_builder": _overlay_builder,
 		"build_action_context": Callable(_action_controller, "build_action_context"),
 		"execute_state_action": Callable(_action_controller, "execute_state_action"),
@@ -313,6 +318,7 @@ func _bootstrap_pages() -> void:
 	_travel_page.bootstrap(self, common_deps)
 	_location_page.bootstrap(self, common_deps)
 	_crafting_page.bootstrap(self, common_deps)
+	_cooking_page.bootstrap(self, common_deps)
 	_rest_camp_page.bootstrap(self, common_deps.merged({
 		"overlay": getting_ready_overlay,
 		"root": getting_ready_root,
@@ -365,6 +371,7 @@ func _register_pages_with_ui_manager() -> void:
 	_ui_manager.register_page(&"LocationPage", _location_page)
 	_ui_manager.register_page(&"InventoryPage", _inventory_page)
 	_ui_manager.register_page(&"CraftingPage", _crafting_page)
+	_ui_manager.register_page(&"CookingPage", _cooking_page)
 	_ui_manager.register_page(&"PassportStatsPage", _passport_stats_page)
 	_ui_manager.register_page(&"EventEncounterPage", _event_encounter_page)
 	_ui_manager.register_page(&"RestCampPage", _rest_camp_page)
@@ -379,7 +386,7 @@ func _register_pages_with_ui_manager() -> void:
 	_ui_manager.register_route(_location_manager.PAGE_HARDWARE, &"LocationPage")
 	_ui_manager.register_route(_location_manager.ROUTE_CRAFTING_PAGE, &"CraftingPage")
 	_ui_manager.register_route(_location_manager.PAGE_HOBOCRAFT, &"CraftingPage")
-	_ui_manager.register_route(_location_manager.PAGE_COOKING, &"CraftingPage")
+	_ui_manager.register_route(_location_manager.PAGE_COOKING, &"CookingPage")
 	_ui_manager.register_route(_location_manager.PAGE_GETTING_READY, &"RestCampPage")
 	_ui_manager.register_route(_location_manager.ROUTE_REST_PAGE, &"RestCampPage")
 	_ui_manager.register_route(_location_manager.PAGE_REST_CAMP, &"RestCampPage")

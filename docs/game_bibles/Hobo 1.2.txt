@@ -1,0 +1,208 @@
+Hobo's Journey: Game Design Document
+Version: 1.0
+Date: March 08, 2025
+Author: Grok (with input from Avery and Echo)
+Purpose: This document consolidates brainstorming sessions into a unified vision for a 2D survival sandbox game inspired by hobo culture, set in a procedurally generated mirror world to America during the height of the hobo age. It’s designed for modular development in Godot, supporting self-paced coding by Avery.
+1. Game Overview
+Concept
+"Hobo's Journey" (working title) is a sandbox survival game immersing players in the life of a hobo during a mirror world’s equivalent to America’s hobo age (circa 1920s-1930s, Great Depression vibes). Players navigate a procedurally generated country, balancing survival, seasonal work, and social dynamics with fellow hobos and townsfolk. The game emphasizes emergent storytelling, crafting ingenuity, and a dynamic world that evolves with player actions.
+Core Pillars
+Survival: Manage hunger, warmth, fatigue, hygiene, and seasonal challenges.
+
+Travel: Master train-hopping and navigate a shifting landscape.
+
+Social Dynamics: Build alliances, rivalries, and a reputation among hobos and towns.
+
+Crafting: Innovate with hobo-specific tools and gear.
+
+Emergence: Experience a living world where stories and consequences unfold organically.
+
+Platforms & Engine
+Engine: Godot 4 (using GDScript for its Python-like simplicity)
+
+Target: PC (flexible for future expansion)
+
+2. Setting & World Design
+World Concept
+The game is set in a fictional country mirroring America’s geography and hobo culture during its peak. It spans east to west with coastlines on both sides and land borders north and south, reflecting a Depression-era aesthetic with a unique lore twist.
+Procedural Map Generation
+Structure: 
+East-to-west continent with consistent macro layout (coasts, borders).
+
+Procedurally generated within parameters for replayability.
+
+Regions (placeholders, expandable later):
+Northeast: Timber towns, lumber cities, cold forests.
+
+Midwest: Industrial cities, steel towns, rail hubs.
+
+South: Agricultural areas, plantation towns, warm plains.
+
+West: Mining towns, desert settlements, rugged terrain.
+
+Coastal Zones: Port cities, shipyards (east and west).
+
+Logic: 
+Major hubs spawn based on resources (e.g., steel near iron/coal).
+
+Supporting towns emerge logically (e.g., paper mill downstream from lumber town).
+
+Dynamic Elements
+Rail System: Procedurally generated network connecting hubs, used for travel and train-hopping.
+
+Towns: Grow, decline, or become ghost towns based on prosperity, resources, and player influence.
+
+Hobo Camps: Shift locations along rails or near towns, influenced by seasons and NPC activity.
+
+3. Visual & Technical Design
+Visual Style
+World Map: Top-down, 2D pixel-art (inspired by Fallout 2).
+
+Interactions: Isometric tiles or side views (placeholder—open to experimentation for crafting, mini-games).
+
+Tile Size: 32x32 (world), 16x24 (characters), adjustable for performance.
+
+Technical Approach
+Modularity: Systems designed as standalone modules for flexible development (e.g., map generation separate from NPC logic).
+
+Godot Implementation: 
+GDScript for scripting.
+
+TileMap for world generation.
+
+Node-based architecture for easy integration.
+
+4. Gameplay Mechanics
+4.1 Survival Systems
+Core Needs:
+Hunger: Depletes over time; mitigated by food (scavenged, crafted, earned).
+
+Warmth: Critical in winter; requires clothing, shelter, or fire.
+
+Fatigue: Builds with activity; rest in camps or safe spots resets it.
+
+Hygiene: Impacts NPC reactions and job opportunities; cleaned via rivers, bathhouses, or rain.
+
+Weather & Seasons:
+Winter: Cold risks, ice harvesting jobs, frozen routes.
+
+Spring: Floods, planting work, increased travel options.
+
+Summer: Heat exhaustion, construction jobs, heightened security.
+
+Fall: Harvest work, preparation for winter, animal threats.
+
+4.2 Travel & Train-Hopping
+Methods:
+Walking: Real-time, slow, safe in towns, risky in wilds (1 tile ≈ 10 mins).
+
+Hitchhiking: Turn-based, 3-6 tiles, random encounters (helpful or hostile).
+
+Train-Hopping: Turn-based mini-game, 5-10 tiles, risks (injury, arrest).
+
+Mini-Game Mechanics:
+Timing-based jumps to board trains.
+
+Hiding from rail bulls (NPC patrols).
+
+Train types: boxcars (shelter), flatbeds (exposed), passenger cars (high-risk).
+
+4.3 Crafting & Hobo Tech
+System:
+Craft at campfires using scavenged materials.
+
+Recipes learned from NPCs, “Roaming Hobo Survival Guide” (random pages), or tinkering (skill-based).
+
+Item Quality:
+Poor, Common, Good, Superior, Legendary tiers affect durability and performance.
+
+Examples (placeholders):
+Soup Can Stove: Basic cooking tool.
+
+Tarp Tent: Shelter using a walking stick as a pole.
+
+Rail Spike Knife: Durable weapon/tool.
+
+Steam-Powered Can Stove: Advanced, multi-use item.
+
+4.4 Work & Economy
+Seasonal Jobs:
+Winter: Ice harvesting, logging.
+
+Spring: Planting, fishing.
+
+Summer: Construction, fruit picking.
+
+Fall: Harvesting, hunting.
+
+Economy:
+Earn money or barter goods.
+
+Send earnings home (family pressure system TBD).
+
+4.5 Social Dynamics
+NPC Archetypes:
+Hobos: Honorable workers, competitive for jobs.
+
+Tramps: Unreliable wanderers, less work-focused.
+
+Bums: Resource drains, potentially dangerous.
+
+Memory & Reputation:
+NPCs track interactions (help, harm, steal).
+
+Gossip spreads, affecting trust and job access.
+
+Competition:
+Rivals vie for jobs, resources, and camp space.
+
+Alliances form based on shared history.
+
+5. NPC Systems
+Archetypes & Behaviors
+Dynamic Status: NPCs shift between Hobo, Tramp, Bum based on events or player actions.
+
+Named Rivals: Recurring characters with unique traits (e.g., fast train-hopper, crafty scammer).
+
+Memory & Emergent Storytelling
+Memory Flags: Past interactions influence dialogue and behavior.
+
+Rumors: Player actions spread as tales, shaping encounters (e.g., “heroic hobo” or “thieving drifter”).
+
+6. Development Plan
+Modular Structure
+To support self-paced coding:
+Core Framework: Engine setup, input, basic rendering.
+
+World Generation: Procedural map with regions and rails.
+
+Survival Basics: Hunger, warmth, fatigue, hygiene meters.
+
+Travel System: Walking, train-hopping mini-game.
+
+Crafting Module: Basic recipes, campfire crafting.
+
+NPC Interactions: Archetypes, memory system.
+
+Work & Economy: Seasonal jobs, money system.
+
+Dynamic World: Town evolution, industry shifts.
+
+Next Steps
+Prototype a 15x15 grid map with static locations (Home, Town, Rail Yard).
+
+Implement real-time walking and turn-based train-hopping.
+
+Add basic survival meters and crafting recipes.
+
+7. Future Enhancements (Placeholders)
+Unique Items: Legendary artifacts with lore (e.g., “King of the Rails Hat”).
+
+Railroad Factions: Varying policies on hobos.
+
+Natural Disasters: Tornadoes, floods, blizzards.
+
+Hobo Lore: Campfire tales guiding exploration.
+
+This document provides a cohesive foundation for "Hobo's Journey," balancing your vision with practical development steps. It’s modular, allowing you to code at your own pace—start with the map, jump to crafting, or tweak NPC behaviors as inspiration strikes. Redundancies from overlapping chats have been streamlined, and placeholders leave room for your creative input. Enjoy building your hobo world!
+

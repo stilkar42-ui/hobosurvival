@@ -2,10 +2,16 @@ class_name HoboPassportPanel
 extends PanelContainer
 
 const PageUIThemeScript := preload("res://scripts/ui/page_ui_theme.gd")
+const ConditionStatWidgetScript := preload("res://scripts/ui/widgets/condition_stat_widget.gd")
 
 var passport_data: PlayerPassportData = null
 var _selected_section_id: StringName = &""
 var _selected_field_id: StringName = &""
+var _external_sections: Array = []
+var _scroll_sync_queued := false
+var _render_queued := false
+var _section_buttons: Dictionary = {}
+var _field_controls: Dictionary = {}
 
 var _root = null
 var _summary_label = null
@@ -27,15 +33,21 @@ var _detail_notes_label = null
 
 func _ready() -> void:
 	_build_static_layout()
-	resized.connect(Callable(self, "_sync_scroll_content_widths"))
-	_sync_scroll_content_widths()
-	_render()
+	resized.connect(Callable(self, "_queue_scroll_content_widths"))
+	_queue_scroll_content_widths()
+	_queue_render()
 
 
 func set_passport_data(new_passport_data: PlayerPassportData) -> void:
 	passport_data = new_passport_data
 	_sync_selection()
-	_render()
+	_queue_render()
+
+
+func set_external_sections(sections: Array) -> void:
+	_external_sections = sections.duplicate(true)
+	_sync_selection()
+	_queue_render()
 
 
 func _build_static_layout() -> void:
@@ -57,7 +69,7 @@ func _build_static_layout() -> void:
 
 	var subtitle = Label.new()
 	subtitle.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	subtitle.text = "Debug rig character page. Identity, condition, skill, and standing live here for later dialogue, work, survival, and reputation systems."
+	subtitle.text = "Identity, condition, standing, and computed readiness live here so the player can read what the road is doing to his body and prospects."
 	PageUIThemeScript.style_body_label(subtitle, true)
 	_root.add_child(subtitle)
 
@@ -224,12 +236,14 @@ func _render() -> void:
 
 	_clear_children(_section_list)
 	_clear_children(_field_list)
+	_section_buttons.clear()
+	_field_controls.clear()
 
 	if passport_data == null:
 		_summary_label.text = "No passport data assigned."
 		_section_title_label.text = "No Section"
 		_section_summary_label.text = "Assign a PlayerPassportData resource to display this panel."
-		_set_detail_state("No Field Selected", "-", "This panel will show field notes and later mechanical explanation.")
+		_set_detail_state({})
 		return
 
 	_sync_selection()
@@ -239,27 +253,19 @@ func _render() -> void:
 		passport_data.current_goal
 	]
 
-	var sections = passport_data.get_sections()
+	var sections = _get_sections()
 	for section in sections:
-		_section_list.add_child(_build_section_button(section))
+		var button = _build_section_button(section)
+		_section_list.add_child(button)
+		_section_buttons[StringName(section.get("id", &""))] = button
 
-	var selected_section = passport_data.get_section_by_id(_selected_section_id)
+	var selected_section = _get_section_by_id(_selected_section_id)
 	_section_title_label.text = String(selected_section.get("title", "No Section"))
 	_section_summary_label.text = String(selected_section.get("summary", ""))
-
-	var fields: Array = selected_section.get("fields", [])
-	for field in fields:
-		if bool(field.get("display_as_bar", false)):
-			_field_list.add_child(_build_condition_field_control(field))
-		else:
-			_field_list.add_child(_build_field_button(field))
-
-	var selected_field = _get_selected_field(selected_section)
-	_set_detail_state(
-		String(selected_field.get("label", "No Field Selected")),
-		String(selected_field.get("value", "-")),
-		String(selected_field.get("notes", "This field does not yet have descriptive notes."))
-	)
+	_rebuild_field_list(selected_section)
+	_refresh_selection_styles()
+	_set_detail_state(_get_selected_field(selected_section))
+	_queue_scroll_content_widths()
 
 
 func _sync_selection() -> void:
@@ -268,16 +274,16 @@ func _sync_selection() -> void:
 		_selected_field_id = &""
 		return
 
-	var sections = passport_data.get_sections()
+	var sections = _get_sections()
 	if sections.is_empty():
 		_selected_section_id = &""
 		_selected_field_id = &""
 		return
 
-	if passport_data.get_section_by_id(_selected_section_id).is_empty():
+	if _get_section_by_id(_selected_section_id).is_empty():
 		_selected_section_id = StringName(sections[0].get("id", &""))
 
-	var selected_section = passport_data.get_section_by_id(_selected_section_id)
+	var selected_section = _get_section_by_id(_selected_section_id)
 	var fields: Array = selected_section.get("fields", [])
 	if fields.is_empty():
 		_selected_field_id = &""
@@ -297,7 +303,7 @@ func _build_section_button(section: Dictionary) -> Button:
 	button.alignment = HORIZONTAL_ALIGNMENT_LEFT
 	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	button.text = String(section.get("title", "Section"))
-	_apply_button_style(button, StringName(section.get("id", &"")) == _selected_section_id, false)
+	_apply_button_style(button, false, false)
 	button.pressed.connect(Callable(self, "_on_section_pressed").bind(StringName(section.get("id", &""))))
 	return button
 
@@ -307,37 +313,35 @@ func _build_field_button(field: Dictionary) -> Button:
 	button.alignment = HORIZONTAL_ALIGNMENT_LEFT
 	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	button.text = _format_field_button_text(field)
-	_apply_button_style(button, StringName(field.get("id", &"")) == _selected_field_id, true)
+	_apply_button_style(button, false, true)
 	button.pressed.connect(Callable(self, "_on_field_pressed").bind(StringName(field.get("id", &""))))
 	return button
 
 
 func _build_condition_field_control(field: Dictionary) -> Control:
-	var root = VBoxContainer.new()
-	root.add_theme_constant_override("separation", 4)
-	root.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	root.add_child(_build_field_button(field))
-
-	var bar = ProgressBar.new()
-	bar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	bar.custom_minimum_size = Vector2(0.0, 12.0)
-	bar.min_value = 0
-	bar.max_value = max(int(field.get("max", 100)), 1)
-	bar.value = clampi(int(field.get("current", 0)), 0, int(bar.max_value))
-	bar.show_percentage = false
-	bar.add_theme_stylebox_override("background", _make_panel_style(Color("2b241d"), Color("5f4e3c"), 1, 4))
-	bar.add_theme_stylebox_override("fill", _make_panel_style(_get_condition_bar_color(float(bar.value) / float(bar.max_value)), Color(0.0, 0.0, 0.0, 0.0), 0, 4))
-	root.add_child(bar)
-	return root
+	var widget = ConditionStatWidgetScript.new()
+	widget.set_stat_data({
+		"stat_id": StringName(field.get("id", &"")),
+		"label": String(field.get("label", "Condition")),
+		"value_text": _get_field_display_value(field),
+		"note": String(field.get("notes", "")),
+		"current": int(field.get("current", 0)),
+		"max": int(field.get("max", 100)),
+		"display_as_bar": true,
+		"tooltip_text": String(field.get("notes", ""))
+	})
+	widget.set_interactive(true)
+	widget.selected.connect(Callable(self, "_on_field_pressed"))
+	return widget
 
 
-func _set_detail_state(field_name: String, value_text: String, notes_text: String) -> void:
-	var section = passport_data.get_section_by_id(_selected_section_id) if passport_data != null else {}
+func _set_detail_state(field: Dictionary) -> void:
+	var section = _get_section_by_id(_selected_section_id) if passport_data != null else {}
 	_detail_section_label.text = String(section.get("title", ""))
-	_detail_field_label.text = field_name
-	_detail_value_label.text = "Current Value: %s" % (value_text if value_text != "" else "-")
-	_detail_notes_label.text = notes_text
-	_sync_scroll_content_widths()
+	_detail_field_label.text = String(field.get("label", "No Field Selected"))
+	_detail_value_label.text = "Current Value: %s" % _get_field_display_value(field)
+	_detail_notes_label.text = String(field.get("notes", "This panel will show field notes and later mechanical explanation."))
+	_queue_scroll_content_widths()
 
 
 func _get_selected_field(selected_section: Dictionary) -> Dictionary:
@@ -351,15 +355,28 @@ func _get_selected_field(selected_section: Dictionary) -> Dictionary:
 
 
 func _on_section_pressed(section_id: StringName) -> void:
+	if section_id == _selected_section_id:
+		return
 	_selected_section_id = section_id
 	_selected_field_id = &""
 	_sync_selection()
-	_render()
+	var selected_section = _get_section_by_id(_selected_section_id)
+	_section_title_label.text = String(selected_section.get("title", "No Section"))
+	_section_summary_label.text = String(selected_section.get("summary", ""))
+	_rebuild_field_list(selected_section)
+	_refresh_selection_styles()
+	_set_detail_state(_get_selected_field(selected_section))
+	_queue_scroll_content_widths()
 
 
 func _on_field_pressed(field_id: StringName) -> void:
+	if field_id == _selected_field_id:
+		return
 	_selected_field_id = field_id
-	_render()
+	var selected_section = _get_section_by_id(_selected_section_id)
+	_refresh_selection_styles()
+	_set_detail_state(_get_selected_field(selected_section))
+	_queue_scroll_content_widths()
 
 
 func _apply_button_style(button: Button, selected: bool, compact: bool) -> void:
@@ -388,7 +405,7 @@ func _format_field_preview(value_text: String) -> String:
 
 func _format_field_button_text(field: Dictionary) -> String:
 	var label_text = _truncate_single_line(String(field.get("label", "Field")), 34)
-	var value_text = _format_field_preview(String(field.get("value", "-")))
+	var value_text = _format_field_preview(_get_field_display_value(field))
 	if value_text == "" or value_text == "-" or value_text == "Recorded":
 		return label_text
 	return "%s    %s" % [label_text, value_text]
@@ -401,26 +418,94 @@ func _truncate_single_line(text: String, limit: int) -> String:
 	return "%s..." % single_line.substr(0, max(limit - 3, 0))
 
 
-func _get_condition_bar_color(ratio: float) -> Color:
-	if ratio <= 0.25:
-		return Color("9a4e3f")
-	if ratio <= 0.50:
-		return Color("a17b43")
-	return Color("6f8857")
+func _queue_scroll_content_widths() -> void:
+	if _scroll_sync_queued:
+		return
+	_scroll_sync_queued = true
+	call_deferred("_apply_scroll_content_widths")
 
 
-func _sync_scroll_content_widths() -> void:
+func _queue_render() -> void:
+	if _render_queued:
+		return
+	_render_queued = true
+	call_deferred("_flush_render")
+
+
+func _flush_render() -> void:
+	_render_queued = false
+	_render()
+
+
+func _rebuild_field_list(selected_section: Dictionary) -> void:
+	_clear_children(_field_list)
+	_field_controls.clear()
+	var fields: Array = selected_section.get("fields", [])
+	for field in fields:
+		var control: Control = _build_condition_field_control(field) if bool(field.get("display_as_bar", false)) else _build_field_button(field)
+		_field_list.add_child(control)
+		_field_controls[StringName(field.get("id", &""))] = control
+
+
+func _refresh_selection_styles() -> void:
+	for section_id in _section_buttons.keys():
+		var button = _section_buttons.get(section_id, null)
+		if button is Button:
+			_apply_button_style(button, StringName(section_id) == _selected_section_id, false)
+	for field_id in _field_controls.keys():
+		var control = _field_controls.get(field_id, null)
+		if control == null:
+			continue
+		if control is Button:
+			_apply_button_style(control, StringName(field_id) == _selected_field_id, true)
+		elif control.has_method("set_selected"):
+			control.set_selected(StringName(field_id) == _selected_field_id)
+
+
+func _apply_scroll_content_widths() -> void:
+	_scroll_sync_queued = false
 	_sync_scroll_width(_section_scroll, _section_scroll_content, 18.0)
 	_sync_scroll_width(_field_scroll, _field_scroll_content, 18.0)
 	_sync_scroll_width(_detail_scroll, _detail_scroll_content, 24.0)
 	if _detail_notes_label != null and _detail_scroll_content != null:
-		_detail_notes_label.custom_minimum_size.x = max(_detail_scroll_content.custom_minimum_size.x - 8.0, 0.0)
+		var target_width = max(_detail_scroll_content.custom_minimum_size.x - 8.0, 0.0)
+		if absf(_detail_notes_label.custom_minimum_size.x - target_width) > 0.5:
+			_detail_notes_label.custom_minimum_size.x = target_width
 
 
 func _sync_scroll_width(scroll: ScrollContainer, content: Control, padding: float) -> void:
 	if scroll == null or content == null:
 		return
-	content.custom_minimum_size.x = max(scroll.size.x - padding, 0.0)
+	var target_width = max(scroll.size.x - padding, 0.0)
+	if absf(content.custom_minimum_size.x - target_width) <= 0.5:
+		return
+	content.custom_minimum_size.x = target_width
+
+
+func _get_sections() -> Array:
+	var sections: Array = passport_data.get_sections() if passport_data != null else []
+	for section in _external_sections:
+		if section is Dictionary:
+			sections.append(section.duplicate(true))
+	return sections
+
+
+func _get_section_by_id(section_id: StringName) -> Dictionary:
+	for section in _get_sections():
+		if StringName(section.get("id", &"")) == section_id:
+			return section
+	return {}
+
+
+func _get_field_display_value(field: Dictionary) -> String:
+	var display_mode = String(field.get("display_mode", "exact")).to_lower()
+	match display_mode:
+		"descriptor":
+			return String(field.get("descriptor_value", field.get("value", "-")))
+		"hidden":
+			return String(field.get("hidden_value", "Unnoticed State"))
+		_:
+			return String(field.get("value", "-"))
 
 
 func _make_panel_style(bg: Color, border: Color, border_width: int, corner_radius: int) -> StyleBoxFlat:

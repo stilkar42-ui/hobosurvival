@@ -4,9 +4,23 @@ extends RefCounted
 const SurvivalLoopRulesScript := preload("res://scripts/gameplay/survival_loop_rules.gd")
 const FadingMeterSystemScript := preload("res://scripts/gameplay/fading_meter_system.gd")
 const PageUIThemeScript := preload("res://scripts/ui/page_ui_theme.gd")
+const ActionButtonWidgetScript := preload("res://scripts/ui/widgets/action_button_widget.gd")
+const ConditionStripWidgetScript := preload("res://scripts/ui/widgets/condition_strip_widget.gd")
+const DataPanelWidgetScript := preload("res://scripts/ui/widgets/data_panel_widget.gd")
+const BasePanelWidgetScript := preload("res://scripts/ui/widgets/base_panel_widget.gd")
 
 const ROUTE_TOWN := &"town"
 const ROUTE_CAMP := &"camp"
+
+const NAV_TRAVEL := &"nav.travel"
+const NAV_LOCATION := &"nav.location"
+const NAV_CRAFTING := &"nav.crafting"
+const NAV_COOKING := &"nav.cooking"
+const NAV_REST := &"nav.rest"
+const NAV_INVENTORY := &"nav.inventory"
+const NAV_PASSPORT := &"nav.passport"
+const ACTION_WAIT_PAGE := &"action.wait"
+const ACTION_SELL_SCRAP_PAGE := &"action.sell_scrap"
 
 var _game_state_manager = null
 var _data_manager = null
@@ -30,17 +44,12 @@ var _return_to_menu_button: Button = null
 var _quit_game_button: Button = null
 
 var _panel: PanelContainer = null
-var _status_label: Label = null
-var _route_summary_label: Label = null
-var _location_button: Button = null
-var _crafting_button: Button = null
-var _rest_button: Button = null
-var _inventory_button: Button = null
-var _passport_button: Button = null
-var _travel_button: Button = null
-var _event_button: Button = null
-var _wait_button: Button = null
-var _sell_scrap_button: Button = null
+var _status_widget = null
+var _route_summary_widget = null
+var _condition_widget = null
+var _page_actions_root: GridContainer = null
+var _world_actions_root: HBoxContainer = null
+var _button_widgets: Dictionary = {}
 var _current_route: StringName = ROUTE_TOWN
 
 
@@ -97,10 +106,12 @@ func refresh_from_state(player_state) -> void:
 		_summary_stats_label.text = "Shared state is unavailable."
 		_condition_stats_label.text = ""
 		_goal_label.text = ""
-		if _status_label != null:
-			_status_label.text = "The road will resolve once shared state is ready."
-		if _route_summary_label != null:
-			_route_summary_label.text = ""
+		if _status_widget != null:
+			_status_widget.set_data("The road will resolve once shared state is ready.")
+		if _route_summary_widget != null:
+			_route_summary_widget.set_data("")
+		if _condition_widget != null:
+			_condition_widget.clear_conditions()
 		return
 
 	var config = _data_manager.get_loop_config() if _data_manager != null else null
@@ -152,39 +163,26 @@ func refresh_from_state(player_state) -> void:
 		_quit_game_button.visible = false
 
 	var in_camp = _current_route == ROUTE_CAMP
-	if _status_label != null:
-		_status_label.text = "Camp is a working camp: rest, wash, crafting, and cooking keep the body usable." if in_camp else "Town is where leads, wages, supplies, and remittance are turned into the next move."
-	if _route_summary_label != null:
-		_route_summary_label.text = _build_route_summary(player_state, config, in_camp)
+	if _status_widget != null:
+		_status_widget.set_data("Camp is a working camp: rest, wash, cooking, and craft keep the body usable." if in_camp else "Town is where leads, wages, supplies, and remittance are turned into the next move.")
+	if _route_summary_widget != null:
+		_route_summary_widget.set_data(_build_route_summary(player_state, config, in_camp))
+	if _condition_widget != null:
+		_condition_widget.set_conditions(_build_condition_surface_data(player_state))
 
-	if _travel_button != null:
-		_travel_button.text = "Travel"
-	if _location_button != null:
-		_location_button.text = "Town Services"
-		_location_button.disabled = in_camp
-	if _crafting_button != null:
-		_crafting_button.text = "Crafting"
-		_crafting_button.disabled = not in_camp
-	if _rest_button != null:
-		_rest_button.text = "Rest / Camp"
-		_rest_button.disabled = not in_camp
-	if _inventory_button != null:
-		_inventory_button.text = "Inventory"
-	if _passport_button != null:
-		_passport_button.text = "Passport / Stats"
-	if _event_button != null:
-		_event_button.text = "Status / Result"
-
-	if _wait_button != null:
-		_wait_button.visible = not in_camp
-		_wait_button.text = "Wait %s" % _format_duration(config.wait_action_minutes) if config != null else "Wait"
-	if _sell_scrap_button != null:
-		_sell_scrap_button.visible = not in_camp
-		_sell_scrap_button.text = "Sell Scrap\n%s | %s for %d scrap" % [
-			_format_duration(config.sell_scrap_minutes),
-			_format_cents(config.sell_scrap_pay_cents),
-			config.sell_scrap_quantity
-		] if config != null else "Sell Scrap"
+	_set_button_state(NAV_TRAVEL, "Travel", true)
+	_set_button_state(NAV_LOCATION, "Town Services", not in_camp)
+	_set_button_state(NAV_CRAFTING, "Crafting", in_camp)
+	_set_button_state(NAV_COOKING, "Cooking", in_camp)
+	_set_button_state(NAV_REST, "Rest / Camp", in_camp)
+	_set_button_state(NAV_INVENTORY, "Inventory", true)
+	_set_button_state(NAV_PASSPORT, "Passport / Stats", true)
+	_set_button_state(ACTION_WAIT_PAGE, "Wait %s" % _format_duration(config.wait_action_minutes) if config != null else "Wait", not in_camp)
+	_set_button_state(ACTION_SELL_SCRAP_PAGE, "Sell Scrap\n%s | %s for %d scrap" % [
+		_format_duration(config.sell_scrap_minutes),
+		_format_cents(config.sell_scrap_pay_cents),
+		config.sell_scrap_quantity
+	] if config != null else "Sell Scrap", not in_camp)
 
 
 func handle_input(_event: InputEvent) -> bool:
@@ -199,6 +197,7 @@ func _build_panel(page_host) -> void:
 	_panel.visible = false
 	_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	PageUIThemeScript.apply_panel_variant(_panel, "panel")
 	page_host.add_child(_panel)
 
 	var root = VBoxContainer.new()
@@ -207,77 +206,68 @@ func _build_panel(page_host) -> void:
 	root.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	root.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_panel.add_child(root)
-	PageUIThemeScript.apply_panel_variant(_panel, "panel")
 
 	var title = Label.new()
 	title.text = "World Map"
 	PageUIThemeScript.style_header_label(title, true)
 	root.add_child(title)
 
-	var intro_section := PageUIThemeScript.create_section_panel("ROAD STATUS", "highlight")
-	root.add_child(intro_section.panel)
-	_status_label = Label.new()
-	_status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	PageUIThemeScript.style_body_label(_status_label)
-	intro_section.root.add_child(_status_label)
-	_route_summary_label = Label.new()
-	_route_summary_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	PageUIThemeScript.style_body_label(_route_summary_label, true)
-	intro_section.root.add_child(_route_summary_label)
+	_status_widget = DataPanelWidgetScript.new()
+	_status_widget.set_title("Road Status", true)
+	_status_widget.set_variant("highlight")
+	root.add_child(_status_widget)
 
-	var page_section := PageUIThemeScript.create_section_panel("DIRECT PAGES")
-	root.add_child(page_section.panel)
-	var page_grid = GridContainer.new()
-	page_grid.name = "DirectPageGrid"
-	page_grid.columns = 2
-	page_grid.add_theme_constant_override("h_separation", 10)
-	page_grid.add_theme_constant_override("v_separation", 10)
-	page_grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	page_section.root.add_child(page_grid)
+	_route_summary_widget = DataPanelWidgetScript.new()
+	_route_summary_widget.set_title("Current Position")
+	_route_summary_widget.set_variant("alt")
+	root.add_child(_route_summary_widget)
 
-	_travel_button = _make_button("Travel", Callable(self, "_open_travel"))
-	_location_button = _make_button("Town Services", Callable(self, "_open_location_page"))
-	_crafting_button = _make_button("Crafting", Callable(self, "_open_crafting_page"))
-	_rest_button = _make_button("Rest / Camp", Callable(self, "_open_rest_page"))
-	_inventory_button = _make_button("Inventory", Callable(self, "_open_inventory"))
-	_passport_button = _make_button("Passport / Stats", Callable(self, "_open_passport"))
-	_event_button = _make_button("Status / Result", Callable(self, "_open_event"))
+	_condition_widget = ConditionStripWidgetScript.new()
+	_condition_widget.set_title("Road Condition")
+	_condition_widget.set_variant("alt")
+	_condition_widget.set_columns(2)
+	root.add_child(_condition_widget)
 
-	for button in [
-		_travel_button,
-		_location_button,
-		_crafting_button,
-		_rest_button,
-		_inventory_button,
-		_passport_button,
-		_event_button
-	]:
-		page_grid.add_child(button)
+	var page_actions = BasePanelWidgetScript.new()
+	page_actions.set_title("Direct Pages")
+	root.add_child(page_actions)
+	_page_actions_root = GridContainer.new()
+	_page_actions_root.columns = 2
+	_page_actions_root.add_theme_constant_override("h_separation", 10)
+	_page_actions_root.add_theme_constant_override("v_separation", 10)
+	_page_actions_root.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	page_actions.get_content_root().add_child(_page_actions_root)
 
-	var action_row = HBoxContainer.new()
-	action_row.add_theme_constant_override("separation", 8)
-	var action_section := PageUIThemeScript.create_section_panel("AVAILABLE ACTIONS")
-	root.add_child(action_section.panel)
-	action_section.root.add_child(action_row)
+	for action_id in [NAV_TRAVEL, NAV_LOCATION, NAV_CRAFTING, NAV_COOKING, NAV_REST, NAV_INVENTORY, NAV_PASSPORT]:
+		_page_actions_root.add_child(_make_action_button(action_id))
 
-	_wait_button = _make_button("Wait", Callable(self, "_on_wait_pressed"))
-	_wait_button.custom_minimum_size = Vector2(180.0, 44.0)
-	action_row.add_child(_wait_button)
+	var world_actions = BasePanelWidgetScript.new()
+	world_actions.set_title("Available Actions")
+	world_actions.set_variant("alt")
+	root.add_child(world_actions)
+	_world_actions_root = HBoxContainer.new()
+	_world_actions_root.add_theme_constant_override("separation", 8)
+	_world_actions_root.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	world_actions.get_content_root().add_child(_world_actions_root)
 
-	_sell_scrap_button = _make_button("Sell Scrap", Callable(self, "_on_sell_scrap_pressed"))
-	_sell_scrap_button.custom_minimum_size = Vector2(220.0, 44.0)
-	action_row.add_child(_sell_scrap_button)
+	for action_id in [ACTION_WAIT_PAGE, ACTION_SELL_SCRAP_PAGE]:
+		_world_actions_root.add_child(_make_action_button(action_id))
 
 
-func _make_button(label_text: String, pressed_callable: Callable) -> Button:
-	var button = Button.new()
-	button.text = label_text
-	button.alignment = HORIZONTAL_ALIGNMENT_LEFT
-	button.custom_minimum_size = Vector2(0.0, 48.0)
-	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	button.pressed.connect(pressed_callable)
-	PageUIThemeScript.style_button(button, true)
+func _make_action_button(action_id: StringName):
+	var button = ActionButtonWidgetScript.new()
+	button.set_action_id(action_id)
+	button.pressed.connect(Callable(self, "_on_action_widget_pressed"))
+	_button_widgets[action_id] = button
 	return button
+
+
+func _set_button_state(action_id: StringName, label_text: String, enabled: bool) -> void:
+	var widget = _button_widgets.get(action_id, null)
+	if widget == null:
+		return
+	widget.set_label(label_text)
+	widget.set_enabled(enabled)
 
 
 func _connect_buttons() -> void:
@@ -308,12 +298,71 @@ func _build_route_summary(player_state, config, in_camp: bool) -> String:
 	]
 
 
-func _on_wait_pressed() -> void:
-	_execute_action(SurvivalLoopRulesScript.ACTION_WAIT, "world_map.wait")
+func _build_condition_surface_data(player_state) -> Array:
+	var conditions: Array = []
+	if player_state == null:
+		return conditions
+	var inventory = player_state.inventory_state
+	var max_weight = inventory.max_total_weight_kg if inventory != null else 0.0
+	var total_weight = inventory.get_total_weight_kg() if inventory != null else 0.0
+	var passport = player_state.passport_profile
+	if passport == null:
+		return conditions
+	conditions.append(_make_condition_entry(&"warmth", "Warmth", passport.warmth))
+	conditions.append(_make_condition_entry(&"stamina", "Stamina", _stats_manager.get_stamina(player_state) if _stats_manager != null else 0))
+	conditions.append(_make_condition_entry(&"nutrition", "Nutrition", passport.nutrition))
+	conditions.append({
+		"stat_id": &"water",
+		"label": "Water",
+		"value_text": "ready %d | raw %d" % [int(player_state.camp_potable_water_units), int(player_state.camp_non_potable_water_units)],
+		"note": "Camp water on hand for washing, coffee, and cooking.",
+		"display_as_bar": false
+	})
+	conditions.append(_make_condition_entry(&"morale", "Morale", passport.morale))
+	conditions.append(_make_condition_entry(&"presentability", "Presentability", passport.presentability))
+	conditions.append(_make_condition_entry(&"hygiene", "Hygiene", passport.hygiene))
+	conditions.append({
+		"stat_id": &"weight",
+		"label": "Weight",
+		"value_text": "%.1f / %.1f kg" % [total_weight, max_weight],
+		"note": "Carry weight decides how hard the body works to keep moving.",
+		"display_as_bar": false
+	})
+	conditions.append(_make_condition_entry(&"dampness", "Dampness", passport.dampness))
+	return conditions
 
 
-func _on_sell_scrap_pressed() -> void:
-	_execute_action(SurvivalLoopRulesScript.ACTION_SELL_SCRAP, "world_map.sell_scrap")
+func _make_condition_entry(stat_id: StringName, label: String, value: int) -> Dictionary:
+	return {
+		"stat_id": stat_id,
+		"label": label,
+		"value_text": "%d / 100" % clampi(value, 0, 100),
+		"current": clampi(value, 0, 100),
+		"max": 100,
+		"display_as_bar": true
+	}
+
+
+func _on_action_widget_pressed(action_id: StringName) -> void:
+	match action_id:
+		NAV_TRAVEL:
+			_open_travel()
+		NAV_LOCATION:
+			_open_location_page()
+		NAV_CRAFTING:
+			_open_crafting_page()
+		NAV_COOKING:
+			_open_cooking_page()
+		NAV_REST:
+			_open_rest_page()
+		NAV_INVENTORY:
+			_open_inventory()
+		NAV_PASSPORT:
+			_open_passport()
+		ACTION_WAIT_PAGE:
+			_execute_action(SurvivalLoopRulesScript.ACTION_WAIT, "world_map.wait")
+		ACTION_SELL_SCRAP_PAGE:
+			_execute_action(SurvivalLoopRulesScript.ACTION_SELL_SCRAP, "world_map.sell_scrap")
 
 
 func _open_travel() -> void:
@@ -335,8 +384,14 @@ func _open_crafting_page() -> void:
 		return
 	_ui_manager.open_page(_location_manager.ROUTE_CRAFTING_PAGE, {
 		"return_route": _current_route,
-		"route_id": _location_manager.get_default_crafting_route_for_location(SurvivalLoopRulesScript.LOCATION_CAMP)
+		"route_id": _location_manager.PAGE_HOBOCRAFT
 	})
+
+
+func _open_cooking_page() -> void:
+	if _ui_manager == null or _location_manager == null or _current_route != ROUTE_CAMP:
+		return
+	_ui_manager.open_page(_location_manager.PAGE_COOKING, {"return_route": _current_route})
 
 
 func _open_rest_page() -> void:
@@ -356,11 +411,6 @@ func _open_inventory() -> void:
 func _open_passport() -> void:
 	if _ui_manager != null:
 		_ui_manager.open_page(&"passport_stats", {"return_route": _current_route})
-
-
-func _open_event() -> void:
-	if _ui_manager != null:
-		_ui_manager.open_page(&"event_encounter", {"return_route": _current_route})
 
 
 func _return_to_menu() -> void:
