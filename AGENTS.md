@@ -50,6 +50,21 @@ These notes describe the current active repository architecture. They override o
 - `SurvivalLoopRules` is the authoritative gameplay validation and mutation layer.
 - Pages and widgets must not become simulation authorities.
 
+### Store And Medicine Baseline
+
+- `UIManager` routes active pages, and `LocationPage` handles town service routes.
+- Current reachable town services are Jobs Board, Send Money, Grocery, Hardware, and General Store.
+- Store authority is split deliberately:
+  - `data/items/inventory_catalog.tres` defines what items are.
+  - `scripts/data/store_inventory_catalog.gd` defines what store types can sell.
+  - `scripts/gameplay/survival_loop_rules.gd` owns weekly stock generation, purchase validation, money mutation, and inventory mutation.
+  - `scripts/player/player_state_data.gd` stores generated runtime stock state.
+  - `scripts/pages/location_page.gd` renders town services and dispatches player-facing store actions.
+- Runtime generated store stock currently lives on `PlayerStateData.grocery_store_stock`, `PlayerStateData.hardware_store_stock`, and `PlayerStateData.general_store_stock`.
+- Grocery, Hardware, and General Store have runtime weekly stock. Medicine is catalog-prepared only and is not runtime-visible yet.
+- Do not put new store assortment data back into `SurvivalLoopRules`; add it to the store inventory catalog path.
+- Do not add `StoreManager`, medicine treatment effects, doctor services, theft/barter/credit, persistent merchant inventories, or specialist runtime stores unless the task explicitly scopes that system.
+
 ### Pages, Widgets, And Routes
 
 - Active page controllers live under `scripts/pages`.

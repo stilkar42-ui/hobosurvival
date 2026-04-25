@@ -12,6 +12,15 @@ This folder holds design and reference material for Hobo Survival. Use it select
 - Current code architecture, active scenes, and tests override older design docs when they conflict.
 - If a bible suggests a major architecture change, preserve the current architecture and report the conflict before changing code.
 
+## Current Code Baselines
+
+Before using bible guidance about stores, medicine, economy, merchants, treatment, or long-term service systems, read:
+
+- `AGENTS.md`
+- `docs/store_medicine_general_store_baseline.md`
+
+The game bibles may describe future medicine stores, merchants, treatment, barter, theft, or broader economy systems. Those references are design material only. Current code and `AGENTS.md` define what is implemented, prepared but inactive, and not implemented yet.
+
 ## Current Implementation Guidance
 
 These docs are the closest to implementation-facing guidance, but they still do not override active code:
