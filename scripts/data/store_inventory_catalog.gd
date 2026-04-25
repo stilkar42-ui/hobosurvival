@@ -120,22 +120,22 @@ const STORE_PROFILES := {
 	STORE_GENERAL: {
 		"store_id": STORE_GENERAL,
 		"display_name": "General Store",
-		"stock_status": "prepared_catalog_pool",
+		"stock_status": "active",
 		"quality_policy": {
 			"dominant_tiers": [ItemDefinitionScript.QualityTier.COMMON],
 			"occasional_tiers": [ItemDefinitionScript.QualityTier.POOR],
 			"rare_tiers": [ItemDefinitionScript.QualityTier.GOOD],
 			"excluded_tiers": [ItemDefinitionScript.QualityTier.LEGENDARY],
-			"notes": "Prepared general stores carry limited crossover grocery, hardware, and medicine stock in restricted quantities; no treatment mechanics are attached."
+			"notes": "General stores carry limited crossover grocery, hardware, and medicine stock in restricted quantities; no treatment mechanics are attached."
 		},
 		"supply_tags": [&"crossover_stock", &"food", &"hardware", &"medicine"],
-		"service_tags": [&"prepared_rotating_stock"],
+		"service_tags": [&"rotating_stock"],
 		"merchant_tags": [&"town_basic"],
 		"region_tags": [],
 		"reputation_hooks": [],
 		"relationship_hooks": [],
-		"restock_cadence": &"prepared_weekly",
-		"future_manager_notes": "Attach town-specific limited assortments here when StoreManager exists. This prepared pool is not generated into runtime state yet."
+		"restock_cadence": &"weekly",
+		"future_manager_notes": "Future StoreManager may vary general store crossover stock by town, season, merchant reliability, and reputation."
 	},
 	STORE_MEDICINE: {
 		"store_id": STORE_MEDICINE,

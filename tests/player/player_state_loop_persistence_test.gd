@@ -20,8 +20,12 @@ func _init() -> void:
 	var first_job = original_state.daily_job_board[0]
 	SurvivalLoopRulesScript.apply_job(original_state, config, catalog, StringName(first_job.get("instance_id", &"")))
 	SurvivalLoopRulesScript.apply_action(original_state, config, catalog, SurvivalLoopRulesScript.ACTION_SEND_SMALL)
-	while original_state.time_of_day_minutes < config.camp_prep_unlock_minutes:
-		SurvivalLoopRulesScript.apply_action(original_state, config, catalog, SurvivalLoopRulesScript.ACTION_WAIT)
+	var wait_guard := 0
+	while original_state.time_of_day_minutes < config.camp_prep_unlock_minutes and wait_guard < 48:
+		var wait_result = SurvivalLoopRulesScript.apply_action(original_state, config, catalog, SurvivalLoopRulesScript.ACTION_WAIT)
+		if not bool(wait_result.get("success", false)):
+			break
+		wait_guard += 1
 	SurvivalLoopRulesScript.apply_action(original_state, config, catalog, SurvivalLoopRulesScript.ACTION_BUILD_FIRE)
 	SurvivalLoopRulesScript.apply_action(original_state, config, catalog, SurvivalLoopRulesScript.ACTION_PREP_SLEEPING_SPOT)
 	SurvivalLoopRulesScript.apply_action(original_state, config, catalog, SurvivalLoopRulesScript.ACTION_WASH_UP)
@@ -87,8 +91,18 @@ func _init() -> void:
 	_expect(restored_state.store_stock_week_index == original_state.store_stock_week_index, "store stock week persists")
 	_expect(restored_state.grocery_store_stock.size() == original_state.grocery_store_stock.size(), "grocery weekly stock persists")
 	_expect(restored_state.hardware_store_stock.size() == original_state.hardware_store_stock.size(), "hardware weekly stock persists")
+	_expect(restored_state.general_store_stock.size() == original_state.general_store_stock.size(), "general store weekly stock persists")
 
 	var legacy_saved = saved.duplicate(true)
+	var legacy_passport = Dictionary(legacy_saved.get("passport_profile", {})).duplicate(true)
+	legacy_saved.erase("passport_profile")
+	legacy_saved["passport_data"] = legacy_passport
+	legacy_saved.erase("general_store_stock")
+	legacy_saved.erase("fade_value")
+	legacy_saved.erase("fade_state")
+	legacy_saved.erase("fade_last_daily_delta")
+	legacy_saved.erase("fade_recent_history")
+	legacy_saved.erase("fade_today_metrics")
 	legacy_saved["passport_data"].erase("nutrition")
 	legacy_saved["passport_data"]["hunger"] = 100 - original_state.passport_data.nutrition
 	legacy_saved["hunger_tick_bank_minutes"] = original_state.nutrition_tick_bank_minutes
@@ -98,6 +112,7 @@ func _init() -> void:
 	_expect(legacy_restored_state.passport_data.nutrition == original_state.passport_data.nutrition, "legacy nutrition migration preserves the current value")
 	_expect(legacy_restored_state.nutrition_tick_bank_minutes == original_state.nutrition_tick_bank_minutes, "legacy nutrition bank migration preserves accumulated time")
 	_expect(legacy_restored_state.fade_value == 0, "legacy saves default fading to a steady zero state")
+	_expect(legacy_restored_state.general_store_stock.is_empty(), "legacy saves without general store stock load with safe empty stock")
 
 	quit(1 if _failed else 0)
 

@@ -18,7 +18,7 @@ func _init() -> void:
 	_assert_supported_store_ids(store_catalog_script)
 	_assert_active_pool(store_catalog_script, item_catalog, &"grocery", [&"coffee_grounds", &"beans_can", &"potted_meat"])
 	_assert_active_pool(store_catalog_script, item_catalog, &"hardware", [&"baling_wire"])
-	_assert_prepared_pool(store_catalog_script, item_catalog, &"general_store", [], ItemDefinitionScript.QualityTier.GOOD)
+	_assert_active_pool(store_catalog_script, item_catalog, &"general_store", [])
 	_assert_prepared_pool(store_catalog_script, item_catalog, &"medicine", [&"clean_rag_bundle", &"bandage_roll", &"carbolic_soap"], ItemDefinitionScript.QualityTier.SUPERIOR)
 	_assert_future_profile(store_catalog_script, &"specialist_grocery")
 	_assert_future_profile(store_catalog_script, &"specialist_hardware")
@@ -34,6 +34,8 @@ func _assert_supported_store_ids(store_catalog_script) -> void:
 
 
 func _assert_active_pool(store_catalog_script, item_catalog, store_id: StringName, required_ids: Array) -> void:
+	var profile: Dictionary = store_catalog_script.get_store_profile(store_id)
+	_expect(String(profile.get("stock_status", "")) == "active", "%s profile is marked active" % String(store_id))
 	var pool: Array = store_catalog_script.get_store_pool(store_id)
 	_expect(not pool.is_empty(), "%s pool is active" % String(store_id))
 	for required_id in required_ids:

@@ -14,6 +14,7 @@ const LOCATION_TOWN := &"town"
 const LOCATION_CAMP := &"camp"
 const STORE_GROCERY := &"grocery"
 const STORE_HARDWARE := &"hardware"
+const STORE_GENERAL := &"general_store"
 
 const ACTION_GO_TO_CAMP := &"go_to_camp"
 const ACTION_RETURN_TO_TOWN := &"return_to_town"
@@ -705,11 +706,13 @@ static func ensure_weekly_store_stock(player_state, config, item_catalog) -> voi
 	var week_index = _get_store_week_index(player_state, config)
 	if player_state.store_stock_week_index == week_index \
 			and not player_state.grocery_store_stock.is_empty() \
-			and not player_state.hardware_store_stock.is_empty():
+			and not player_state.hardware_store_stock.is_empty() \
+			and not player_state.general_store_stock.is_empty():
 		return
 	var grocery_stock = _generate_store_stock(STORE_GROCERY, StoreInventoryCatalogScript.get_store_pool(STORE_GROCERY), week_index, config, item_catalog)
 	var hardware_stock = _generate_store_stock(STORE_HARDWARE, StoreInventoryCatalogScript.get_store_pool(STORE_HARDWARE), week_index, config, item_catalog)
-	player_state.set_store_stock(week_index, grocery_stock, hardware_stock)
+	var general_stock = _generate_store_stock(STORE_GENERAL, StoreInventoryCatalogScript.get_store_pool(STORE_GENERAL), week_index, config, item_catalog)
+	player_state.set_store_stock(week_index, grocery_stock, hardware_stock, general_stock)
 
 
 static func _get_store_week_index(player_state, config) -> int:
@@ -731,7 +734,7 @@ static func _generate_store_stock(store_id: StringName, pool: Array, week_index:
 		return []
 
 	var rng = RandomNumberGenerator.new()
-	rng.seed = int(config.store_stock_seed) + int(week_index * 7919) + (101 if store_id == STORE_GROCERY else 509)
+	rng.seed = int(config.store_stock_seed) + int(week_index * 7919) + _get_store_seed_offset(store_id)
 	var target_count = clampi(rng.randi_range(int(config.min_store_stock_items), int(config.max_store_stock_items)), 4, 8)
 	target_count = min(target_count, valid_pool.size())
 
@@ -758,6 +761,18 @@ static func _generate_store_stock(store_id: StringName, pool: Array, week_index:
 
 static func _get_required_store_stock_item_ids(store_id: StringName) -> Array:
 	return StoreInventoryCatalogScript.get_required_stock_item_ids(store_id)
+
+
+static func _get_store_seed_offset(store_id: StringName) -> int:
+	match store_id:
+		STORE_GROCERY:
+			return 101
+		STORE_HARDWARE:
+			return 509
+		STORE_GENERAL:
+			return 907
+		_:
+			return 1301
 
 
 static func _find_stock_pool_entry(pool: Array, item_id: StringName) -> Dictionary:
@@ -1645,7 +1660,7 @@ static func _check_town_purchase(player_state, item_catalog, item_id: StringName
 static func _check_store_stock_purchase(player_state, config, item_catalog, store_id: StringName, stock_index: int) -> Dictionary:
 	if not _is_at_town(player_state):
 		return _blocked("Town stores are back in town.")
-	if store_id != STORE_GROCERY and store_id != STORE_HARDWARE:
+	if store_id != STORE_GROCERY and store_id != STORE_HARDWARE and store_id != STORE_GENERAL:
 		return _blocked("Choose a town store shelf first.")
 	ensure_weekly_store_stock(player_state, config, item_catalog)
 	var stock_entry = _get_store_stock_entry(player_state, store_id, stock_index)

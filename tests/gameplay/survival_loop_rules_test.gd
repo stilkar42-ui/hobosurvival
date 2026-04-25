@@ -1,6 +1,7 @@
 extends SceneTree
 
 const PlayerStateFactoryScript := preload("res://scripts/player/player_state_factory.gd")
+const ItemDefinitionScript := preload("res://scripts/inventory/item_definition.gd")
 const SurvivalLoopConfigScript := preload("res://scripts/gameplay/survival_loop_config.gd")
 const SurvivalJobTemplateScript := preload("res://scripts/gameplay/survival_job_template.gd")
 const SurvivalLoopRulesScript := preload("res://scripts/gameplay/survival_loop_rules.gd")
@@ -480,10 +481,14 @@ func _assert_weekly_store_stock(catalog, config) -> void:
 	SurvivalLoopRulesScript.ensure_weekly_store_stock(state, config, catalog)
 	var week_one_grocery = SurvivalLoopRulesScript.get_store_stock(state, config, catalog, SurvivalLoopRulesScript.STORE_GROCERY)
 	var week_one_hardware = SurvivalLoopRulesScript.get_store_stock(state, config, catalog, SurvivalLoopRulesScript.STORE_HARDWARE)
+	var week_one_general = SurvivalLoopRulesScript.get_store_stock(state, config, catalog, SurvivalLoopRulesScript.STORE_GENERAL)
 	_expect(week_one_grocery.size() >= 4 and week_one_grocery.size() <= 8, "grocery stocks 4-8 weekly items")
 	_expect(week_one_hardware.size() >= 4 and week_one_hardware.size() <= 8, "hardware stocks 4-8 weekly items")
+	_expect(week_one_general.size() >= 4 and week_one_general.size() <= 8, "general store stocks 4-8 weekly items")
 	_assert_generated_store_entries(catalog, week_one_grocery, SurvivalLoopRulesScript.STORE_GROCERY, "week one grocery")
 	_assert_generated_store_entries(catalog, week_one_hardware, SurvivalLoopRulesScript.STORE_HARDWARE, "week one hardware")
+	_assert_generated_store_entries(catalog, week_one_general, SurvivalLoopRulesScript.STORE_GENERAL, "week one general store")
+	_assert_generated_store_quality_cap(week_one_general, ItemDefinitionScript.QualityTier.GOOD, "week one general store")
 	_expect(int(week_one_grocery[0].get("quality_tier", -1)) >= 0, "grocery stock carries a quality tier")
 	_expect(_stock_has_item(week_one_grocery, &"coffee_grounds"), "weekly grocery guarantees coffee grounds for cooking tests")
 	_expect(_stock_has_item(week_one_grocery, &"beans_can"), "weekly grocery guarantees beans for heating tests")
@@ -502,14 +507,29 @@ func _assert_weekly_store_stock(catalog, config) -> void:
 	)
 	_expect(buy_result.get("success", false), "generic weekly grocery stock purchase succeeds")
 	_expect(_has_stack_with_quality(state, StringName(first_entry.get("item_id", &"")), int(first_entry.get("quality_tier", 1))), "weekly store purchase preserves stack quality")
+	state.money_cents = 500
+	var first_general_entry = week_one_general[0]
+	var general_buy_result = SurvivalLoopRulesScript.apply_action(
+		state,
+		config,
+		catalog,
+		SurvivalLoopRulesScript.ACTION_BUY_STORE_STOCK,
+		0,
+		{"store_id": SurvivalLoopRulesScript.STORE_GENERAL}
+	)
+	_expect(general_buy_result.get("success", false), "general store weekly stock purchase succeeds")
+	_expect(_has_stack_with_quality(state, StringName(first_general_entry.get("item_id", &"")), int(first_general_entry.get("quality_tier", 1))), "general store purchase preserves stack quality")
 
 	state.current_day = 8
 	SurvivalLoopRulesScript.ensure_weekly_store_stock(state, config, catalog)
 	var week_two_grocery = SurvivalLoopRulesScript.get_store_stock(state, config, catalog, SurvivalLoopRulesScript.STORE_GROCERY)
 	var week_two_hardware = SurvivalLoopRulesScript.get_store_stock(state, config, catalog, SurvivalLoopRulesScript.STORE_HARDWARE)
+	var week_two_general = SurvivalLoopRulesScript.get_store_stock(state, config, catalog, SurvivalLoopRulesScript.STORE_GENERAL)
 	_expect(state.store_stock_week_index == 2, "store stock advances to week two")
 	_assert_generated_store_entries(catalog, week_two_grocery, SurvivalLoopRulesScript.STORE_GROCERY, "week two grocery")
 	_assert_generated_store_entries(catalog, week_two_hardware, SurvivalLoopRulesScript.STORE_HARDWARE, "week two hardware")
+	_assert_generated_store_entries(catalog, week_two_general, SurvivalLoopRulesScript.STORE_GENERAL, "week two general store")
+	_assert_generated_store_quality_cap(week_two_general, ItemDefinitionScript.QualityTier.GOOD, "week two general store")
 	_expect(_stock_has_item(week_two_grocery, &"coffee_grounds"), "week two grocery keeps coffee test stock available")
 	_expect(_stock_has_item(week_two_grocery, &"beans_can"), "week two grocery keeps beans test stock available")
 	_expect(_stock_has_item(week_two_grocery, &"potted_meat"), "week two grocery keeps potted meat test stock available")
@@ -518,9 +538,12 @@ func _assert_weekly_store_stock(catalog, config) -> void:
 	SurvivalLoopRulesScript.ensure_weekly_store_stock(state, config, catalog)
 	var week_three_grocery = SurvivalLoopRulesScript.get_store_stock(state, config, catalog, SurvivalLoopRulesScript.STORE_GROCERY)
 	var week_three_hardware = SurvivalLoopRulesScript.get_store_stock(state, config, catalog, SurvivalLoopRulesScript.STORE_HARDWARE)
+	var week_three_general = SurvivalLoopRulesScript.get_store_stock(state, config, catalog, SurvivalLoopRulesScript.STORE_GENERAL)
 	_expect(state.store_stock_week_index == 3, "store stock advances to week three")
 	_assert_generated_store_entries(catalog, week_three_grocery, SurvivalLoopRulesScript.STORE_GROCERY, "week three grocery")
 	_assert_generated_store_entries(catalog, week_three_hardware, SurvivalLoopRulesScript.STORE_HARDWARE, "week three hardware")
+	_assert_generated_store_entries(catalog, week_three_general, SurvivalLoopRulesScript.STORE_GENERAL, "week three general store")
+	_assert_generated_store_quality_cap(week_three_general, ItemDefinitionScript.QualityTier.GOOD, "week three general store")
 	_expect(_stock_has_item(week_three_grocery, &"coffee_grounds"), "week three grocery keeps coffee test stock available")
 	_expect(_stock_has_item(week_three_grocery, &"beans_can"), "week three grocery keeps beans test stock available")
 	_expect(_stock_has_item(week_three_grocery, &"potted_meat"), "week three grocery keeps potted meat test stock available")
@@ -529,7 +552,9 @@ func _assert_weekly_store_stock(catalog, config) -> void:
 		JSON.stringify(week_one_grocery) != JSON.stringify(week_two_grocery)
 			or JSON.stringify(week_two_grocery) != JSON.stringify(week_three_grocery)
 			or JSON.stringify(week_one_hardware) != JSON.stringify(week_two_hardware)
-			or JSON.stringify(week_two_hardware) != JSON.stringify(week_three_hardware),
+			or JSON.stringify(week_two_hardware) != JSON.stringify(week_three_hardware)
+			or JSON.stringify(week_one_general) != JSON.stringify(week_two_general)
+			or JSON.stringify(week_two_general) != JSON.stringify(week_three_general),
 		"weekly stock visibly changes across three cycles"
 	)
 
@@ -1005,6 +1030,13 @@ func _assert_generated_store_entries(catalog, stock: Array, store_id: StringName
 		_expect(int(entry.get("price_cents", 0)) > 0, "%s entry has a positive price" % label)
 		_expect(entry.has("quality_tier"), "%s entry has quality tier" % label)
 		_expect(entry.has("quality_score"), "%s entry has quality score" % label)
+
+
+func _assert_generated_store_quality_cap(stock: Array, max_quality: int, label: String) -> void:
+	for entry in stock:
+		if not (entry is Dictionary):
+			continue
+		_expect(int(entry.get("quality_tier", -1)) <= max_quality, "%s entry stays within quality cap" % label)
 
 
 func _assert_first_playable_loop_scene_instantiates() -> void:

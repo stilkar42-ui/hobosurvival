@@ -33,6 +33,8 @@ var _grocery_summary_widget = null
 var _grocery_list_widget = null
 var _hardware_summary_widget = null
 var _hardware_list_widget = null
+var _general_summary_widget = null
+var _general_list_widget = null
 var _service_nav_buttons: Dictionary = {}
 
 
@@ -109,7 +111,7 @@ func _build_panel(page_host) -> void:
 	root.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_panel.add_child(root)
 
-	for route_id in [&"jobs_board", &"send_money", &"grocery", &"hardware"]:
+	for route_id in [&"jobs_board", &"send_money", &"grocery", &"hardware", &"general_store"]:
 		var route_panel = PanelContainer.new()
 		route_panel.name = "%sRoute" % String(route_id)
 		route_panel.visible = false
@@ -129,6 +131,7 @@ func _build_panel(page_host) -> void:
 	_build_send_money_page()
 	_build_grocery_page()
 	_build_hardware_page()
+	_build_general_store_page()
 
 
 func _build_jobs_board_page() -> void:
@@ -238,6 +241,23 @@ func _build_hardware_page() -> void:
 	root.add_child(_hardware_list_widget)
 
 
+func _build_general_store_page() -> void:
+	var root = _get_route_root(&"general_store")
+	_add_title(root, "General Store", "A limited shelf of food, camp goods, and small household necessities.")
+	root.add_child(_make_back_button())
+	root.add_child(_build_service_nav_panel())
+	_general_summary_widget = DataPanelWidgetScript.new()
+	_general_summary_widget.set_title("Store Summary")
+	_configure_compact_panel(_general_summary_widget)
+	root.add_child(_general_summary_widget)
+	_general_list_widget = VerticalListWidgetScript.new()
+	_general_list_widget.name = "GeneralStoreListWidget"
+	_general_list_widget.set_title("Available Stock")
+	_general_list_widget.set_variant("dark")
+	_configure_content_list(_general_list_widget)
+	root.add_child(_general_list_widget)
+
+
 func _apply_visibility(visible: bool) -> void:
 	if _panel != null:
 		_panel.visible = visible
@@ -302,8 +322,10 @@ func _refresh_store_stock_sections(player_state) -> void:
 	var week_index = player_state.store_stock_week_index
 	_grocery_summary_widget.set_data("Week %d town stock. It changes each week; quality and price both matter." % week_index)
 	_hardware_summary_widget.set_data("Week %d hardware stock. Camp utility, repair bits, and small road materials." % week_index)
+	_general_summary_widget.set_data("Week %d general stock. Limited crossover goods for food, camp, and keeping clean." % week_index)
 	_rebuild_store_stock_list(_grocery_list_widget, SurvivalLoopRulesScript.STORE_GROCERY, SurvivalLoopRulesScript.get_store_stock(player_state, config, item_catalog, SurvivalLoopRulesScript.STORE_GROCERY))
 	_rebuild_store_stock_list(_hardware_list_widget, SurvivalLoopRulesScript.STORE_HARDWARE, SurvivalLoopRulesScript.get_store_stock(player_state, config, item_catalog, SurvivalLoopRulesScript.STORE_HARDWARE))
+	_rebuild_store_stock_list(_general_list_widget, SurvivalLoopRulesScript.STORE_GENERAL, SurvivalLoopRulesScript.get_store_stock(player_state, config, item_catalog, SurvivalLoopRulesScript.STORE_GENERAL))
 
 
 func _rebuild_store_stock_list(list_widget, store_id: StringName, stock: Array) -> void:
@@ -391,7 +413,8 @@ func _build_service_nav_panel() -> Control:
 		{"route_id": &"jobs_board", "label": "Posted Work"},
 		{"route_id": &"send_money", "label": "Send Money"},
 		{"route_id": &"grocery", "label": "Grocery"},
-		{"route_id": &"hardware", "label": "Hardware"}
+		{"route_id": &"hardware", "label": "Hardware"},
+		{"route_id": &"general_store", "label": "General Store"}
 	]:
 		var button = ActionButtonWidgetScript.new()
 		button.set_action_id(action_data.route_id)

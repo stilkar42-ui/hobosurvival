@@ -9,6 +9,7 @@ const PAGE_SEND_MONEY := &"send_money"
 const PAGE_CAMP := &"camp"
 const PAGE_GROCERY := &"grocery"
 const PAGE_HARDWARE := &"hardware"
+const PAGE_GENERAL_STORE := &"general_store"
 const PAGE_GETTING_READY := &"getting_ready"
 const PAGE_REST_CAMP := &"rest_camp"
 const PAGE_HOBOCRAFT := &"hobocraft"
@@ -21,7 +22,7 @@ const ROUTE_PASSPORT := &"passport_stats"
 const ROUTE_EVENT := &"event_encounter"
 const ROUTE_TRAVEL := &"travel_ui"
 
-const TOWN_ONLY_PAGES := [PAGE_TOWN, PAGE_JOBS_BOARD, PAGE_SEND_MONEY, PAGE_GROCERY, PAGE_HARDWARE, ROUTE_LOCATION_PAGE]
+const TOWN_ONLY_PAGES := [PAGE_TOWN, PAGE_JOBS_BOARD, PAGE_SEND_MONEY, PAGE_GROCERY, PAGE_HARDWARE, PAGE_GENERAL_STORE, ROUTE_LOCATION_PAGE]
 const CAMP_ONLY_PAGES := [PAGE_CAMP, PAGE_GETTING_READY, PAGE_REST_CAMP, PAGE_HOBOCRAFT, PAGE_COOKING, ROUTE_CRAFTING_PAGE, ROUTE_REST_PAGE]
 const CAMP_SUB_PAGES := [PAGE_GETTING_READY, PAGE_REST_CAMP, PAGE_HOBOCRAFT, PAGE_COOKING, ROUTE_CRAFTING_PAGE, ROUTE_REST_PAGE]
 const OVERLAY_ROUTES := [ROUTE_INVENTORY, ROUTE_PASSPORT, ROUTE_EVENT]
@@ -36,7 +37,8 @@ const TOWN_INTERACTION_PAGE_IDS := {
 	&"jobs_board": PAGE_JOBS_BOARD,
 	&"send_money": PAGE_SEND_MONEY,
 	&"grocery": PAGE_GROCERY,
-	&"hardware": PAGE_HARDWARE
+	&"hardware": PAGE_HARDWARE,
+	&"general_store": PAGE_GENERAL_STORE
 }
 
 const ROUTE_DESTINATIONS := {
@@ -50,6 +52,7 @@ const ROUTE_DESTINATIONS := {
 	&"town_send_money": {"action_id": &"", "page_id": PAGE_SEND_MONEY},
 	&"town_grocery": {"action_id": &"", "page_id": PAGE_GROCERY},
 	&"town_hardware": {"action_id": &"", "page_id": PAGE_HARDWARE},
+	&"town_general_store": {"action_id": &"", "page_id": PAGE_GENERAL_STORE},
 	&"town_foreman": {"action_id": &"", "page_id": PAGE_JOBS_BOARD},
 	&"town_exit": {"action_id": &"go_to_camp", "page_id": &""}
 }
