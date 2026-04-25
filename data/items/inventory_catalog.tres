@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="ItemCatalog" load_steps=44 format=3]
+[gd_resource type="Resource" script_class="ItemCatalog" load_steps=54 format=3]
 
 [ext_resource type="Script" path="res://scripts/inventory/item_catalog.gd" id="1_catalog"]
 [ext_resource type="Script" path="res://scripts/inventory/item_definition.gd" id="2_item"]
@@ -858,6 +858,186 @@ trade_value_cents = 32
 visible_to_others = true
 work_tags = PackedStringArray("camp", "cooking")
 
+[sub_resource type="Resource" id="ItemDefinition_clean_rag_bundle"]
+script = ExtResource("2_item")
+item_id = &"clean_rag_bundle"
+display_name = "Clean Rag Bundle"
+description = "Washed cloth folded tight for cuts, sweat, and the small messes that become larger trouble on the road."
+category = 4
+quality_tier = 1
+quality_score = 1.0
+unit_weight_kg = 0.08
+max_stack = 4
+size_class = 0
+allowed_carry_zones = PackedStringArray("pack", "pocket", "hands")
+hand_holdable = true
+behavior_tags = PackedStringArray("holdable", "medical", "hygiene", "wound_care", "apothecary")
+capabilities = PackedStringArray("inspect", "hold")
+trade_value_cents = 8
+visible_to_others = true
+
+[sub_resource type="Resource" id="ItemDefinition_bandage_roll"]
+script = ExtResource("2_item")
+item_id = &"bandage_roll"
+display_name = "Bandage Roll"
+description = "A narrow roll of clean bandage cloth, dearer than rags because it is ready when hands are shaking."
+category = 4
+quality_tier = 1
+quality_score = 1.0
+unit_weight_kg = 0.07
+max_stack = 3
+size_class = 0
+allowed_carry_zones = PackedStringArray("pack", "pocket", "hands")
+hand_holdable = true
+behavior_tags = PackedStringArray("holdable", "medical", "wound_care", "apothecary")
+capabilities = PackedStringArray("inspect", "hold")
+trade_value_cents = 16
+visible_to_others = true
+
+[sub_resource type="Resource" id="ItemDefinition_carbolic_soap"]
+script = ExtResource("2_item")
+item_id = &"carbolic_soap"
+display_name = "Carbolic Soap"
+description = "Sharp-smelling soap sold as cleaner and stronger than the common bar, useful enough to keep wrapped."
+category = 4
+quality_tier = 1
+quality_score = 1.0
+unit_weight_kg = 0.16
+max_stack = 2
+size_class = 0
+allowed_carry_zones = PackedStringArray("pack", "pocket", "hands")
+hand_holdable = true
+behavior_tags = PackedStringArray("holdable", "medical", "hygiene", "apothecary")
+capabilities = PackedStringArray("inspect", "hold")
+trade_value_cents = 18
+visible_to_others = true
+
+[sub_resource type="Resource" id="ItemDefinition_iodine_bottle"]
+script = ExtResource("2_item")
+item_id = &"iodine_bottle"
+display_name = "Iodine Bottle"
+description = "A small brown bottle from the apothecary, wrapped tight so it does not break before it is needed."
+category = 4
+quality_tier = 1
+quality_score = 1.0
+unit_weight_kg = 0.12
+max_stack = 2
+size_class = 0
+allowed_carry_zones = PackedStringArray("pack", "pocket", "hands")
+hand_holdable = true
+behavior_tags = PackedStringArray("holdable", "medical", "wound_care", "apothecary")
+capabilities = PackedStringArray("inspect", "hold")
+trade_value_cents = 28
+visible_to_others = true
+
+[sub_resource type="Resource" id="ItemDefinition_healing_salve"]
+script = ExtResource("2_item")
+item_id = &"healing_salve"
+display_name = "Healing Salve Tin"
+description = "A little tin of greasy salve, sold for cracked skin, rough hands, and whatever else the label promises."
+category = 4
+quality_tier = 1
+quality_score = 1.0
+unit_weight_kg = 0.09
+max_stack = 2
+size_class = 0
+allowed_carry_zones = PackedStringArray("pack", "pocket", "hands")
+hand_holdable = true
+behavior_tags = PackedStringArray("holdable", "medical", "wound_care", "comfort", "apothecary")
+capabilities = PackedStringArray("inspect", "hold")
+trade_value_cents = 22
+visible_to_others = true
+
+[sub_resource type="Resource" id="ItemDefinition_foot_powder"]
+script = ExtResource("2_item")
+item_id = &"foot_powder"
+display_name = "Foot Powder"
+description = "A paper tin of powder for damp socks and sore feet, bought by men who know how far tomorrow may be."
+category = 4
+quality_tier = 1
+quality_score = 1.0
+unit_weight_kg = 0.1
+max_stack = 2
+size_class = 0
+allowed_carry_zones = PackedStringArray("pack", "pocket", "hands")
+hand_holdable = true
+behavior_tags = PackedStringArray("holdable", "medical", "hygiene", "comfort", "apothecary")
+capabilities = PackedStringArray("inspect", "hold")
+trade_value_cents = 20
+visible_to_others = true
+
+[sub_resource type="Resource" id="ItemDefinition_liniment_bottle"]
+script = ExtResource("2_item")
+item_id = &"liniment_bottle"
+display_name = "Liniment Bottle"
+description = "A pungent rub in a small bottle, the kind sold to working men for aches that still have work waiting."
+category = 4
+quality_tier = 1
+quality_score = 1.0
+unit_weight_kg = 0.18
+max_stack = 1
+size_class = 0
+allowed_carry_zones = PackedStringArray("pack", "pocket", "hands")
+hand_holdable = true
+behavior_tags = PackedStringArray("holdable", "medical", "comfort", "apothecary")
+capabilities = PackedStringArray("inspect", "hold")
+trade_value_cents = 32
+visible_to_others = true
+
+[sub_resource type="Resource" id="ItemDefinition_headache_powder"]
+script = ExtResource("2_item")
+item_id = &"headache_powder"
+display_name = "Headache Powder Packet"
+description = "A folded packet of bitter powder with a confident label and small print that asks for trust."
+category = 4
+quality_tier = 1
+quality_score = 1.0
+unit_weight_kg = 0.02
+max_stack = 4
+size_class = 0
+allowed_carry_zones = PackedStringArray("pack", "pocket", "hands")
+hand_holdable = true
+behavior_tags = PackedStringArray("holdable", "medical", "comfort", "questionable_medicine", "apothecary")
+capabilities = PackedStringArray("inspect", "hold")
+trade_value_cents = 10
+visible_to_others = true
+
+[sub_resource type="Resource" id="ItemDefinition_cough_syrup"]
+script = ExtResource("2_item")
+item_id = &"cough_syrup"
+display_name = "Cough Syrup Bottle"
+description = "Sweet dark syrup in a corked bottle, sold for winter coughs and rough nights in poor rooms."
+category = 4
+quality_tier = 1
+quality_score = 1.0
+unit_weight_kg = 0.22
+max_stack = 1
+size_class = 0
+allowed_carry_zones = PackedStringArray("pack", "pocket", "hands")
+hand_holdable = true
+behavior_tags = PackedStringArray("holdable", "medical", "comfort", "questionable_medicine", "apothecary")
+capabilities = PackedStringArray("inspect", "hold")
+trade_value_cents = 26
+visible_to_others = true
+
+[sub_resource type="Resource" id="ItemDefinition_patent_tonic"]
+script = ExtResource("2_item")
+item_id = &"patent_tonic"
+display_name = "Patent Tonic Bottle"
+description = "A loud label promises strength, nerves, appetite, and sleep. The bottle is more certain than the medicine."
+category = 4
+quality_tier = 1
+quality_score = 1.0
+unit_weight_kg = 0.25
+max_stack = 1
+size_class = 0
+allowed_carry_zones = PackedStringArray("pack", "pocket", "hands")
+hand_holdable = true
+behavior_tags = PackedStringArray("holdable", "medical", "comfort", "questionable_medicine", "apothecary")
+capabilities = PackedStringArray("inspect", "hold")
+trade_value_cents = 30
+visible_to_others = true
+
 [resource]
 script = ExtResource("1_catalog")
-items = Array[ExtResource("2_item")]([SubResource("ItemDefinition_beans"), SubResource("ItemDefinition_wool_coat"), SubResource("ItemDefinition_hammer"), SubResource("ItemDefinition_scrap"), SubResource("ItemDefinition_letter"), SubResource("ItemDefinition_blanket_roll"), SubResource("ItemDefinition_bread"), SubResource("ItemDefinition_coffee"), SubResource("ItemDefinition_stew"), SubResource("ItemDefinition_tobacco"), SubResource("ItemDefinition_backpack"), SubResource("ItemDefinition_satchel"), SubResource("ItemDefinition_haversack"), SubResource("ItemDefinition_bindle"), SubResource("ItemDefinition_pants"), SubResource("ItemDefinition_belt"), SubResource("ItemDefinition_pocket_knife"), SubResource("ItemDefinition_timetable"), SubResource("ItemDefinition_church_key"), SubResource("ItemDefinition_match_safe"), SubResource("ItemDefinition_empty_can"), SubResource("ItemDefinition_potted_meat"), SubResource("ItemDefinition_hot_coffee"), SubResource("ItemDefinition_soap"), SubResource("ItemDefinition_coffee_grounds"), SubResource("ItemDefinition_clean_water"), SubResource("ItemDefinition_non_potable_water"), SubResource("ItemDefinition_dry_kindling"), SubResource("ItemDefinition_cordage"), SubResource("ItemDefinition_oats_sack"), SubResource("ItemDefinition_dried_beans"), SubResource("ItemDefinition_salt_pouch"), SubResource("ItemDefinition_lard_tin"), SubResource("ItemDefinition_baling_wire"), SubResource("ItemDefinition_box_nails"), SubResource("ItemDefinition_cloth_patch"), SubResource("ItemDefinition_needle_thread"), SubResource("ItemDefinition_soup_can_stove"), SubResource("ItemDefinition_repair_roll"), SubResource("ItemDefinition_tin_can_heater"), SubResource("ItemDefinition_wire_braced_tin_can_heater"), SubResource("ItemDefinition_alarm_can_line"), SubResource("ItemDefinition_road_cook_kit")])
+items = Array[ExtResource("2_item")]([SubResource("ItemDefinition_beans"), SubResource("ItemDefinition_wool_coat"), SubResource("ItemDefinition_hammer"), SubResource("ItemDefinition_scrap"), SubResource("ItemDefinition_letter"), SubResource("ItemDefinition_blanket_roll"), SubResource("ItemDefinition_bread"), SubResource("ItemDefinition_coffee"), SubResource("ItemDefinition_stew"), SubResource("ItemDefinition_tobacco"), SubResource("ItemDefinition_backpack"), SubResource("ItemDefinition_satchel"), SubResource("ItemDefinition_haversack"), SubResource("ItemDefinition_bindle"), SubResource("ItemDefinition_pants"), SubResource("ItemDefinition_belt"), SubResource("ItemDefinition_pocket_knife"), SubResource("ItemDefinition_timetable"), SubResource("ItemDefinition_church_key"), SubResource("ItemDefinition_match_safe"), SubResource("ItemDefinition_empty_can"), SubResource("ItemDefinition_potted_meat"), SubResource("ItemDefinition_hot_coffee"), SubResource("ItemDefinition_soap"), SubResource("ItemDefinition_coffee_grounds"), SubResource("ItemDefinition_clean_water"), SubResource("ItemDefinition_non_potable_water"), SubResource("ItemDefinition_dry_kindling"), SubResource("ItemDefinition_cordage"), SubResource("ItemDefinition_oats_sack"), SubResource("ItemDefinition_dried_beans"), SubResource("ItemDefinition_salt_pouch"), SubResource("ItemDefinition_lard_tin"), SubResource("ItemDefinition_baling_wire"), SubResource("ItemDefinition_box_nails"), SubResource("ItemDefinition_cloth_patch"), SubResource("ItemDefinition_needle_thread"), SubResource("ItemDefinition_soup_can_stove"), SubResource("ItemDefinition_repair_roll"), SubResource("ItemDefinition_tin_can_heater"), SubResource("ItemDefinition_wire_braced_tin_can_heater"), SubResource("ItemDefinition_alarm_can_line"), SubResource("ItemDefinition_road_cook_kit"), SubResource("ItemDefinition_clean_rag_bundle"), SubResource("ItemDefinition_bandage_roll"), SubResource("ItemDefinition_carbolic_soap"), SubResource("ItemDefinition_iodine_bottle"), SubResource("ItemDefinition_healing_salve"), SubResource("ItemDefinition_foot_powder"), SubResource("ItemDefinition_liniment_bottle"), SubResource("ItemDefinition_headache_powder"), SubResource("ItemDefinition_cough_syrup"), SubResource("ItemDefinition_patent_tonic")])

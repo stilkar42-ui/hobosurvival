@@ -36,16 +36,41 @@ const HARDWARE_STOCK_POOL := [
 	{"item_id": &"needle_thread", "base_price_cents": 11, "weight": 6, "min_quality": 0, "max_quality": 2}
 ]
 
+const GENERAL_STOCK_POOL := [
+	{"item_id": &"bread_loaf", "base_price_cents": 16, "weight": 10, "min_quality": 0, "max_quality": 2},
+	{"item_id": &"coffee_grounds", "base_price_cents": 6, "weight": 8, "min_quality": 0, "max_quality": 2},
+	{"item_id": &"dried_beans", "base_price_cents": 12, "weight": 8, "min_quality": 0, "max_quality": 2},
+	{"item_id": &"match_safe", "base_price_cents": 14, "weight": 6, "min_quality": 0, "max_quality": 2},
+	{"item_id": &"cordage", "base_price_cents": 12, "weight": 6, "min_quality": 0, "max_quality": 2},
+	{"item_id": &"clean_rag_bundle", "base_price_cents": 8, "weight": 6, "min_quality": 0, "max_quality": 2},
+	{"item_id": &"bandage_roll", "base_price_cents": 16, "weight": 4, "min_quality": 1, "max_quality": 2},
+	{"item_id": &"carbolic_soap", "base_price_cents": 18, "weight": 4, "min_quality": 1, "max_quality": 2}
+]
+
+const MEDICINE_STOCK_POOL := [
+	{"item_id": &"clean_rag_bundle", "base_price_cents": 8, "weight": 12, "min_quality": 0, "max_quality": 2},
+	{"item_id": &"bandage_roll", "base_price_cents": 16, "weight": 11, "min_quality": 1, "max_quality": 2},
+	{"item_id": &"carbolic_soap", "base_price_cents": 18, "weight": 10, "min_quality": 1, "max_quality": 2},
+	{"item_id": &"iodine_bottle", "base_price_cents": 28, "weight": 8, "min_quality": 1, "max_quality": 3},
+	{"item_id": &"healing_salve", "base_price_cents": 22, "weight": 8, "min_quality": 0, "max_quality": 3},
+	{"item_id": &"foot_powder", "base_price_cents": 20, "weight": 7, "min_quality": 1, "max_quality": 3},
+	{"item_id": &"liniment_bottle", "base_price_cents": 32, "weight": 6, "min_quality": 1, "max_quality": 3},
+	{"item_id": &"headache_powder", "base_price_cents": 10, "weight": 6, "min_quality": 0, "max_quality": 2},
+	{"item_id": &"cough_syrup", "base_price_cents": 26, "weight": 5, "min_quality": 1, "max_quality": 3},
+	{"item_id": &"patent_tonic", "base_price_cents": 30, "weight": 4, "min_quality": 0, "max_quality": 2}
+]
+
 const REQUIRED_STOCK_ITEM_IDS := {
 	STORE_GROCERY: [&"coffee_grounds", &"beans_can", &"potted_meat"],
-	STORE_HARDWARE: [&"baling_wire"]
+	STORE_HARDWARE: [&"baling_wire"],
+	STORE_MEDICINE: [&"clean_rag_bundle", &"bandage_roll", &"carbolic_soap"]
 }
 
 const STORE_POOLS := {
 	STORE_GROCERY: GROCERY_STOCK_POOL,
 	STORE_HARDWARE: HARDWARE_STOCK_POOL,
-	STORE_GENERAL: [],
-	STORE_MEDICINE: [],
+	STORE_GENERAL: GENERAL_STOCK_POOL,
+	STORE_MEDICINE: MEDICINE_STOCK_POOL,
 	STORE_SPECIALIST_GROCERY: [],
 	STORE_SPECIALIST_HARDWARE: [],
 	STORE_SPECIALIST_MEDICINE: []
@@ -95,42 +120,42 @@ const STORE_PROFILES := {
 	STORE_GENERAL: {
 		"store_id": STORE_GENERAL,
 		"display_name": "General Store",
-		"stock_status": "future_profile_only",
+		"stock_status": "prepared_catalog_pool",
 		"quality_policy": {
 			"dominant_tiers": [ItemDefinitionScript.QualityTier.COMMON],
 			"occasional_tiers": [ItemDefinitionScript.QualityTier.POOR],
 			"rare_tiers": [ItemDefinitionScript.QualityTier.GOOD],
 			"excluded_tiers": [ItemDefinitionScript.QualityTier.LEGENDARY],
-			"notes": "Future general stores should carry limited crossover grocery, hardware, and medicine stock in restricted quantities."
+			"notes": "Prepared general stores carry limited crossover grocery, hardware, and medicine stock in restricted quantities; no treatment mechanics are attached."
 		},
 		"supply_tags": [&"crossover_stock", &"food", &"hardware", &"medicine"],
-		"service_tags": [&"future_rotating_stock"],
+		"service_tags": [&"prepared_rotating_stock"],
 		"merchant_tags": [&"town_basic"],
 		"region_tags": [],
 		"reputation_hooks": [],
 		"relationship_hooks": [],
-		"restock_cadence": &"future_weekly",
-		"future_manager_notes": "Attach town-specific limited assortments here when StoreManager exists."
+		"restock_cadence": &"prepared_weekly",
+		"future_manager_notes": "Attach town-specific limited assortments here when StoreManager exists. This prepared pool is not generated into runtime state yet."
 	},
 	STORE_MEDICINE: {
 		"store_id": STORE_MEDICINE,
 		"display_name": "Medicine / Apothecary",
-		"stock_status": "future_profile_only",
+		"stock_status": "prepared_catalog_pool",
 		"quality_policy": {
 			"dominant_tiers": [ItemDefinitionScript.QualityTier.COMMON, ItemDefinitionScript.QualityTier.GOOD],
 			"occasional_tiers": [ItemDefinitionScript.QualityTier.POOR],
 			"rare_tiers": [ItemDefinitionScript.QualityTier.SUPERIOR],
 			"excluded_tiers": [ItemDefinitionScript.QualityTier.LEGENDARY],
-			"notes": "Future medicine stock may include bandages, clean rags, salves, antiseptic, tonic, headache powder, foot powder, liniment, cough syrup, and patent medicine."
+			"notes": "Prepared medicine stock includes bandages, clean rags, salves, antiseptic, tonic, headache powder, foot powder, liniment, cough syrup, and patent medicine. These are inventory goods only until treatment rules exist."
 		},
 		"supply_tags": [&"medical", &"apothecary", &"doctor_supply"],
-		"service_tags": [&"future_medical_stock"],
+		"service_tags": [&"prepared_medical_stock"],
 		"merchant_tags": [&"apothecary", &"doctor_supply"],
 		"region_tags": [],
 		"reputation_hooks": [],
 		"relationship_hooks": [],
-		"restock_cadence": &"future_weekly",
-		"future_manager_notes": "Medicine goods are only catalog-prepared here; do not add treatment, addiction, sickness, or doctor-service mechanics in this catalog."
+		"restock_cadence": &"prepared_weekly",
+		"future_manager_notes": "Medicine goods are catalog-prepared here but are not generated into runtime state yet; do not add treatment, addiction, sickness, or doctor-service mechanics in this catalog."
 	},
 	STORE_SPECIALIST_GROCERY: {
 		"store_id": STORE_SPECIALIST_GROCERY,
