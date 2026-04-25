@@ -35,6 +35,8 @@ var _hardware_summary_widget = null
 var _hardware_list_widget = null
 var _general_summary_widget = null
 var _general_list_widget = null
+var _doctor_summary_widget = null
+var _doctor_list_widget = null
 var _service_nav_buttons: Dictionary = {}
 
 
@@ -83,6 +85,7 @@ func refresh_from_state(player_state) -> void:
 	_rebuild_job_board(player_state)
 	_refresh_send_money(player_state)
 	_refresh_store_stock_sections(player_state)
+	_refresh_doctor_care(player_state)
 
 
 func handle_input(event: InputEvent) -> bool:
@@ -111,7 +114,7 @@ func _build_panel(page_host) -> void:
 	root.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_panel.add_child(root)
 
-	for route_id in [&"jobs_board", &"send_money", &"grocery", &"hardware", &"general_store"]:
+	for route_id in [&"jobs_board", &"send_money", &"grocery", &"hardware", &"general_store", &"doctor_apothecary"]:
 		var route_panel = PanelContainer.new()
 		route_panel.name = "%sRoute" % String(route_id)
 		route_panel.visible = false
@@ -132,6 +135,7 @@ func _build_panel(page_host) -> void:
 	_build_grocery_page()
 	_build_hardware_page()
 	_build_general_store_page()
+	_build_doctor_apothecary_page()
 
 
 func _build_jobs_board_page() -> void:
@@ -258,6 +262,23 @@ func _build_general_store_page() -> void:
 	root.add_child(_general_list_widget)
 
 
+func _build_doctor_apothecary_page() -> void:
+	var root = _get_route_root(&"doctor_apothecary")
+	_add_title(root, "Doctor / Apothecary", "Basic paid care, remedies, and advice. It can steady a man; it does not resolve wounds or sickness.")
+	root.add_child(_make_back_button())
+	root.add_child(_build_service_nav_panel())
+	_doctor_summary_widget = DataPanelWidgetScript.new()
+	_doctor_summary_widget.set_title("Care Summary")
+	_configure_compact_panel(_doctor_summary_widget)
+	root.add_child(_doctor_summary_widget)
+	_doctor_list_widget = VerticalListWidgetScript.new()
+	_doctor_list_widget.name = "DoctorApothecaryListWidget"
+	_doctor_list_widget.set_title("Available Care")
+	_doctor_list_widget.set_variant("dark")
+	_configure_content_list(_doctor_list_widget)
+	root.add_child(_doctor_list_widget)
+
+
 func _apply_visibility(visible: bool) -> void:
 	if _panel != null:
 		_panel.visible = visible
@@ -328,6 +349,46 @@ func _refresh_store_stock_sections(player_state) -> void:
 	_rebuild_store_stock_list(_general_list_widget, SurvivalLoopRulesScript.STORE_GENERAL, SurvivalLoopRulesScript.get_store_stock(player_state, config, item_catalog, SurvivalLoopRulesScript.STORE_GENERAL))
 
 
+func _refresh_doctor_care(_player_state) -> void:
+	if _doctor_summary_widget == null or _doctor_list_widget == null:
+		return
+	var config = _data_manager.get_loop_config()
+	_doctor_summary_widget.set_data("Paid town care can clean a man up, ease the road from his feet, and steady his morale. It does not treat wounds, disease, or dependence.")
+	_doctor_list_widget.clear_items()
+	var care_actions = SurvivalLoopRulesScript.get_doctor_care_actions(config)
+	if care_actions.is_empty():
+		var empty_widget = DataPanelWidgetScript.new()
+		empty_widget.set_title("No Care")
+		empty_widget.set_data("No doctor or apothecary care is available in this town.")
+		_doctor_list_widget.add_item(empty_widget)
+		return
+	for care_action in care_actions:
+		var action_id = StringName(care_action.get("action_id", &""))
+		var availability = _game_state_manager.get_loop_action_availability(action_id) if _game_state_manager != null else {"enabled": false, "reason": "Unavailable"}
+		var requirements: Array[String] = [
+			"%s | %s" % [
+				_format_cents(int(care_action.get("cost_cents", 0))),
+				_format_duration(int(care_action.get("minutes", 0)))
+			],
+			_format_doctor_effects(care_action)
+		]
+		var blocked_reason = String(availability.get("reason", "")).strip_edges()
+		if blocked_reason != "":
+			requirements.append(blocked_reason)
+		var card = ActionCardWidgetScript.new()
+		card.set_data({
+			"action_id": action_id,
+			"title": String(care_action.get("title", "Care")),
+			"description": String(care_action.get("description", "")),
+			"requirements": requirements,
+			"status": _format_cents(int(care_action.get("cost_cents", 0))),
+			"enabled": bool(availability.get("enabled", false)),
+			"action_label": "Care Action"
+		})
+		card.selected.connect(Callable(self, "_on_doctor_care_selected"))
+		_doctor_list_widget.add_item(card)
+
+
 func _rebuild_store_stock_list(list_widget, store_id: StringName, stock: Array) -> void:
 	list_widget.clear_items()
 	if stock.is_empty():
@@ -396,6 +457,12 @@ func _on_store_stock_selected(action_id: StringName) -> void:
 		_show_status.call(String(result.get("message", "No result.")))
 
 
+func _on_doctor_care_selected(action_id: StringName) -> void:
+	var result = _game_state_manager.execute_action(String(action_id), {"source": "location.doctor_apothecary"})
+	if not _show_status.is_null():
+		_show_status.call(String(result.get("message", "No result.")))
+
+
 func _build_service_nav_panel() -> Control:
 	var panel = BasePanelWidgetScript.new()
 	panel.set_title("Town Services")
@@ -414,7 +481,8 @@ func _build_service_nav_panel() -> Control:
 		{"route_id": &"send_money", "label": "Send Money"},
 		{"route_id": &"grocery", "label": "Grocery"},
 		{"route_id": &"hardware", "label": "Hardware"},
-		{"route_id": &"general_store", "label": "General Store"}
+		{"route_id": &"general_store", "label": "General Store"},
+		{"route_id": &"doctor_apothecary", "label": "Doctor / Apothecary"}
 	]:
 		var button = ActionButtonWidgetScript.new()
 		button.set_action_id(action_data.route_id)
@@ -599,3 +667,25 @@ func _format_duration(minutes: int) -> String:
 
 func _format_cents(amount_cents: int) -> String:
 	return "$%.2f" % (float(amount_cents) / 100.0)
+
+
+func _format_doctor_effects(care_action: Dictionary) -> String:
+	var parts: Array[String] = []
+	var hygiene_gain = int(care_action.get("hygiene_gain", 0))
+	var presentability_gain = int(care_action.get("presentability_gain", 0))
+	var dampness_relief = int(care_action.get("dampness_relief", 0))
+	var fatigue_relief = int(care_action.get("fatigue_relief", 0))
+	var morale_gain = int(care_action.get("morale_gain", 0))
+	if hygiene_gain > 0:
+		parts.append("+%d Hygiene" % hygiene_gain)
+	if presentability_gain > 0:
+		parts.append("+%d Presentability" % presentability_gain)
+	if dampness_relief > 0:
+		parts.append("-%d Dampness" % dampness_relief)
+	if fatigue_relief > 0:
+		parts.append("+%d Stamina" % fatigue_relief)
+	if morale_gain > 0:
+		parts.append("+%d Morale" % morale_gain)
+	if parts.is_empty():
+		return "Effects: no condition change"
+	return "Effects: %s" % ", ".join(parts)

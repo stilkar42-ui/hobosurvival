@@ -17,6 +17,10 @@ extends Resource
 @export_range(1, 720, 1, "suffix:min") var buy_supply_minutes := 20
 @export_range(1, 720, 1, "suffix:min") var prepared_food_purchase_minutes := 5
 @export_range(1, 720, 1, "suffix:min") var send_support_minutes := 30
+@export_range(1, 720, 1, "suffix:min") var doctor_clean_up_minutes := 25
+@export_range(1, 720, 1, "suffix:min") var doctor_foot_care_minutes := 30
+@export_range(1, 720, 1, "suffix:min") var doctor_tonic_advice_minutes := 15
+@export_range(1, 720, 1, "suffix:min") var doctor_basic_checkup_minutes := 35
 @export_range(1, 720, 1, "suffix:min") var town_to_camp_travel_minutes := 35
 @export_range(1, 720, 1, "suffix:min") var camp_to_town_travel_minutes := 35
 @export_range(1, 240, 1, "suffix:min") var passive_nutrition_minutes_per_point := 45
@@ -75,6 +79,23 @@ extends Resource
 @export_range(4, 8, 1) var min_store_stock_items := 4
 @export_range(4, 8, 1) var max_store_stock_items := 8
 @export_range(1, 720, 1, "suffix:min") var hobocraft_action_minutes := 35
+
+@export_group("Doctor / Apothecary")
+@export_range(0, 1000000, 1, "suffix:cents") var doctor_clean_up_cost_cents := 18
+@export_range(0, 1000000, 1, "suffix:cents") var doctor_foot_care_cost_cents := 32
+@export_range(0, 1000000, 1, "suffix:cents") var doctor_tonic_advice_cost_cents := 22
+@export_range(0, 1000000, 1, "suffix:cents") var doctor_basic_checkup_cost_cents := 40
+@export_range(0, 100, 1) var doctor_clean_up_hygiene_gain := 16
+@export_range(0, 100, 1) var doctor_clean_up_presentability_gain := 6
+@export_range(0, 100, 1) var doctor_clean_up_dampness_relief := 4
+@export_range(0, 100, 1) var doctor_foot_care_dampness_relief := 10
+@export_range(0, 100, 1) var doctor_foot_care_fatigue_relief := 5
+@export_range(-100, 100, 1) var doctor_foot_care_morale_gain := 2
+@export_range(0, 100, 1) var doctor_tonic_advice_fatigue_relief := 2
+@export_range(-100, 100, 1) var doctor_tonic_advice_morale_gain := 4
+@export_range(0, 100, 1) var doctor_basic_checkup_hygiene_gain := 1
+@export_range(0, 100, 1) var doctor_basic_checkup_presentability_gain := 1
+@export_range(-100, 100, 1) var doctor_basic_checkup_morale_gain := 5
 
 @export_group("Support")
 @export_range(0, 1000000, 1, "suffix:cents") var send_small_amount_cents := 375

@@ -52,6 +52,10 @@ const ACTION_READY_SHAVE := &"ready_shave"
 const ACTION_READY_COMB_GROOM := &"ready_comb_groom"
 const ACTION_READY_AIR_OUT_CLOTHES := &"ready_air_out_clothes"
 const ACTION_READY_BRUSH_CLOTHES := &"ready_brush_clothes"
+const ACTION_DOCTOR_CLEAN_UP := &"doctor_clean_up"
+const ACTION_DOCTOR_FOOT_CARE := &"doctor_foot_care"
+const ACTION_DOCTOR_TONIC_ADVICE := &"doctor_tonic_advice"
+const ACTION_DOCTOR_BASIC_CHECKUP := &"doctor_basic_checkup"
 
 const HOBOCRAFT_RECIPES := [
 	{
@@ -264,6 +268,8 @@ static func can_perform_action(player_state, config, item_catalog, action_id: St
 				int(context.get("amount_cents", config.send_small_amount_cents)),
 				StringName(context.get("method_id", &"mail"))
 			)
+		ACTION_DOCTOR_CLEAN_UP, ACTION_DOCTOR_FOOT_CARE, ACTION_DOCTOR_TONIC_ADVICE, ACTION_DOCTOR_BASIC_CHECKUP:
+			return _check_doctor_care_action(player_state, config, action_id)
 		ACTION_BUILD_FIRE:
 			if not _is_at_camp(player_state):
 				return _blocked("You need to be at camp to build a fire.")
@@ -393,6 +399,8 @@ static func apply_action(player_state, config, item_catalog, action_id: StringNa
 				int(context.get("amount_cents", config.send_small_amount_cents)),
 				StringName(context.get("method_id", &"mail"))
 			)
+		ACTION_DOCTOR_CLEAN_UP, ACTION_DOCTOR_FOOT_CARE, ACTION_DOCTOR_TONIC_ADVICE, ACTION_DOCTOR_BASIC_CHECKUP:
+			return _apply_doctor_care_action(player_state, config, action_id)
 		ACTION_BUILD_FIRE:
 			_advance_awake_time(player_state, config, config.build_fire_minutes)
 			player_state.set_camp_fire_level(1)
@@ -1029,6 +1037,109 @@ static func _send_support(player_state, config, amount_cents: int, method_id: St
 	})
 	normalize_state(player_state, config)
 	return _result(true, "You mail %s home through the %s. It should count after it arrives on Day %d." % [_format_cents(amount_cents), method_name, arrival_day])
+
+
+static func _check_doctor_care_action(player_state, config, action_id: StringName) -> Dictionary:
+	if not _is_at_town(player_state):
+		return _blocked("Doctor and apothecary care is back in town.")
+	var care_action = _get_doctor_care_action(config, action_id)
+	if care_action.is_empty():
+		return _blocked("That care is not available in this prototype.")
+	if player_state.money_cents < int(care_action.get("cost_cents", 0)):
+		return _blocked("You do not have enough cash for that care.")
+	return _allowed()
+
+
+static func _apply_doctor_care_action(player_state, config, action_id: StringName) -> Dictionary:
+	var care_action = _get_doctor_care_action(config, action_id)
+	if care_action.is_empty():
+		return _result(false, "That care is not available in this prototype.")
+	player_state.apply_money_delta(-int(care_action.get("cost_cents", 0)))
+	_advance_awake_time(player_state, config, int(care_action.get("minutes", 0)))
+	player_state.apply_hygiene_delta(int(care_action.get("hygiene_gain", 0)))
+	player_state.apply_presentability_delta(int(care_action.get("presentability_gain", 0)))
+	player_state.passport_profile.dampness = clampi(
+		player_state.passport_profile.dampness - max(int(care_action.get("dampness_relief", 0)), 0),
+		0,
+		100
+	)
+	player_state.passport_profile.fatigue = clampi(
+		player_state.passport_profile.fatigue - max(int(care_action.get("fatigue_relief", 0)), 0),
+		0,
+		100
+	)
+	player_state.apply_morale_delta(int(care_action.get("morale_gain", 0)))
+	normalize_state(player_state, config)
+	return _result(true, String(care_action.get("message", "")))
+
+
+static func _get_doctor_care_action(config, action_id: StringName) -> Dictionary:
+	if config == null:
+		return {}
+	match action_id:
+		ACTION_DOCTOR_CLEAN_UP:
+			return {
+				"action_id": ACTION_DOCTOR_CLEAN_UP,
+				"title": "Wash and clean up",
+				"description": "Paid water, soap, and a little privacy. It helps a man look ready, but it does not cure anything deeper.",
+				"cost_cents": config.doctor_clean_up_cost_cents,
+				"minutes": config.doctor_clean_up_minutes,
+				"hygiene_gain": config.doctor_clean_up_hygiene_gain,
+				"presentability_gain": config.doctor_clean_up_presentability_gain,
+				"dampness_relief": config.doctor_clean_up_dampness_relief,
+				"message": "You pay for a wash and clean-up. The road is still on you, but less of it shows."
+			}
+		ACTION_DOCTOR_FOOT_CARE:
+			return {
+				"action_id": ACTION_DOCTOR_FOOT_CARE,
+				"title": "Foot care",
+				"description": "Powder, dry cloth, and attention to the feet that carry tomorrow. It eases wear, not injury.",
+				"cost_cents": config.doctor_foot_care_cost_cents,
+				"minutes": config.doctor_foot_care_minutes,
+				"dampness_relief": config.doctor_foot_care_dampness_relief,
+				"fatigue_relief": config.doctor_foot_care_fatigue_relief,
+				"morale_gain": config.doctor_foot_care_morale_gain,
+				"message": "You pay for foot care. The road feels less raw for now, though it still waits outside."
+			}
+		ACTION_DOCTOR_TONIC_ADVICE:
+			return {
+				"action_id": ACTION_DOCTOR_TONIC_ADVICE,
+				"title": "Tonic and advice",
+				"description": "A common remedy and plain advice from the counter. It steadies the nerves, but promises no cure.",
+				"cost_cents": config.doctor_tonic_advice_cost_cents,
+				"minutes": config.doctor_tonic_advice_minutes,
+				"fatigue_relief": config.doctor_tonic_advice_fatigue_relief,
+				"morale_gain": config.doctor_tonic_advice_morale_gain,
+				"message": "You take the tonic and advice. It puts a little steadiness back in you, no more than that."
+			}
+		ACTION_DOCTOR_BASIC_CHECKUP:
+			return {
+				"action_id": ACTION_DOCTOR_BASIC_CHECKUP,
+				"title": "Basic check-up",
+				"description": "A brief look-over and practical counsel. It can settle worry, not resolve disease or wounds.",
+				"cost_cents": config.doctor_basic_checkup_cost_cents,
+				"minutes": config.doctor_basic_checkup_minutes,
+				"hygiene_gain": config.doctor_basic_checkup_hygiene_gain,
+				"presentability_gain": config.doctor_basic_checkup_presentability_gain,
+				"morale_gain": config.doctor_basic_checkup_morale_gain,
+				"message": "You pay for a basic check-up. The words are plain, but being seen helps more than expected."
+			}
+		_:
+			return {}
+
+
+static func get_doctor_care_actions(config) -> Array:
+	var actions: Array = []
+	for action_id in [
+		ACTION_DOCTOR_CLEAN_UP,
+		ACTION_DOCTOR_FOOT_CARE,
+		ACTION_DOCTOR_TONIC_ADVICE,
+		ACTION_DOCTOR_BASIC_CHECKUP
+	]:
+		var care_action = _get_doctor_care_action(config, action_id)
+		if not care_action.is_empty():
+			actions.append(care_action)
+	return actions
 
 
 static func _consume_selected_stack(player_state, config, item_catalog, selected_stack_index: int) -> Dictionary:

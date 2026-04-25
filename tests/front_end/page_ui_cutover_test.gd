@@ -61,6 +61,11 @@ func _run_checks(loop_page: Control) -> void:
 	_expect(ui_manager.get_active_page() == &"LocationPage", "general store route resolves through UIManager")
 	_expect_location_route_has_visible_cards(loop_page, "GeneralStoreListWidget", "Buy Stock", "general store route renders visible stock cards")
 
+	ui_manager.open_page(&"doctor_apothecary", {"return_route": &"town"})
+	await process_frame
+	_expect(ui_manager.get_active_page() == &"LocationPage", "doctor/apothecary route resolves through UIManager")
+	_expect_location_route_has_visible_cards(loop_page, "DoctorApothecaryListWidget", "Care Action", "doctor/apothecary route renders visible care cards")
+
 	ui_manager.open_page(&"jobs_board", {"return_route": &"town"})
 	await process_frame
 	_expect_location_route_has_visible_cards(loop_page, "JobsListWidget", "Take Work", "jobs board renders posted work cards")
