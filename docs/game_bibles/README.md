@@ -14,12 +14,12 @@ This folder holds design and reference material for Hobo Survival. Use it select
 
 ## Current Code Baselines
 
-Before using bible guidance about stores, medicine, economy, merchants, treatment, or long-term service systems, read:
+Before using bible guidance about stores, medicine, doctors, economy, merchants, treatment, or long-term service systems, read:
 
 - `AGENTS.md`
 - `docs/store_medicine_general_store_baseline.md`
 
-The game bibles may describe future medicine stores, merchants, treatment, barter, theft, or broader economy systems. Those references are design material only. Current code and `AGENTS.md` define what is implemented, prepared but inactive, and not implemented yet.
+The game bibles may describe medicine stores, doctors, merchants, treatment, barter, theft, or broader economy systems as future or alternate design concepts. Those references are design material only. Current code, `AGENTS.md`, and the store/medicine baseline define what is implemented now, prepared but inactive, and not implemented yet.
 
 ## Current Implementation Guidance
 

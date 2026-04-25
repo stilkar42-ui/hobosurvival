@@ -53,17 +53,23 @@ These notes describe the current active repository architecture. They override o
 ### Store And Medicine Baseline
 
 - `UIManager` routes active pages, and `LocationPage` handles town service routes.
-- Current reachable town services are Jobs Board, Send Money, Grocery, Hardware, and General Store.
+- Current reachable town services are Jobs Board, Send Money, Grocery, Hardware, General Store, Doctor / Apothecary, and Medicine Store.
 - Store authority is split deliberately:
   - `data/items/inventory_catalog.tres` defines what items are.
   - `scripts/data/store_inventory_catalog.gd` defines what store types can sell.
   - `scripts/gameplay/survival_loop_rules.gd` owns weekly stock generation, purchase validation, money mutation, and inventory mutation.
   - `scripts/player/player_state_data.gd` stores generated runtime stock state.
   - `scripts/pages/location_page.gd` renders town services and dispatches player-facing store actions.
-- Runtime generated store stock currently lives on `PlayerStateData.grocery_store_stock`, `PlayerStateData.hardware_store_stock`, and `PlayerStateData.general_store_stock`.
-- Grocery, Hardware, and General Store have runtime weekly stock. Medicine is catalog-prepared only and is not runtime-visible yet.
+- Runtime generated store stock currently lives on `PlayerStateData.grocery_store_stock`, `PlayerStateData.hardware_store_stock`, `PlayerStateData.general_store_stock`, and `PlayerStateData.medicine_store_stock`.
+- `PlayerStateData.SAVE_VERSION` is currently `12`; older saves without `medicine_store_stock` load safely with empty medicine stock.
+- Grocery, Hardware, General Store, and Medicine Store have runtime weekly stock.
+- Doctor / Apothecary and Medicine Store are separate routes with separate meanings:
+  - Doctor / Apothecary is paid care through action cards. It affects existing condition fields only: hygiene, presentability, dampness, fatigue/stamina relief, and morale.
+  - Medicine Store is buyable medical/apothecary stock through the existing store purchase pipeline.
+- Doctor / Apothecary does not implement wounds, sickness, diagnosis, addiction, or full medical simulation.
 - Do not put new store assortment data back into `SurvivalLoopRules`; add it to the store inventory catalog path.
-- Do not add `StoreManager`, medicine treatment effects, doctor services, theft/barter/credit, persistent merchant inventories, or specialist runtime stores unless the task explicitly scopes that system.
+- Do not conflate service care with store stock.
+- Do not add `StoreManager`, injury/sickness/disease, addiction, theft/barter/credit, persistent merchant inventories, or specialist runtime stores unless the task explicitly scopes that system.
 
 ### Pages, Widgets, And Routes
 
