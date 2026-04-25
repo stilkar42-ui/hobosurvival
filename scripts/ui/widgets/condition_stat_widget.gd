@@ -8,6 +8,9 @@ const PageUIThemeScript := preload("res://scripts/ui/page_ui_theme.gd")
 var _stat_id: StringName = &""
 var _interactive := false
 var _selected := false
+var _compact_mode := false
+var _root: VBoxContainer = null
+var _header: HBoxContainer = null
 var _label: Label = null
 var _value: Label = null
 var _note: Label = null
@@ -18,31 +21,31 @@ func _init() -> void:
 	size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 
-	var root := VBoxContainer.new()
-	root.add_theme_constant_override("separation", 4)
-	root.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	add_child(root)
+	_root = VBoxContainer.new()
+	_root.add_theme_constant_override("separation", 4)
+	_root.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	add_child(_root)
 
-	var header := HBoxContainer.new()
-	header.add_theme_constant_override("separation", 8)
-	header.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	root.add_child(header)
+	_header = HBoxContainer.new()
+	_header.add_theme_constant_override("separation", 8)
+	_header.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_root.add_child(_header)
 
 	_label = Label.new()
 	_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	PageUIThemeScript.style_section_label(_label)
-	header.add_child(_label)
+	_header.add_child(_label)
 
 	_value = Label.new()
 	_value.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	PageUIThemeScript.style_body_label(_value, true)
-	header.add_child(_value)
+	_header.add_child(_value)
 
 	_note = Label.new()
 	_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_note.visible = false
 	PageUIThemeScript.style_small_label(_note)
-	root.add_child(_note)
+	_root.add_child(_note)
 
 	_bar = ProgressBar.new()
 	_bar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -52,7 +55,7 @@ func _init() -> void:
 	_bar.show_percentage = false
 	_bar.visible = false
 	_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	root.add_child(_bar)
+	_root.add_child(_bar)
 
 	_apply_visual_state()
 
@@ -64,17 +67,23 @@ func set_stat_data(data: Dictionary) -> void:
 
 	var note_text = String(data.get("note", "")).strip_edges()
 	_note.text = note_text
-	_note.visible = note_text != ""
+	_note.visible = note_text != "" and not _compact_mode
 
 	var show_bar = bool(data.get("display_as_bar", false))
 	var current_value = float(data.get("current", 0.0))
 	var max_value = max(float(data.get("max", 100.0)), 1.0)
-	_bar.visible = show_bar
+	_bar.visible = show_bar and not _compact_mode
 	_bar.max_value = max_value
 	_bar.value = clampf(current_value, 0.0, max_value)
 	_bar.add_theme_stylebox_override("background", _make_panel_style(Color("2b241d"), Color("5f4e3c"), 1, 4))
 	_bar.add_theme_stylebox_override("fill", _make_panel_style(_get_bar_color(_bar.value / _bar.max_value), Color(0.0, 0.0, 0.0, 0.0), 0, 4))
 	tooltip_text = String(data.get("tooltip_text", note_text))
+	_apply_compact_mode()
+
+
+func set_compact_mode(enabled: bool) -> void:
+	_compact_mode = enabled
+	_apply_compact_mode()
 
 
 func set_interactive(interactive: bool) -> void:
@@ -98,6 +107,18 @@ func _gui_input(event: InputEvent) -> void:
 
 func _apply_visual_state() -> void:
 	PageUIThemeScript.apply_panel_variant(self, "highlight" if _selected else "alt")
+
+
+func _apply_compact_mode() -> void:
+	if _root == null:
+		return
+	custom_minimum_size = Vector2.ZERO
+	_root.add_theme_constant_override("separation", 1 if _compact_mode else 4)
+	_header.add_theme_constant_override("separation", 4 if _compact_mode else 8)
+	_label.add_theme_font_size_override("font_size", 13 if _compact_mode else 18)
+	_value.add_theme_font_size_override("font_size", 13 if _compact_mode else PageUIThemeScript.FONT_SIZE_BODY)
+	_note.visible = false if _compact_mode else _note.text.strip_edges() != ""
+	_bar.visible = false if _compact_mode else _bar.visible
 
 
 func _get_bar_color(ratio: float) -> Color:

@@ -222,12 +222,6 @@ func _build_panel(page_host) -> void:
 	_route_summary_widget.set_variant("alt")
 	root.add_child(_route_summary_widget)
 
-	_condition_widget = ConditionStripWidgetScript.new()
-	_condition_widget.set_title("Road Condition")
-	_condition_widget.set_variant("alt")
-	_condition_widget.set_columns(2)
-	root.add_child(_condition_widget)
-
 	var page_actions = BasePanelWidgetScript.new()
 	page_actions.set_title("Direct Pages")
 	root.add_child(page_actions)

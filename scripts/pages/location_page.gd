@@ -7,6 +7,8 @@ const ActionButtonWidgetScript := preload("res://scripts/ui/widgets/action_butto
 const ActionCardWidgetScript := preload("res://scripts/ui/widgets/action_card_widget.gd")
 const BasePanelWidgetScript := preload("res://scripts/ui/widgets/base_panel_widget.gd")
 const DataPanelWidgetScript := preload("res://scripts/ui/widgets/data_panel_widget.gd")
+const FeatureWindowWidgetScript := preload("res://scripts/ui/widgets/feature_window_widget.gd")
+const ShopStockWidgetScript := preload("res://scripts/ui/widgets/shop_stock_widget.gd")
 const VerticalListWidgetScript := preload("res://scripts/ui/widgets/vertical_list_widget.gd")
 
 var _game_state_manager = null
@@ -17,8 +19,11 @@ var _ui_manager = null
 var _show_status := Callable()
 
 var _panel: PanelContainer = null
+var _hub_panel: PanelContainer = null
+var _service_window_layer: Control = null
+var _service_window = null
 var _route_roots: Dictionary = {}
-var _current_route: StringName = &"jobs_board"
+var _current_route: StringName = &""
 var _return_route: StringName = &"town"
 var _has_context_route := false
 var _selected_send_amount_cents := 125
@@ -29,14 +34,10 @@ var _send_cash_widget = null
 var _send_amount_spinbox: SpinBox = null
 var _send_mail_custom_button = null
 var _send_telegraph_custom_button = null
-var _grocery_summary_widget = null
-var _grocery_list_widget = null
-var _hardware_summary_widget = null
-var _hardware_list_widget = null
-var _general_summary_widget = null
-var _general_list_widget = null
-var _medicine_summary_widget = null
-var _medicine_list_widget = null
+var _grocery_shop_widget = null
+var _hardware_shop_widget = null
+var _general_shop_widget = null
+var _medicine_shop_widget = null
 var _doctor_summary_widget = null
 var _doctor_list_widget = null
 var _service_nav_buttons: Dictionary = {}
@@ -61,6 +62,8 @@ func set_context(context: Dictionary) -> void:
 	_has_context_route = requested_route != &"" and _route_roots.has(requested_route)
 	if _has_context_route:
 		_current_route = requested_route
+	else:
+		_current_route = &""
 
 
 func set_route(route_name: StringName) -> void:
@@ -68,11 +71,7 @@ func set_route(route_name: StringName) -> void:
 		_current_route = route_name
 	elif _location_manager != null and route_name == _location_manager.ROUTE_LOCATION_PAGE:
 		if not _has_context_route:
-			var player_state = _game_state_manager.get_player_state() if _game_state_manager != null else null
-			var location_id = StringName(player_state.loop_location_id) if player_state != null else SurvivalLoopRulesScript.LOCATION_TOWN
-			var default_route = _location_manager.get_default_location_route_for_location(location_id)
-			if default_route != &"":
-				_current_route = default_route
+			_current_route = &""
 	_apply_visibility(true)
 	refresh_from_state(_game_state_manager.get_player_state() if _game_state_manager != null else null)
 
@@ -94,6 +93,9 @@ func handle_input(event: InputEvent) -> bool:
 	if _panel == null or not _panel.visible:
 		return false
 	if event.is_action_pressed("ui_cancel"):
+		if _service_window != null and _service_window.visible:
+			_show_hub_only()
+			return true
 		_go_back()
 		return true
 	return false
@@ -110,11 +112,46 @@ func _build_panel(page_host) -> void:
 	PageUIThemeScript.apply_panel_variant(_panel, "panel")
 	page_host.add_child(_panel)
 
-	var root = VBoxContainer.new()
-	root.add_theme_constant_override("separation", 10)
-	root.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	root.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	_panel.add_child(root)
+	var canvas = Control.new()
+	canvas.name = "TownServicesCanvas"
+	canvas.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	canvas.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	canvas.custom_minimum_size = Vector2.ZERO
+	_panel.add_child(canvas)
+
+	_hub_panel = PanelContainer.new()
+	_hub_panel.name = "TownServicesHub"
+	_hub_panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_hub_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_hub_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	PageUIThemeScript.apply_panel_variant(_hub_panel, "alt")
+	canvas.add_child(_hub_panel)
+
+	var hub_root = VBoxContainer.new()
+	hub_root.name = "TownServicesHubRoot"
+	hub_root.add_theme_constant_override("separation", 10)
+	hub_root.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	hub_root.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_hub_panel.add_child(hub_root)
+	hub_root.add_child(_build_service_nav_panel())
+	var hub_note = Label.new()
+	hub_note.text = "Choose a town service. Each service opens as a separate window over this hub."
+	hub_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	PageUIThemeScript.style_body_label(hub_note)
+	hub_root.add_child(hub_note)
+	hub_root.add_child(_make_back_button())
+
+	_service_window_layer = Control.new()
+	_service_window_layer.name = "TownServiceWindowLayer"
+	_service_window_layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_service_window_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	canvas.add_child(_service_window_layer)
+
+	_service_window = FeatureWindowWidgetScript.new()
+	_service_window.name = "TownServiceFeatureWindow"
+	_service_window.visible = false
+	_service_window.closed.connect(Callable(self, "_on_service_window_closed"))
+	_service_window_layer.add_child(_service_window)
 
 	for route_id in [&"jobs_board", &"send_money", &"grocery", &"hardware", &"general_store", &"medicine", &"doctor_apothecary"]:
 		var route_panel = PanelContainer.new()
@@ -122,14 +159,14 @@ func _build_panel(page_host) -> void:
 		route_panel.visible = false
 		route_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		route_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
-		PageUIThemeScript.apply_panel_variant(route_panel, "alt")
-		root.add_child(route_panel)
+		PageUIThemeScript.apply_panel_variant(route_panel, "dark")
 		var route_root = VBoxContainer.new()
 		route_root.name = "PageRoot"
 		route_root.add_theme_constant_override("separation", 10)
 		route_root.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		route_root.size_flags_vertical = Control.SIZE_EXPAND_FILL
 		route_panel.add_child(route_root)
+		_service_window.get_content_root().add_child(route_panel)
 		_route_roots[route_id] = route_panel
 
 	_build_jobs_board_page()
@@ -144,8 +181,6 @@ func _build_panel(page_host) -> void:
 func _build_jobs_board_page() -> void:
 	var root = _get_route_root(&"jobs_board")
 	_add_title(root, "Jobs Board", "Posted work is public, limited by the hour, and never promised twice.")
-	root.add_child(_make_back_button())
-	root.add_child(_build_service_nav_panel())
 	_jobs_list_widget = VerticalListWidgetScript.new()
 	_jobs_list_widget.name = "JobsListWidget"
 	_jobs_list_widget.set_title("Posted Work")
@@ -157,8 +192,6 @@ func _build_jobs_board_page() -> void:
 func _build_send_money_page() -> void:
 	var root = _get_route_root(&"send_money")
 	_add_title(root, "Send Money", "A money order is not progress. It is proof the day was turned into help at home.")
-	root.add_child(_make_back_button())
-	root.add_child(_build_service_nav_panel())
 
 	_send_summary_widget = DataPanelWidgetScript.new()
 	_send_summary_widget.set_title("Obligation")
@@ -217,76 +250,34 @@ func _build_send_money_page() -> void:
 func _build_grocery_page() -> void:
 	var root = _get_route_root(&"grocery")
 	_add_title(root, "Grocery Store", "Food, coffee, and small comforts bought out of the stake.")
-	root.add_child(_make_back_button())
-	root.add_child(_build_service_nav_panel())
-	_grocery_summary_widget = DataPanelWidgetScript.new()
-	_grocery_summary_widget.set_title("Store Summary")
-	_configure_compact_panel(_grocery_summary_widget)
-	root.add_child(_grocery_summary_widget)
-	_grocery_list_widget = VerticalListWidgetScript.new()
-	_grocery_list_widget.name = "GroceryListWidget"
-	_grocery_list_widget.set_title("Available Stock")
-	_grocery_list_widget.set_variant("dark")
-	_configure_content_list(_grocery_list_widget)
-	root.add_child(_grocery_list_widget)
+	_grocery_shop_widget = _build_shop_widget("GroceryShopStockWidget")
+	root.add_child(_grocery_shop_widget)
 
 
 func _build_hardware_page() -> void:
 	var root = _get_route_root(&"hardware")
 	_add_title(root, "Hardware Store", "Small practical gear for camp, fire, repair, and boiling water.")
-	root.add_child(_make_back_button())
-	root.add_child(_build_service_nav_panel())
-	_hardware_summary_widget = DataPanelWidgetScript.new()
-	_hardware_summary_widget.set_title("Store Summary")
-	_configure_compact_panel(_hardware_summary_widget)
-	root.add_child(_hardware_summary_widget)
-	_hardware_list_widget = VerticalListWidgetScript.new()
-	_hardware_list_widget.name = "HardwareListWidget"
-	_hardware_list_widget.set_title("Available Stock")
-	_hardware_list_widget.set_variant("dark")
-	_configure_content_list(_hardware_list_widget)
-	root.add_child(_hardware_list_widget)
+	_hardware_shop_widget = _build_shop_widget("HardwareShopStockWidget")
+	root.add_child(_hardware_shop_widget)
 
 
 func _build_general_store_page() -> void:
 	var root = _get_route_root(&"general_store")
 	_add_title(root, "General Store", "A limited shelf of food, camp goods, and small household necessities.")
-	root.add_child(_make_back_button())
-	root.add_child(_build_service_nav_panel())
-	_general_summary_widget = DataPanelWidgetScript.new()
-	_general_summary_widget.set_title("Store Summary")
-	_configure_compact_panel(_general_summary_widget)
-	root.add_child(_general_summary_widget)
-	_general_list_widget = VerticalListWidgetScript.new()
-	_general_list_widget.name = "GeneralStoreListWidget"
-	_general_list_widget.set_title("Available Stock")
-	_general_list_widget.set_variant("dark")
-	_configure_content_list(_general_list_widget)
-	root.add_child(_general_list_widget)
+	_general_shop_widget = _build_shop_widget("GeneralStoreShopStockWidget")
+	root.add_child(_general_shop_widget)
 
 
 func _build_medicine_store_page() -> void:
 	var root = _get_route_root(&"medicine")
 	_add_title(root, "Medicine Store", "Apothecary stock for cleaning up, foot care, common remedies, and trade. Paid care is handled at Doctor / Apothecary.")
-	root.add_child(_make_back_button())
-	root.add_child(_build_service_nav_panel())
-	_medicine_summary_widget = DataPanelWidgetScript.new()
-	_medicine_summary_widget.set_title("Store Summary")
-	_configure_compact_panel(_medicine_summary_widget)
-	root.add_child(_medicine_summary_widget)
-	_medicine_list_widget = VerticalListWidgetScript.new()
-	_medicine_list_widget.name = "MedicineStoreListWidget"
-	_medicine_list_widget.set_title("Available Stock")
-	_medicine_list_widget.set_variant("dark")
-	_configure_content_list(_medicine_list_widget)
-	root.add_child(_medicine_list_widget)
+	_medicine_shop_widget = _build_shop_widget("MedicineStoreShopStockWidget")
+	root.add_child(_medicine_shop_widget)
 
 
 func _build_doctor_apothecary_page() -> void:
 	var root = _get_route_root(&"doctor_apothecary")
 	_add_title(root, "Doctor / Apothecary", "Basic paid care, remedies, and advice. It can steady a man; it does not resolve wounds or sickness.")
-	root.add_child(_make_back_button())
-	root.add_child(_build_service_nav_panel())
 	_doctor_summary_widget = DataPanelWidgetScript.new()
 	_doctor_summary_widget.set_title("Care Summary")
 	_configure_compact_panel(_doctor_summary_widget)
@@ -302,9 +293,14 @@ func _build_doctor_apothecary_page() -> void:
 func _apply_visibility(visible: bool) -> void:
 	if _panel != null:
 		_panel.visible = visible
-	for route_name in _route_roots.keys():
-		var route_panel = _route_roots[route_name]
-		route_panel.visible = visible and StringName(route_name) == _current_route
+	if not visible:
+		if _service_window != null:
+			_service_window.visible = false
+		_set_route_panel_visibility(&"")
+	elif _current_route != &"":
+		_open_service_window(_current_route)
+	else:
+		_show_hub_only()
 	_refresh_service_nav()
 
 
@@ -361,14 +357,34 @@ func _refresh_store_stock_sections(player_state) -> void:
 	var config = _data_manager.get_loop_config()
 	var item_catalog = _data_manager.get_item_catalog()
 	var week_index = player_state.store_stock_week_index
-	_grocery_summary_widget.set_data("Week %d town stock. It changes each week; quality and price both matter." % week_index)
-	_hardware_summary_widget.set_data("Week %d hardware stock. Camp utility, repair bits, and small road materials." % week_index)
-	_general_summary_widget.set_data("Week %d general stock. Limited crossover goods for food, camp, and keeping clean." % week_index)
-	_medicine_summary_widget.set_data("Week %d medicine stock. Apothecary goods are for inventory use and trade; paid care is separate." % week_index)
-	_rebuild_store_stock_list(_grocery_list_widget, SurvivalLoopRulesScript.STORE_GROCERY, SurvivalLoopRulesScript.get_store_stock(player_state, config, item_catalog, SurvivalLoopRulesScript.STORE_GROCERY))
-	_rebuild_store_stock_list(_hardware_list_widget, SurvivalLoopRulesScript.STORE_HARDWARE, SurvivalLoopRulesScript.get_store_stock(player_state, config, item_catalog, SurvivalLoopRulesScript.STORE_HARDWARE))
-	_rebuild_store_stock_list(_general_list_widget, SurvivalLoopRulesScript.STORE_GENERAL, SurvivalLoopRulesScript.get_store_stock(player_state, config, item_catalog, SurvivalLoopRulesScript.STORE_GENERAL))
-	_rebuild_store_stock_list(_medicine_list_widget, SurvivalLoopRulesScript.STORE_MEDICINE, SurvivalLoopRulesScript.get_store_stock(player_state, config, item_catalog, SurvivalLoopRulesScript.STORE_MEDICINE))
+	_refresh_store_shop_widget(
+		_grocery_shop_widget,
+		SurvivalLoopRulesScript.STORE_GROCERY,
+		"Grocery Stock",
+		"Week %d town stock. It changes each week; quality and price both matter." % week_index,
+		SurvivalLoopRulesScript.get_store_stock(player_state, config, item_catalog, SurvivalLoopRulesScript.STORE_GROCERY)
+	)
+	_refresh_store_shop_widget(
+		_hardware_shop_widget,
+		SurvivalLoopRulesScript.STORE_HARDWARE,
+		"Hardware Stock",
+		"Week %d hardware stock. Camp utility, repair bits, and small road materials." % week_index,
+		SurvivalLoopRulesScript.get_store_stock(player_state, config, item_catalog, SurvivalLoopRulesScript.STORE_HARDWARE)
+	)
+	_refresh_store_shop_widget(
+		_general_shop_widget,
+		SurvivalLoopRulesScript.STORE_GENERAL,
+		"General Store Stock",
+		"Week %d general stock. Limited crossover goods for food, camp, and keeping clean." % week_index,
+		SurvivalLoopRulesScript.get_store_stock(player_state, config, item_catalog, SurvivalLoopRulesScript.STORE_GENERAL)
+	)
+	_refresh_store_shop_widget(
+		_medicine_shop_widget,
+		SurvivalLoopRulesScript.STORE_MEDICINE,
+		"Medicine Store Stock",
+		"Week %d medicine stock. Apothecary goods are for inventory use and trade; paid care is separate." % week_index,
+		SurvivalLoopRulesScript.get_store_stock(player_state, config, item_catalog, SurvivalLoopRulesScript.STORE_MEDICINE)
+	)
 
 
 func _refresh_doctor_care(_player_state) -> void:
@@ -411,31 +427,43 @@ func _refresh_doctor_care(_player_state) -> void:
 		_doctor_list_widget.add_item(card)
 
 
-func _rebuild_store_stock_list(list_widget, store_id: StringName, stock: Array) -> void:
-	list_widget.clear_items()
-	if stock.is_empty():
-		var empty_widget = DataPanelWidgetScript.new()
-		empty_widget.set_title("No Stock")
-		empty_widget.set_data("No usable stock came in this week.")
-		list_widget.add_item(empty_widget)
+func _refresh_store_shop_widget(widget, store_id: StringName, title: String, summary: String, stock: Array) -> void:
+	if widget == null:
 		return
+	var selected_index: int = widget.get_selected_stock_index() if widget.has_method("get_selected_stock_index") else 0
+	if selected_index < 0:
+		selected_index = 0
+	widget.set_store_title(title, summary)
+	widget.set_stock_items(store_id, _build_shop_stock_entries(stock), selected_index)
+
+
+func _build_shop_widget(widget_name: String):
+	var widget = ShopStockWidgetScript.new()
+	widget.name = widget_name
+	widget.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	widget.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	widget.custom_minimum_size = Vector2(0.0, 420.0)
+	widget.buy_requested.connect(Callable(self, "_on_shop_stock_buy_requested"))
+	return widget
+
+
+func _build_shop_stock_entries(stock: Array) -> Array:
+	var entries: Array = []
 	for index in range(stock.size()):
 		var entry = stock[index]
 		if not (entry is Dictionary):
 			continue
-		var item = _data_manager.get_item_definition(StringName(entry.get("item_id", &"")))
-		var card = ActionCardWidgetScript.new()
-		card.set_data({
-			"action_id": StringName("%s:%d" % [store_id, index]),
+		var item = _data_manager.get_item_definition(StringName(entry.get("item_id", &""))) if _data_manager != null else null
+		entries.append({
+			"stock_index": index,
 			"title": _format_store_stock_title(entry, item),
-			"description": "Town week %d stock." % int(entry.get("week_index", 0)),
-			"requirements": [_format_store_stock_requirements(entry, item)],
-			"status": _format_cents(int(entry.get("price_cents", 0))),
-			"enabled": true,
-			"action_label": "Buy Stock"
+			"button_text": _format_store_stock_button_text(entry, item),
+			"description": _format_store_stock_description(entry, item),
+			"detail_lines": _build_store_stock_detail_lines(entry, item),
+			"tooltip_text": _format_store_stock_description(entry, item),
+			"enabled": true
 		})
-		card.selected.connect(Callable(self, "_on_store_stock_selected"))
-		list_widget.add_item(card)
+	return entries
 
 
 func _on_simple_send_pressed(action_id: StringName) -> void:
@@ -466,14 +494,11 @@ func _on_job_pressed(instance_id: StringName) -> void:
 		_show_status.call(String(result.get("message", "No result.")))
 
 
-func _on_store_stock_selected(action_id: StringName) -> void:
-	var parts = String(action_id).split(":")
-	if parts.size() != 2:
-		return
+func _on_shop_stock_buy_requested(store_id: StringName, stock_index: int) -> void:
 	var result = _game_state_manager.execute_action(String(SurvivalLoopRulesScript.ACTION_BUY_STORE_STOCK), {
 		"source": "location.store.stock",
-		"store_id": StringName(parts[0]),
-		"selected_stack_index": int(parts[1])
+		"store_id": store_id,
+		"selected_stack_index": stock_index
 	})
 	if not _show_status.is_null():
 		_show_status.call(String(result.get("message", "No result.")))
@@ -487,12 +512,13 @@ func _on_doctor_care_selected(action_id: StringName) -> void:
 
 func _build_service_nav_panel() -> Control:
 	var panel = BasePanelWidgetScript.new()
+	panel.name = "TownServicesNavPanel"
 	panel.set_title("Town Services")
 	panel.set_variant("panel")
 	_configure_compact_panel(panel)
 
 	var grid = GridContainer.new()
-	grid.columns = 2
+	grid.columns = 4
 	grid.add_theme_constant_override("h_separation", 8)
 	grid.add_theme_constant_override("v_separation", 8)
 	grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -521,7 +547,7 @@ func _build_service_nav_panel() -> Control:
 func _configure_content_list(list_widget: Control) -> void:
 	list_widget.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	list_widget.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	list_widget.custom_minimum_size = Vector2(0.0, 260.0)
+	list_widget.custom_minimum_size = Vector2(0.0, 360.0)
 
 
 func _configure_compact_panel(panel: Control) -> void:
@@ -534,16 +560,78 @@ func _refresh_service_nav() -> void:
 		for button in buttons:
 			if button == null:
 				continue
-			button.set_enabled(StringName(route_id) != _current_route)
+			button.set_enabled(true)
 			button.set_accent(StringName(route_id) == _current_route)
 
 
 func _on_service_nav_pressed(route_id: StringName) -> void:
-	if route_id == _current_route:
+	_open_service_window(route_id)
+	refresh_from_state(_game_state_manager.get_player_state() if _game_state_manager != null else null)
+
+
+func _open_service_window(route_id: StringName) -> void:
+	if _service_window == null or not _route_roots.has(route_id):
 		return
 	_current_route = route_id
-	_apply_visibility(true)
-	refresh_from_state(_game_state_manager.get_player_state() if _game_state_manager != null else null)
+	_set_route_panel_visibility(route_id)
+	_service_window.set_window_title(_get_route_window_title(route_id))
+	_service_window.visible = true
+	_size_service_window()
+	call_deferred("_size_service_window")
+	_refresh_service_nav()
+
+
+func _show_hub_only() -> void:
+	_current_route = &""
+	_set_route_panel_visibility(&"")
+	if _service_window != null:
+		_service_window.visible = false
+	_refresh_service_nav()
+
+
+func _set_route_panel_visibility(route_id: StringName) -> void:
+	for route_name in _route_roots.keys():
+		var route_panel = _route_roots[route_name]
+		if route_panel != null:
+			route_panel.visible = route_id != &"" and StringName(route_name) == route_id
+
+
+func _size_service_window() -> void:
+	if _service_window == null or _service_window_layer == null:
+		return
+	var layer_size = _service_window_layer.get_rect().size
+	if layer_size == Vector2.ZERO:
+		return
+	var window_size = Vector2(
+		max(min(layer_size.x - 28.0, 900.0), min(layer_size.x, 560.0)),
+		max(min(layer_size.y - 28.0, 560.0), min(layer_size.y, 420.0))
+	)
+	_service_window.set_window_size(window_size)
+	_service_window.center_in_parent()
+
+
+func _get_route_window_title(route_id: StringName) -> String:
+	match route_id:
+		&"jobs_board":
+			return "Jobs Board"
+		&"send_money":
+			return "Send Money"
+		&"grocery":
+			return "Grocery Store"
+		&"hardware":
+			return "Hardware Store"
+		&"general_store":
+			return "General Store"
+		&"medicine":
+			return "Medicine Store"
+		&"doctor_apothecary":
+			return "Doctor / Apothecary"
+		_:
+			return "Town Service"
+
+
+func _on_service_window_closed() -> void:
+	_show_hub_only()
 
 
 func _make_back_button():
@@ -628,6 +716,32 @@ func _format_store_stock_requirements(entry: Dictionary, item) -> String:
 	return "%s | Week %d" % [
 		_format_cents(int(entry.get("price_cents", 0))),
 		int(entry.get("week_index", 0))
+	]
+
+
+func _format_store_stock_button_text(entry: Dictionary, item) -> String:
+	var item_name = item.display_name if item != null else String(entry.get("item_id", "Unknown")).replace("_", " ")
+	return "%s\n%s" % [
+		item_name,
+		_format_cents(int(entry.get("price_cents", 0)))
+	]
+
+
+func _format_store_stock_description(entry: Dictionary, item) -> String:
+	var description = String(item.description).strip_edges() if item != null else ""
+	if description != "":
+		return description
+	return "Town week %d stock." % int(entry.get("week_index", 0))
+
+
+func _build_store_stock_detail_lines(entry: Dictionary, item) -> Array[String]:
+	var quality_tier = int(entry.get("quality_tier", 1))
+	var quality_name = item.get_quality_name(quality_tier).capitalize() if item != null else "Common"
+	return [
+		"Quality: %s" % quality_name,
+		"Price: %s" % _format_cents(int(entry.get("price_cents", 0))),
+		"Store week: %d" % int(entry.get("week_index", 0)),
+		"Item id: %s" % String(entry.get("item_id", "unknown"))
 	]
 
 

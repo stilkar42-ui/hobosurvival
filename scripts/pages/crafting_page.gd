@@ -160,7 +160,7 @@ func _build_panel(page_host) -> void:
 
 	_recipe_list_widget = VerticalListWidgetScript.new()
 	_recipe_list_widget.set_title("Known Makes")
-	_recipe_list_widget.custom_minimum_size = Vector2(320.0, 0.0)
+	_recipe_list_widget.custom_minimum_size = Vector2(260.0, 0.0)
 	_recipe_list_widget.set_variant("dark")
 	layout.add_child(_recipe_list_widget)
 
@@ -246,7 +246,7 @@ func _show_hobocraft_detail(recipe: Dictionary, player_state) -> void:
 func _build_recipe_note_panel(note_model: Dictionary) -> Control:
 	var widget = DataPanelWidgetScript.new()
 	widget.name = "RecipeInventoryNote"
-	widget.custom_minimum_size = Vector2(270.0, 0.0)
+	widget.custom_minimum_size = Vector2(230.0, 0.0)
 	widget.set_title(String(note_model.get("title", "Camp Note")), true)
 	widget.set_variant("dark")
 	var lines: PackedStringArray = note_model.get("lines", PackedStringArray())

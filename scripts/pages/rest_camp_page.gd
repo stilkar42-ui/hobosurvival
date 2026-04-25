@@ -185,16 +185,8 @@ func _build_overlay_layout() -> void:
 	var camp_state_root: VBoxContainer = _camp_state_panel.get_child(0)
 	camp_state_root.add_child(_status_label)
 	layout.add_child(_camp_state_panel)
-	_stats_panel = PageUIThemeScript.create_section_panel("ROAD CONDITION", "highlight").panel
-	_stats_panel.custom_minimum_size = Vector2(280.0, 0.0)
-	var stats_root: VBoxContainer = _stats_panel.get_child(0)
-	stats_root.add_child(_stats_label)
-	_condition_widget = ConditionStripWidgetScript.new()
-	_condition_widget.set_title("Working Condition")
-	_condition_widget.set_variant("dark")
-	_condition_widget.set_columns(2)
-	stats_root.add_child(_condition_widget)
-	layout.add_child(_stats_panel)
+	_stats_panel = null
+	_condition_widget = null
 
 
 func _build_rest_sections_root() -> void:
