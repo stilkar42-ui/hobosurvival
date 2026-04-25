@@ -252,6 +252,7 @@ func _expect_persistent_condition_strip(loop_page: Control, route_label: String)
 	_expect(rect.size.x > 20.0 and rect.size.y > 20.0, "%s persistent condition strip has rendered size" % route_label)
 	for label in ["Warmth", "Stamina", "Nutrition", "Water", "Morale", "Hygiene", "Presentability", "Weight", "Dampness"]:
 		_expect(_control_has_label_text(strip, label), "%s persistent condition strip shows %s" % [route_label, label])
+	_expect(_count_visible_condition_bars(strip) >= 9, "%s persistent condition strip shows compact bars" % route_label)
 
 
 func _expect_shell_layout_reserves_condition_strip(loop_page: Control) -> void:
@@ -282,6 +283,15 @@ func _control_has_label_text(root: Node, expected_text: String) -> bool:
 		if child is Label and child.text == expected_text:
 			return true
 	return false
+
+
+func _count_visible_condition_bars(root: Node) -> int:
+	var count := 0
+	for child in root.find_children("ConditionStatBar", "ProgressBar", true, false):
+		var bar = child as ProgressBar
+		if bar != null and bar.is_visible_in_tree():
+			count += 1
+	return count
 
 
 func _rect_inside(parent_rect: Rect2, child_rect: Rect2) -> bool:

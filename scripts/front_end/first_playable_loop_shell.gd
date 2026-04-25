@@ -401,12 +401,7 @@ func _apply_overlay_shell_offsets() -> void:
 	if header_bottom <= 0.0:
 		return
 	var top_offset = header_bottom + 12.0
-	var inventory_backdrop = inventory_overlay.get_node_or_null("Backdrop") as ColorRect
-	if inventory_backdrop != null:
-		inventory_backdrop.offset_top = header_bottom
-	var inventory_margin = inventory_overlay.get_node_or_null("InventoryMargin") as MarginContainer
-	if inventory_margin != null:
-		inventory_margin.offset_top = top_offset
+	_apply_inventory_overlay_bounds(header_bottom, top_offset)
 	var getting_ready_backdrop = getting_ready_overlay.get_node_or_null("Backdrop") as ColorRect
 	if getting_ready_backdrop != null:
 		getting_ready_backdrop.offset_top = header_bottom
@@ -416,6 +411,37 @@ func _apply_overlay_shell_offsets() -> void:
 		if getting_ready_margin.get_global_rect().position.y < top_offset:
 			getting_ready_margin.offset_top = top_offset - (get_viewport_rect().size.y * 0.5)
 			getting_ready_margin.offset_bottom = getting_ready_margin.offset_top + current_height
+
+
+func _apply_inventory_overlay_bounds(header_bottom: float, top_offset: float) -> void:
+	var viewport_size = get_viewport_rect().size
+	inventory_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	inventory_overlay.offset_left = 0.0
+	inventory_overlay.offset_top = 0.0
+	inventory_overlay.offset_right = 0.0
+	inventory_overlay.offset_bottom = 0.0
+	var inventory_backdrop = inventory_overlay.get_node_or_null("Backdrop") as ColorRect
+	if inventory_backdrop != null:
+		inventory_backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		inventory_backdrop.offset_left = 0.0
+		inventory_backdrop.offset_top = header_bottom
+		inventory_backdrop.offset_right = 0.0
+		inventory_backdrop.offset_bottom = 0.0
+	var inventory_margin = inventory_overlay.get_node_or_null("InventoryMargin") as MarginContainer
+	if inventory_margin != null:
+		inventory_margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		inventory_margin.offset_left = 12.0
+		inventory_margin.offset_top = top_offset
+		inventory_margin.offset_right = -12.0
+		inventory_margin.offset_bottom = -12.0
+	if inventory_window != null:
+		inventory_window.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		inventory_window.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		inventory_window.custom_minimum_size = Vector2.ZERO
+		inventory_window.size = Vector2(
+			max(viewport_size.x - 24.0, 0.0),
+			max(viewport_size.y - top_offset - 12.0, 0.0)
+		)
 
 
 func _set_mouse_filter_recursive(node: Node, mouse_filter: int) -> void:
@@ -479,6 +505,9 @@ func _build_condition_surface_data(player_state) -> Array:
 	var inventory = player_state.inventory_state
 	var max_weight = inventory.max_total_weight_kg if inventory != null else 0.0
 	var total_weight = inventory.get_total_weight_kg() if inventory != null else 0.0
+	var potable_water = int(player_state.camp_potable_water_units)
+	var non_potable_water = int(player_state.camp_non_potable_water_units)
+	var total_water = potable_water + non_potable_water
 	var passport = player_state.passport_profile
 	if passport == null:
 		return conditions
@@ -488,9 +517,12 @@ func _build_condition_surface_data(player_state) -> Array:
 	conditions.append({
 		"stat_id": &"water",
 		"label": "Water",
-		"value_text": "%d/%d" % [int(player_state.camp_potable_water_units), int(player_state.camp_non_potable_water_units)],
+		"value_text": "%d/%d" % [potable_water, non_potable_water],
+		"current": clampi(total_water, 0, 4),
+		"max": 4,
 		"note": "Camp water on hand for washing, coffee, and cooking.",
-		"display_as_bar": false
+		"display_as_bar": true,
+		"bar_mode": &"positive"
 	})
 	conditions.append(_make_condition_entry(&"morale", "Morale", passport.morale))
 	conditions.append(_make_condition_entry(&"hygiene", "Hygiene", passport.hygiene))
@@ -499,21 +531,25 @@ func _build_condition_surface_data(player_state) -> Array:
 		"stat_id": &"weight",
 		"label": "Weight",
 		"value_text": "%.1f/%.0fkg" % [total_weight, max_weight],
+		"current": maxf(total_weight, 0.0),
+		"max": maxf(max_weight, 1.0),
 		"note": "Carry weight decides how hard the body works to keep moving.",
-		"display_as_bar": false
+		"display_as_bar": true,
+		"bar_mode": &"burden"
 	})
-	conditions.append(_make_condition_entry(&"dampness", "Dampness", passport.dampness))
+	conditions.append(_make_condition_entry(&"dampness", "Dampness", passport.dampness, &"burden"))
 	return conditions
 
 
-func _make_condition_entry(stat_id: StringName, label: String, value: int) -> Dictionary:
+func _make_condition_entry(stat_id: StringName, label: String, value: int, bar_mode: StringName = &"positive") -> Dictionary:
 	return {
 		"stat_id": stat_id,
 		"label": label,
 		"value_text": "%d" % clampi(value, 0, 100),
 		"current": clampi(value, 0, 100),
 		"max": 100,
-		"display_as_bar": true
+		"display_as_bar": true,
+		"bar_mode": bar_mode
 	}
 
 
@@ -681,6 +717,8 @@ func _on_state_message(_success: bool, message: String) -> void:
 
 
 func _on_route_changed(route_name: StringName, _page_name: StringName) -> void:
+	_apply_overlay_shell_offsets()
+	call_deferred("_apply_overlay_shell_offsets")
 	if not _location_manager.is_overlay_route(route_name):
 		_last_primary_route = route_name
 

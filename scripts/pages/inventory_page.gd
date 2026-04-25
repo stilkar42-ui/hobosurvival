@@ -54,6 +54,9 @@ var _inventory_context_stack_index := -1
 var _inventory_context_provider_id: StringName = &""
 var _inventory_open_context: StringName = &"carried"
 var _inventory_container_popups: Dictionary = {}
+var _dragged_container_popup: Control = null
+var _dragged_container_provider_id: StringName = &""
+var _container_popup_drag_offset := Vector2.ZERO
 var _selected_item_widget = null
 var _inventory_state_widget = null
 
@@ -241,12 +244,16 @@ func _build_inventory_widgets() -> void:
 	_selected_item_widget = ItemSlotWidgetScript.new()
 	_selected_item_widget.name = "SelectedItemWidget"
 	_selected_item_widget.slot_selected.connect(Callable(self, "_on_selected_item_widget_pressed"))
+	_selected_item_widget.visible = false
 	actions_root.add_child(_selected_item_widget)
 
 	_inventory_state_widget = DetailPanelWidgetScript.new()
 	_inventory_state_widget.name = "InventoryStateWidget"
 	_inventory_state_widget.set_title("Move / Condition")
 	_inventory_state_widget.set_variant("dark")
+	_inventory_state_widget.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	_inventory_state_widget.custom_minimum_size = Vector2(0.0, 96.0)
+	_inventory_state_widget.visible = false
 	actions_root.add_child(_inventory_state_widget)
 
 	if _selected_item_label != null:
@@ -388,14 +395,15 @@ func _show_inventory_container_popup(provider_id: StringName) -> void:
 	var provider = _inventory_manager.get_storage_provider(player_state, provider_id)
 	if provider == null:
 		return
-	_close_all_inventory_container_popups()
 	var popup = _inventory_container_popups.get(provider_id, null)
 	if popup == null or not is_instance_valid(popup):
 		popup = _build_inventory_container_popup(provider_id, provider.display_name)
 		_inventory_container_popups[provider_id] = popup
 		_overlay.add_child(popup)
-		popup.position = Vector2(40.0 + (24.0 * _inventory_container_popups.size()), 80.0 + (18.0 * _inventory_container_popups.size()))
+		popup.position = _get_next_inventory_container_popup_position()
 	_rebuild_inventory_container_popup(provider_id, popup)
+	popup.move_to_front()
+	_clamp_inventory_container_popup(popup)
 
 
 func _build_inventory_container_popup(provider_id: StringName, display_name: String) -> PanelContainer:
@@ -407,7 +415,11 @@ func _build_inventory_container_popup(provider_id: StringName, display_name: Str
 	root.add_theme_constant_override("separation", 8)
 	popup.add_child(root)
 	var header = HBoxContainer.new()
+	header.name = "InventoryContainerPopupHeader"
 	header.add_theme_constant_override("separation", 8)
+	header.mouse_filter = Control.MOUSE_FILTER_STOP
+	header.mouse_default_cursor_shape = Control.CURSOR_MOVE
+	header.gui_input.connect(Callable(self, "_on_inventory_container_popup_header_gui_input").bind(provider_id, popup))
 	root.add_child(header)
 	var title = Label.new()
 	title.name = "InventoryContainerPopupTitle"
@@ -446,7 +458,7 @@ func _rebuild_inventory_container_popup(provider_id: StringName, popup: PanelCon
 	if _inventory_panel != null and _inventory_panel.has_method("build_container_popup_body"):
 		body_scroll.add_child(_inventory_panel.call("build_container_popup_body", provider_id))
 	popup.size = popup.custom_minimum_size
-	popup.move_to_front()
+	_clamp_inventory_container_popup(popup)
 
 
 func _refresh_inventory_container_popups() -> void:
@@ -462,16 +474,110 @@ func _refresh_inventory_container_popups() -> void:
 func _close_inventory_container_popup(provider_id: StringName) -> void:
 	var popup = _inventory_container_popups.get(provider_id, null)
 	_inventory_container_popups.erase(provider_id)
+	if _dragged_container_provider_id == provider_id:
+		_dragged_container_popup = null
+		_dragged_container_provider_id = &""
+		_container_popup_drag_offset = Vector2.ZERO
 	if popup != null and is_instance_valid(popup):
 		popup.queue_free()
 
 
 func _close_all_inventory_container_popups() -> void:
+	_dragged_container_popup = null
+	_dragged_container_provider_id = &""
+	_container_popup_drag_offset = Vector2.ZERO
 	for provider_id in _inventory_container_popups.keys():
 		var popup = _inventory_container_popups.get(provider_id, null)
 		if popup != null and is_instance_valid(popup):
 			popup.queue_free()
 	_inventory_container_popups.clear()
+
+
+func _on_inventory_container_popup_header_gui_input(event: InputEvent, provider_id: StringName, popup: Control) -> void:
+	if popup == null or not is_instance_valid(popup):
+		return
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
+		if event.pressed:
+			_dragged_container_popup = popup
+			_dragged_container_provider_id = provider_id
+			_container_popup_drag_offset = event.global_position - popup.get_global_rect().position
+			popup.move_to_front()
+			_mark_container_popup_input_handled()
+			return
+		if _dragged_container_popup == popup:
+			_dragged_container_popup = null
+			_dragged_container_provider_id = &""
+			_container_popup_drag_offset = Vector2.ZERO
+			_clamp_inventory_container_popup(popup)
+			_mark_container_popup_input_handled()
+			return
+	if event is InputEventMouseMotion and _dragged_container_popup == popup:
+		var parent_control = popup.get_parent() as Control
+		var parent_origin := Vector2.ZERO
+		if parent_control != null:
+			parent_origin = parent_control.get_global_rect().position
+		popup.position = event.global_position - _container_popup_drag_offset - parent_origin
+		_clamp_inventory_container_popup(popup)
+		_mark_container_popup_input_handled()
+
+
+func _get_next_inventory_container_popup_position() -> Vector2:
+	var bounds := _get_inventory_container_popup_bounds()
+	var overlay_origin := Vector2.ZERO
+	if _overlay != null:
+		overlay_origin = _overlay.get_global_rect().position
+	var popup_index := _get_valid_inventory_container_popup_count()
+	return bounds.position - overlay_origin + Vector2(24.0 + (28.0 * popup_index), 24.0 + (22.0 * popup_index))
+
+
+func _mark_container_popup_input_handled() -> void:
+	if _overlay != null and _overlay.is_inside_tree():
+		_overlay.get_viewport().set_input_as_handled()
+
+
+func _get_valid_inventory_container_popup_count() -> int:
+	var count := 0
+	for provider_id in _inventory_container_popups.keys():
+		var popup = _inventory_container_popups.get(provider_id, null)
+		if popup != null and is_instance_valid(popup):
+			count += 1
+	return count
+
+
+func _get_inventory_container_popup_bounds() -> Rect2:
+	if _window != null and is_instance_valid(_window) and _window.is_inside_tree():
+		return _window.get_global_rect()
+	if _overlay != null and is_instance_valid(_overlay) and _overlay.is_inside_tree():
+		return _overlay.get_global_rect()
+	if _overlay != null:
+		return _overlay.get_viewport_rect()
+	return Rect2(Vector2.ZERO, Vector2(1280.0, 720.0))
+
+
+func _clamp_inventory_container_popup(popup: Control) -> void:
+	if popup == null or not is_instance_valid(popup):
+		return
+	var parent_control = popup.get_parent() as Control
+	var parent_origin := Vector2.ZERO
+	if parent_control != null and parent_control.is_inside_tree():
+		parent_origin = parent_control.get_global_rect().position
+	var bounds := _get_inventory_container_popup_bounds()
+	var popup_size := popup.get_global_rect().size
+	if popup_size.x <= 0.0 or popup_size.y <= 0.0:
+		popup_size = popup.size
+	if popup_size.x <= 0.0 or popup_size.y <= 0.0:
+		popup_size = popup.custom_minimum_size
+	var max_position := bounds.end - popup_size
+	max_position.x = maxf(max_position.x, bounds.position.x)
+	max_position.y = maxf(max_position.y, bounds.position.y)
+	var current_global := popup.get_global_rect().position
+	if current_global == Vector2.ZERO:
+		current_global = popup.position + parent_origin
+	var clamped_global := Vector2(
+		clampf(current_global.x, bounds.position.x, max_position.x),
+		clampf(current_global.y, bounds.position.y, max_position.y)
+	)
+	popup.position = clamped_global - parent_origin
 
 
 func _on_inventory_stack_context_requested(stack_index: int, screen_position: Vector2) -> void:
@@ -637,7 +743,6 @@ func _open_selected_container() -> void:
 	)
 	_apply_inventory_result(result)
 	if bool(result.get("success", false)):
-		_close_all_inventory_container_popups()
 		_inventory_panel.open_container(provider_id)
 
 

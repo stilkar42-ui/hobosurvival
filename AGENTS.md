@@ -77,6 +77,9 @@ These notes describe the current active repository architecture. They override o
 - Pages follow `bootstrap(deps)`, `set_context(context)`, `set_route(route_id)`, `set_visible(visible)`, `refresh_from_state(player_state)`, and optional `handle_input(event)`, where applicable.
 - `UIManager` owns page routing through `open_page(id, context)`.
 - New page routes should be registered in `scripts/front_end/first_playable_loop_shell.gd` and routed through `UIManager`.
+- Town, Camp, and Travel are context/world layers. Inventory, Cooking, Crafting, Getting Ready, Jobs, Stores, Doctor / Apothecary, Medicine Store, and Passport are interaction windows over that context layer.
+- Do not trap interaction windows inside the page panel that opened them. Prefer large readable floating or movable windows over nested scroll boxes when a surface needs room.
+- Interaction windows should be closable and bounded or recoverable so they cannot be permanently lost off-screen. Future direction includes player-arrangeable windows, saved positions, and reset-to-default layout, but those systems do not exist yet unless a task explicitly implements them.
 - Reusable widgets live under `scripts/ui/widgets`.
 - Widgets should remain mostly passive: setters in, signals out.
 - Widgets should not call `PlayerStateService`, `GameStateManager`, or `SurvivalLoopRules` directly.

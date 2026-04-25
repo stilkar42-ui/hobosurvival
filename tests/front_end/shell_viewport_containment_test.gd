@@ -44,6 +44,8 @@ func _run_checks(loop_page: Control) -> void:
 		await process_frame
 		await process_frame
 		_assert_shell_contained(loop_page, String(route_data.label), false)
+		if route_data.page_id == &"inventory_ui":
+			_assert_inventory_overlay_contained(loop_page)
 
 	if _failed:
 		quit(1)
@@ -81,6 +83,33 @@ func _rect_inside(viewport_rect: Rect2, rect: Rect2) -> bool:
 		and rect.position.y >= viewport_rect.position.y \
 		and rect.end.x <= viewport_rect.end.x \
 		and rect.end.y <= viewport_rect.end.y
+
+
+func _assert_inventory_overlay_contained(loop_page: Control) -> void:
+	var viewport_rect := loop_page.get_viewport_rect()
+	var strip = loop_page.find_child("PersistentConditionStrip", true, false) as Control
+	var overlay = loop_page.find_child("InventoryOverlay", true, false) as Control
+	var margin = loop_page.find_child("InventoryMargin", true, false) as Control
+	var window = loop_page.find_child("InventoryWindow", true, false) as Control
+	var content_scroll = loop_page.find_child("InventoryContentScroll", true, false) as Control
+	var panel = loop_page.find_child("InventoryPanel", true, false) as Control
+	var back_button = loop_page.find_child("CloseInventoryButton", true, false) as Button
+
+	for required in [overlay, margin, window, content_scroll, panel, back_button]:
+		_expect(required != null, "inventory overlay required control exists")
+	if overlay == null or margin == null or window == null or content_scroll == null or panel == null or back_button == null:
+		return
+
+	_expect(overlay.visible and overlay.is_visible_in_tree(), "inventory overlay is visible")
+	_expect(_rect_inside(viewport_rect, window.get_global_rect()), "inventory window stays inside viewport")
+	if strip != null:
+		_expect(window.get_global_rect().position.y >= strip.get_global_rect().end.y, "inventory window starts below persistent condition strip")
+	_expect(content_scroll.is_visible_in_tree(), "inventory content scroll is visible")
+	_expect(content_scroll.get_global_rect().size.y >= 180.0, "inventory content scroll has usable visible height")
+	_expect(content_scroll.get_global_rect().intersects(viewport_rect), "inventory content scroll intersects viewport")
+	_expect(panel.is_visible_in_tree(), "inventory panel is visible")
+	_expect(panel.get_global_rect().intersects(content_scroll.get_global_rect()), "inventory panel intersects the content scroll viewport")
+	_expect(back_button.is_visible_in_tree(), "inventory back button remains visible")
 
 
 func _expect(condition: bool, message: String) -> void:

@@ -15,6 +15,8 @@ var _label: Label = null
 var _value: Label = null
 var _note: Label = null
 var _bar: ProgressBar = null
+var _bar_should_show := false
+var _bar_mode: StringName = &"positive"
 
 
 func _init() -> void:
@@ -48,6 +50,7 @@ func _init() -> void:
 	_root.add_child(_note)
 
 	_bar = ProgressBar.new()
+	_bar.name = "ConditionStatBar"
 	_bar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_bar.custom_minimum_size = Vector2(0.0, 10.0)
 	_bar.min_value = 0.0
@@ -72,11 +75,13 @@ func set_stat_data(data: Dictionary) -> void:
 	var show_bar = bool(data.get("display_as_bar", false))
 	var current_value = float(data.get("current", 0.0))
 	var max_value = max(float(data.get("max", 100.0)), 1.0)
-	_bar.visible = show_bar and not _compact_mode
+	_bar_should_show = show_bar
+	_bar_mode = StringName(data.get("bar_mode", &"positive"))
+	_bar.visible = _bar_should_show
 	_bar.max_value = max_value
 	_bar.value = clampf(current_value, 0.0, max_value)
 	_bar.add_theme_stylebox_override("background", _make_panel_style(Color("2b241d"), Color("5f4e3c"), 1, 4))
-	_bar.add_theme_stylebox_override("fill", _make_panel_style(_get_bar_color(_bar.value / _bar.max_value), Color(0.0, 0.0, 0.0, 0.0), 0, 4))
+	_bar.add_theme_stylebox_override("fill", _make_panel_style(_get_bar_color(_bar.value / _bar.max_value, _bar_mode), Color(0.0, 0.0, 0.0, 0.0), 0, 4))
 	tooltip_text = String(data.get("tooltip_text", note_text))
 	_apply_compact_mode()
 
@@ -118,10 +123,18 @@ func _apply_compact_mode() -> void:
 	_label.add_theme_font_size_override("font_size", 13 if _compact_mode else 18)
 	_value.add_theme_font_size_override("font_size", 13 if _compact_mode else PageUIThemeScript.FONT_SIZE_BODY)
 	_note.visible = false if _compact_mode else _note.text.strip_edges() != ""
-	_bar.visible = false if _compact_mode else _bar.visible
+	_bar.custom_minimum_size = Vector2(0.0, 6.0 if _compact_mode else 10.0)
+	_bar.visible = _bar_should_show
 
 
-func _get_bar_color(ratio: float) -> Color:
+func _get_bar_color(ratio: float, bar_mode: StringName = &"positive") -> Color:
+	ratio = clampf(ratio, 0.0, 1.0)
+	if bar_mode == &"burden":
+		if ratio >= 0.75:
+			return Color("9a4e3f")
+		if ratio >= 0.50:
+			return Color("a17b43")
+		return Color("6f8857")
 	if ratio <= 0.25:
 		return Color("9a4e3f")
 	if ratio <= 0.50:
