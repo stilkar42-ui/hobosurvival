@@ -872,9 +872,13 @@ size_class = 0
 allowed_carry_zones = PackedStringArray("pack", "pocket", "hands")
 hand_holdable = true
 behavior_tags = PackedStringArray("holdable", "medical", "hygiene", "wound_care", "apothecary")
-capabilities = PackedStringArray("inspect", "hold")
+capabilities = PackedStringArray("use", "inspect", "hold")
 trade_value_cents = 8
 visible_to_others = true
+use_message = "You clean up with a rag bundle. It is no doctoring, but the worst of the grime comes off."
+use_result_type = 3
+hygiene_value = 5
+presentability_value = 2
 
 [sub_resource type="Resource" id="ItemDefinition_bandage_roll"]
 script = ExtResource("2_item")
@@ -908,9 +912,14 @@ size_class = 0
 allowed_carry_zones = PackedStringArray("pack", "pocket", "hands")
 hand_holdable = true
 behavior_tags = PackedStringArray("holdable", "medical", "hygiene", "apothecary")
-capabilities = PackedStringArray("inspect", "hold")
+capabilities = PackedStringArray("use", "inspect", "hold")
 trade_value_cents = 18
 visible_to_others = true
+use_message = "You wash with carbolic soap. The sharp clean smell helps you look a little more fit for town."
+use_result_type = 3
+hygiene_value = 14
+presentability_value = 5
+morale_value = 1
 
 [sub_resource type="Resource" id="ItemDefinition_iodine_bottle"]
 script = ExtResource("2_item")
@@ -962,9 +971,13 @@ size_class = 0
 allowed_carry_zones = PackedStringArray("pack", "pocket", "hands")
 hand_holdable = true
 behavior_tags = PackedStringArray("holdable", "medical", "hygiene", "comfort", "apothecary")
-capabilities = PackedStringArray("inspect", "hold")
+capabilities = PackedStringArray("use", "inspect", "hold")
 trade_value_cents = 20
 visible_to_others = true
+use_message = "You dust your feet. The road feels less raw, though it will not fix a hard march."
+use_result_type = 3
+dampness_relief = 12
+morale_value = 1
 
 [sub_resource type="Resource" id="ItemDefinition_liniment_bottle"]
 script = ExtResource("2_item")
@@ -980,9 +993,13 @@ size_class = 0
 allowed_carry_zones = PackedStringArray("pack", "pocket", "hands")
 hand_holdable = true
 behavior_tags = PackedStringArray("holdable", "medical", "comfort", "apothecary")
-capabilities = PackedStringArray("inspect", "hold")
+capabilities = PackedStringArray("use", "inspect", "hold")
 trade_value_cents = 32
 visible_to_others = true
+use_message = "You rub in the liniment. It loosens the ache enough to keep moving."
+use_result_type = 3
+fatigue_relief = 6
+morale_value = 1
 
 [sub_resource type="Resource" id="ItemDefinition_headache_powder"]
 script = ExtResource("2_item")
@@ -998,9 +1015,12 @@ size_class = 0
 allowed_carry_zones = PackedStringArray("pack", "pocket", "hands")
 hand_holdable = true
 behavior_tags = PackedStringArray("holdable", "medical", "comfort", "questionable_medicine", "apothecary")
-capabilities = PackedStringArray("inspect", "hold")
+capabilities = PackedStringArray("use", "inspect", "hold")
 trade_value_cents = 10
 visible_to_others = true
+use_message = "The headache powder takes the edge off, but it is no cure."
+use_result_type = 3
+morale_value = 4
 
 [sub_resource type="Resource" id="ItemDefinition_cough_syrup"]
 script = ExtResource("2_item")

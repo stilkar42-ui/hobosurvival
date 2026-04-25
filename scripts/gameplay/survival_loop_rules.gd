@@ -1056,7 +1056,8 @@ static func _consume_selected_stack(player_state, config, item_catalog, selected
 			item.hygiene_value,
 			item.presentability_value,
 			item.morale_value,
-			item.can_consume() and (item.food_type != ItemDefinitionScript.FoodType.NONE or item.nutrition_value > 0)
+			item.can_consume() and (item.food_type != ItemDefinitionScript.FoodType.NONE or item.nutrition_value > 0),
+			item.dampness_relief
 		)
 	if item.can_consume() or int(item.fading_comfort_load) > 0:
 		FadingMeterSystemScript.record_item_consumed(player_state, item)
@@ -1079,6 +1080,9 @@ static func _consume_selected_stack(player_state, config, item_catalog, selected
 			if item.can_read() and not item.can_consume():
 				removes_one = false
 				use_message = "You read %s and keep it close." % item_name
+	var custom_use_message = item.use_message.strip_edges()
+	if custom_use_message != "":
+		use_message = custom_use_message
 	_trace_use_selected("before", selected_stack_index, String(item_id), starting_quantity, String(source_zone), removes_one, player_state, {})
 
 	if removes_one:
@@ -1224,6 +1228,7 @@ static func _item_has_player_effects(item) -> bool:
 		or item.warmth_value != 0
 		or item.hygiene_value != 0
 		or item.presentability_value != 0
+		or item.dampness_relief != 0
 		or item.morale_value != 0
 	)
 

@@ -314,7 +314,7 @@ func record_food_consumption(item_id: StringName, nutrition_gain: int, fatigue_r
 	apply_item_use_effects(item_id, nutrition_gain, fatigue_relief, warmth_gain, hygiene_gain, presentability_gain, morale_gain, true)
 
 
-func apply_item_use_effects(item_id: StringName, nutrition_gain: int = 0, fatigue_relief: int = 0, warmth_gain: int = 0, hygiene_gain: int = 0, presentability_gain: int = 0, morale_gain: int = 0, record_as_food: bool = false) -> void:
+func apply_item_use_effects(item_id: StringName, nutrition_gain: int = 0, fatigue_relief: int = 0, warmth_gain: int = 0, hygiene_gain: int = 0, presentability_gain: int = 0, morale_gain: int = 0, record_as_food: bool = false, dampness_relief: int = 0) -> void:
 	ensure_core_resources()
 	if record_as_food:
 		last_food_item_id = item_id
@@ -323,6 +323,7 @@ func apply_item_use_effects(item_id: StringName, nutrition_gain: int = 0, fatigu
 	passport_profile.warmth = clampi(passport_profile.warmth + max(warmth_gain, 0), 0, 100)
 	passport_profile.hygiene = clampi(passport_profile.hygiene + max(hygiene_gain, 0), 0, 100)
 	passport_profile.presentability = clampi(passport_profile.presentability + max(presentability_gain, 0), 0, 100)
+	passport_profile.dampness = clampi(passport_profile.dampness - max(dampness_relief, 0), 0, 100)
 	passport_profile.morale = clampi(passport_profile.morale + morale_gain, 0, 100)
 
 

@@ -101,6 +101,7 @@ const TAG_HOLDABLE := &"holdable"
 @export_range(0, 10000, 1, "suffix:cents") var trade_value_cents := 0
 @export var visible_to_others := true
 @export var is_consumable := false
+@export_multiline var use_message := ""
 @export_multiline var read_text := ""
 @export var use_result_type: UseResultType = UseResultType.NONE
 @export var use_outputs: Dictionary = {}
@@ -112,6 +113,7 @@ const TAG_HOLDABLE := &"holdable"
 @export_range(0, 100, 1) var fatigue_relief := 0
 @export_range(0, 100, 1) var hygiene_value := 0
 @export_range(0, 100, 1) var presentability_value := 0
+@export_range(0, 100, 1) var dampness_relief := 0
 @export_range(-100, 100, 1) var morale_value := 0
 
 @export_group("System Tags")
@@ -364,6 +366,8 @@ func get_consumable_effect_lines() -> Array[String]:
 		lines.append("+%d Hygiene" % hygiene_value)
 	if presentability_value > 0:
 		lines.append("+%d Presentability" % presentability_value)
+	if dampness_relief > 0:
+		lines.append("-%d Dampness" % dampness_relief)
 	if morale_value != 0:
 		lines.append("%s%d Morale" % ["+" if morale_value > 0 else "", morale_value])
 	return lines
