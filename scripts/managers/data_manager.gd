@@ -2,6 +2,7 @@ class_name DataManager
 extends RefCounted
 
 const RecipeCatalogScript := preload("res://scripts/data/recipe_catalog.gd")
+const StoreInventoryCatalogScript := preload("res://scripts/data/store_inventory_catalog.gd")
 
 var _player_state_service = null
 
@@ -40,6 +41,22 @@ func get_recipe(recipe_id: StringName) -> Dictionary:
 
 func get_recipes_by_category(category: String) -> Array:
 	return RecipeCatalogScript.get_recipes_by_category(category)
+
+
+func get_store_stock_pool(store_id: StringName) -> Array:
+	return StoreInventoryCatalogScript.get_store_pool(store_id)
+
+
+func get_required_store_stock_item_ids(store_id: StringName) -> Array:
+	return StoreInventoryCatalogScript.get_required_stock_item_ids(store_id)
+
+
+func get_store_profile(store_id: StringName) -> Dictionary:
+	return StoreInventoryCatalogScript.get_store_profile(store_id)
+
+
+func get_supported_store_ids() -> Array:
+	return StoreInventoryCatalogScript.get_supported_store_ids()
 
 
 func get_state_origin() -> StringName:

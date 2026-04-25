@@ -8,6 +8,7 @@ const InventoryScript := preload("res://scripts/inventory/inventory.gd")
 const ItemDefinitionScript := preload("res://scripts/inventory/item_definition.gd")
 const ItemQualityRulesScript := preload("res://scripts/gameplay/item_quality_rules.gd")
 const RecipeCatalogScript := preload("res://scripts/data/recipe_catalog.gd")
+const StoreInventoryCatalogScript := preload("res://scripts/data/store_inventory_catalog.gd")
 
 const LOCATION_TOWN := &"town"
 const LOCATION_CAMP := &"camp"
@@ -50,32 +51,6 @@ const ACTION_READY_SHAVE := &"ready_shave"
 const ACTION_READY_COMB_GROOM := &"ready_comb_groom"
 const ACTION_READY_AIR_OUT_CLOTHES := &"ready_air_out_clothes"
 const ACTION_READY_BRUSH_CLOTHES := &"ready_brush_clothes"
-
-const GROCERY_STOCK_POOL := [
-	{"item_id": &"bread_loaf", "base_price_cents": 16, "weight": 12, "min_quality": 0, "max_quality": 2},
-	{"item_id": &"beans_can", "base_price_cents": 30, "weight": 10, "min_quality": 0, "max_quality": 2},
-	{"item_id": &"potted_meat", "base_price_cents": 24, "weight": 9, "min_quality": 0, "max_quality": 2},
-	{"item_id": &"coffee_grounds", "base_price_cents": 6, "weight": 11, "min_quality": 0, "max_quality": 2},
-	{"item_id": &"oats_sack", "base_price_cents": 10, "weight": 8, "min_quality": 0, "max_quality": 2},
-	{"item_id": &"dried_beans", "base_price_cents": 12, "weight": 8, "min_quality": 0, "max_quality": 2},
-	{"item_id": &"salt_pouch", "base_price_cents": 5, "weight": 6, "min_quality": 0, "max_quality": 2},
-	{"item_id": &"lard_tin", "base_price_cents": 18, "weight": 5, "min_quality": 0, "max_quality": 2}
-]
-
-const REQUIRED_GROCERY_STOCK_ITEM_IDS := [&"coffee_grounds", &"beans_can", &"potted_meat"]
-const REQUIRED_HARDWARE_STOCK_ITEM_IDS := [&"baling_wire"]
-
-const HARDWARE_STOCK_POOL := [
-	{"item_id": &"match_safe", "base_price_cents": 14, "weight": 10, "min_quality": 0, "max_quality": 2},
-	{"item_id": &"empty_can", "base_price_cents": 3, "weight": 12, "min_quality": 0, "max_quality": 2},
-	{"item_id": &"cordage", "base_price_cents": 12, "weight": 11, "min_quality": 0, "max_quality": 2},
-	{"item_id": &"scrap_tin", "base_price_cents": 5, "weight": 8, "min_quality": 0, "max_quality": 1},
-	{"item_id": &"baling_wire", "base_price_cents": 9, "weight": 8, "min_quality": 0, "max_quality": 2},
-	{"item_id": &"church_key", "base_price_cents": 7, "weight": 5, "min_quality": 0, "max_quality": 2},
-	{"item_id": &"box_nails", "base_price_cents": 8, "weight": 6, "min_quality": 0, "max_quality": 2},
-	{"item_id": &"cloth_patch", "base_price_cents": 7, "weight": 7, "min_quality": 0, "max_quality": 2},
-	{"item_id": &"needle_thread", "base_price_cents": 11, "weight": 6, "min_quality": 0, "max_quality": 2}
-]
 
 const HOBOCRAFT_RECIPES := [
 	{
@@ -732,8 +707,8 @@ static func ensure_weekly_store_stock(player_state, config, item_catalog) -> voi
 			and not player_state.grocery_store_stock.is_empty() \
 			and not player_state.hardware_store_stock.is_empty():
 		return
-	var grocery_stock = _generate_store_stock(STORE_GROCERY, GROCERY_STOCK_POOL, week_index, config, item_catalog)
-	var hardware_stock = _generate_store_stock(STORE_HARDWARE, HARDWARE_STOCK_POOL, week_index, config, item_catalog)
+	var grocery_stock = _generate_store_stock(STORE_GROCERY, StoreInventoryCatalogScript.get_store_pool(STORE_GROCERY), week_index, config, item_catalog)
+	var hardware_stock = _generate_store_stock(STORE_HARDWARE, StoreInventoryCatalogScript.get_store_pool(STORE_HARDWARE), week_index, config, item_catalog)
 	player_state.set_store_stock(week_index, grocery_stock, hardware_stock)
 
 
@@ -782,11 +757,7 @@ static func _generate_store_stock(store_id: StringName, pool: Array, week_index:
 
 
 static func _get_required_store_stock_item_ids(store_id: StringName) -> Array:
-	if store_id == STORE_GROCERY:
-		return REQUIRED_GROCERY_STOCK_ITEM_IDS.duplicate()
-	if store_id == STORE_HARDWARE:
-		return REQUIRED_HARDWARE_STOCK_ITEM_IDS.duplicate()
-	return []
+	return StoreInventoryCatalogScript.get_required_stock_item_ids(store_id)
 
 
 static func _find_stock_pool_entry(pool: Array, item_id: StringName) -> Dictionary:

@@ -482,6 +482,8 @@ func _assert_weekly_store_stock(catalog, config) -> void:
 	var week_one_hardware = SurvivalLoopRulesScript.get_store_stock(state, config, catalog, SurvivalLoopRulesScript.STORE_HARDWARE)
 	_expect(week_one_grocery.size() >= 4 and week_one_grocery.size() <= 8, "grocery stocks 4-8 weekly items")
 	_expect(week_one_hardware.size() >= 4 and week_one_hardware.size() <= 8, "hardware stocks 4-8 weekly items")
+	_assert_generated_store_entries(catalog, week_one_grocery, SurvivalLoopRulesScript.STORE_GROCERY, "week one grocery")
+	_assert_generated_store_entries(catalog, week_one_hardware, SurvivalLoopRulesScript.STORE_HARDWARE, "week one hardware")
 	_expect(int(week_one_grocery[0].get("quality_tier", -1)) >= 0, "grocery stock carries a quality tier")
 	_expect(_stock_has_item(week_one_grocery, &"coffee_grounds"), "weekly grocery guarantees coffee grounds for cooking tests")
 	_expect(_stock_has_item(week_one_grocery, &"beans_can"), "weekly grocery guarantees beans for heating tests")
@@ -506,6 +508,8 @@ func _assert_weekly_store_stock(catalog, config) -> void:
 	var week_two_grocery = SurvivalLoopRulesScript.get_store_stock(state, config, catalog, SurvivalLoopRulesScript.STORE_GROCERY)
 	var week_two_hardware = SurvivalLoopRulesScript.get_store_stock(state, config, catalog, SurvivalLoopRulesScript.STORE_HARDWARE)
 	_expect(state.store_stock_week_index == 2, "store stock advances to week two")
+	_assert_generated_store_entries(catalog, week_two_grocery, SurvivalLoopRulesScript.STORE_GROCERY, "week two grocery")
+	_assert_generated_store_entries(catalog, week_two_hardware, SurvivalLoopRulesScript.STORE_HARDWARE, "week two hardware")
 	_expect(_stock_has_item(week_two_grocery, &"coffee_grounds"), "week two grocery keeps coffee test stock available")
 	_expect(_stock_has_item(week_two_grocery, &"beans_can"), "week two grocery keeps beans test stock available")
 	_expect(_stock_has_item(week_two_grocery, &"potted_meat"), "week two grocery keeps potted meat test stock available")
@@ -515,6 +519,8 @@ func _assert_weekly_store_stock(catalog, config) -> void:
 	var week_three_grocery = SurvivalLoopRulesScript.get_store_stock(state, config, catalog, SurvivalLoopRulesScript.STORE_GROCERY)
 	var week_three_hardware = SurvivalLoopRulesScript.get_store_stock(state, config, catalog, SurvivalLoopRulesScript.STORE_HARDWARE)
 	_expect(state.store_stock_week_index == 3, "store stock advances to week three")
+	_assert_generated_store_entries(catalog, week_three_grocery, SurvivalLoopRulesScript.STORE_GROCERY, "week three grocery")
+	_assert_generated_store_entries(catalog, week_three_hardware, SurvivalLoopRulesScript.STORE_HARDWARE, "week three hardware")
 	_expect(_stock_has_item(week_three_grocery, &"coffee_grounds"), "week three grocery keeps coffee test stock available")
 	_expect(_stock_has_item(week_three_grocery, &"beans_can"), "week three grocery keeps beans test stock available")
 	_expect(_stock_has_item(week_three_grocery, &"potted_meat"), "week three grocery keeps potted meat test stock available")
@@ -985,6 +991,20 @@ func _stock_has_item(stock: Array, item_id: StringName) -> bool:
 		if entry is Dictionary and StringName(entry.get("item_id", &"")) == item_id:
 			return true
 	return false
+
+
+func _assert_generated_store_entries(catalog, stock: Array, store_id: StringName, label: String) -> void:
+	for entry in stock:
+		_expect(entry is Dictionary, "%s entry is dictionary data" % label)
+		if not (entry is Dictionary):
+			continue
+		var item_id = StringName(entry.get("item_id", &""))
+		_expect(StringName(entry.get("store_id", &"")) == store_id, "%s entry records its store id" % label)
+		_expect(item_id != &"", "%s entry records an item id" % label)
+		_expect(catalog.get_item(item_id) != null, "%s entry item exists in catalog" % label)
+		_expect(int(entry.get("price_cents", 0)) > 0, "%s entry has a positive price" % label)
+		_expect(entry.has("quality_tier"), "%s entry has quality tier" % label)
+		_expect(entry.has("quality_score"), "%s entry has quality score" % label)
 
 
 func _assert_first_playable_loop_scene_instantiates() -> void:

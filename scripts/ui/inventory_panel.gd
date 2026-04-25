@@ -1501,8 +1501,7 @@ func _on_stack_button_gui_input(event: InputEvent, stack_index: int, button: But
 	if not event.pressed or event.button_index != MOUSE_BUTTON_RIGHT:
 		return
 	button.accept_event()
-	set_selected_stack_index(stack_index)
-	stack_context_requested.emit(stack_index, event.global_position)
+	call_deferred("_request_stack_context_menu", stack_index, event.global_position)
 
 
 func _on_slot_button_gui_input(event: InputEvent, slot_id: StringName, button: Button) -> void:
@@ -1514,8 +1513,7 @@ func _on_slot_button_gui_input(event: InputEvent, slot_id: StringName, button: B
 	var provider_id = _get_preferred_destination_provider_for_slot(slot_id)
 	if provider_id == &"":
 		return
-	set_selected_container_provider_id(provider_id)
-	container_context_requested.emit(provider_id, event.global_position)
+	call_deferred("_request_container_context_menu", provider_id, event.global_position)
 
 
 func _on_container_pressed(provider_id: StringName) -> void:
@@ -1537,8 +1535,21 @@ func _on_container_button_gui_input(event: InputEvent, provider_id: StringName, 
 	if not event.pressed or event.button_index != MOUSE_BUTTON_RIGHT:
 		return
 	button.accept_event()
+	call_deferred("_request_container_context_menu", provider_id, event.global_position)
+
+
+func _request_stack_context_menu(stack_index: int, screen_position: Vector2) -> void:
+	if inventory == null or inventory.get_stack_at(stack_index) == null:
+		return
+	set_selected_stack_index(stack_index)
+	stack_context_requested.emit(stack_index, screen_position)
+
+
+func _request_container_context_menu(provider_id: StringName, screen_position: Vector2) -> void:
+	if inventory == null or inventory.get_storage_provider(provider_id) == null:
+		return
 	set_selected_container_provider_id(provider_id)
-	container_context_requested.emit(provider_id, event.global_position)
+	container_context_requested.emit(provider_id, screen_position)
 
 
 func _on_ledger_toggle_pressed() -> void:

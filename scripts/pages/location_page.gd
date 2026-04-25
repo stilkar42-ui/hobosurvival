@@ -20,6 +20,7 @@ var _panel: PanelContainer = null
 var _route_roots: Dictionary = {}
 var _current_route: StringName = &"jobs_board"
 var _return_route: StringName = &"town"
+var _has_context_route := false
 var _selected_send_amount_cents := 125
 
 var _jobs_list_widget = null
@@ -51,7 +52,8 @@ func bootstrap(_scene_root: Control, deps: Dictionary) -> void:
 func set_context(context: Dictionary) -> void:
 	_return_route = StringName(context.get("return_route", _return_route))
 	var requested_route = StringName(context.get("route_id", &""))
-	if requested_route != &"":
+	_has_context_route = requested_route != &"" and _route_roots.has(requested_route)
+	if _has_context_route:
 		_current_route = requested_route
 
 
@@ -59,11 +61,12 @@ func set_route(route_name: StringName) -> void:
 	if route_name in _route_roots:
 		_current_route = route_name
 	elif _location_manager != null and route_name == _location_manager.ROUTE_LOCATION_PAGE:
-		var player_state = _game_state_manager.get_player_state() if _game_state_manager != null else null
-		var location_id = StringName(player_state.loop_location_id) if player_state != null else SurvivalLoopRulesScript.LOCATION_TOWN
-		var default_route = _location_manager.get_default_location_route_for_location(location_id)
-		if default_route != &"":
-			_current_route = default_route
+		if not _has_context_route:
+			var player_state = _game_state_manager.get_player_state() if _game_state_manager != null else null
+			var location_id = StringName(player_state.loop_location_id) if player_state != null else SurvivalLoopRulesScript.LOCATION_TOWN
+			var default_route = _location_manager.get_default_location_route_for_location(location_id)
+			if default_route != &"":
+				_current_route = default_route
 	_apply_visibility(true)
 	refresh_from_state(_game_state_manager.get_player_state() if _game_state_manager != null else null)
 
@@ -137,6 +140,7 @@ func _build_jobs_board_page() -> void:
 	_jobs_list_widget.name = "JobsListWidget"
 	_jobs_list_widget.set_title("Posted Work")
 	_jobs_list_widget.set_variant("dark")
+	_configure_content_list(_jobs_list_widget)
 	root.add_child(_jobs_list_widget)
 
 
@@ -207,11 +211,13 @@ func _build_grocery_page() -> void:
 	root.add_child(_build_service_nav_panel())
 	_grocery_summary_widget = DataPanelWidgetScript.new()
 	_grocery_summary_widget.set_title("Store Summary")
+	_configure_compact_panel(_grocery_summary_widget)
 	root.add_child(_grocery_summary_widget)
 	_grocery_list_widget = VerticalListWidgetScript.new()
 	_grocery_list_widget.name = "GroceryListWidget"
 	_grocery_list_widget.set_title("Available Stock")
 	_grocery_list_widget.set_variant("dark")
+	_configure_content_list(_grocery_list_widget)
 	root.add_child(_grocery_list_widget)
 
 
@@ -222,11 +228,13 @@ func _build_hardware_page() -> void:
 	root.add_child(_build_service_nav_panel())
 	_hardware_summary_widget = DataPanelWidgetScript.new()
 	_hardware_summary_widget.set_title("Store Summary")
+	_configure_compact_panel(_hardware_summary_widget)
 	root.add_child(_hardware_summary_widget)
 	_hardware_list_widget = VerticalListWidgetScript.new()
 	_hardware_list_widget.name = "HardwareListWidget"
 	_hardware_list_widget.set_title("Available Stock")
 	_hardware_list_widget.set_variant("dark")
+	_configure_content_list(_hardware_list_widget)
 	root.add_child(_hardware_list_widget)
 
 
@@ -370,6 +378,7 @@ func _build_service_nav_panel() -> Control:
 	var panel = BasePanelWidgetScript.new()
 	panel.set_title("Town Services")
 	panel.set_variant("panel")
+	_configure_compact_panel(panel)
 
 	var grid = GridContainer.new()
 	grid.columns = 2
@@ -393,6 +402,16 @@ func _build_service_nav_panel() -> Control:
 		bucket.append(button)
 		_service_nav_buttons[action_data.route_id] = bucket
 	return panel
+
+
+func _configure_content_list(list_widget: Control) -> void:
+	list_widget.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	list_widget.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	list_widget.custom_minimum_size = Vector2(0.0, 260.0)
+
+
+func _configure_compact_panel(panel: Control) -> void:
+	panel.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 
 
 func _refresh_service_nav() -> void:

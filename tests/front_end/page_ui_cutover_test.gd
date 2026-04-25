@@ -50,18 +50,15 @@ func _run_checks(loop_page: Control) -> void:
 	await process_frame
 	_expect(ui_manager.get_active_page() == &"LocationPage", "direct location page route resolves through UIManager")
 	_expect(ui_manager.get_active_route() == &"location_page", "direct location page route is tracked in UIManager")
-	var grocery_list = loop_page.find_child("GroceryListWidget", true, false)
-	_expect(grocery_list != null and grocery_list.get_item_count() > 0, "grocery route renders visible stock cards")
+	_expect_location_route_has_visible_cards(loop_page, "GroceryListWidget", "Buy Stock", "grocery route renders visible stock cards")
 
 	ui_manager.open_page(&"hardware", {"return_route": &"town"})
 	await process_frame
-	var hardware_list = loop_page.find_child("HardwareListWidget", true, false)
-	_expect(hardware_list != null and hardware_list.get_item_count() > 0, "hardware route renders visible stock cards")
+	_expect_location_route_has_visible_cards(loop_page, "HardwareListWidget", "Buy Stock", "hardware route renders visible stock cards")
 
 	ui_manager.open_page(&"jobs_board", {"return_route": &"town"})
 	await process_frame
-	var jobs_list = loop_page.find_child("JobsListWidget", true, false)
-	_expect(jobs_list != null and jobs_list.get_item_count() > 0, "jobs board renders posted work cards")
+	_expect_location_route_has_visible_cards(loop_page, "JobsListWidget", "Take Work", "jobs board renders posted work cards")
 
 	ui_manager.open_page(&"crafting_page", {"return_route": &"camp", "route_id": &"hobocraft"})
 	await process_frame
@@ -116,3 +113,22 @@ func _panel_has_button_text(root: Node, text: String) -> bool:
 		if child is Button and child.text == text:
 			return true
 	return false
+
+
+func _expect_location_route_has_visible_cards(loop_page: Control, list_name: String, action_text: String, message: String) -> void:
+	var list = loop_page.find_child(list_name, true, false)
+	_expect(list != null, "%s list exists" % message)
+	if list == null:
+		return
+	_expect(list.get_item_count() > 0, "%s list has cards" % message)
+	_expect(list.is_visible_in_tree(), "%s list is visible" % message)
+	var list_rect: Rect2 = list.get_global_rect()
+	_expect(list_rect.size.x > 20.0 and list_rect.size.y >= 160.0, "%s list has usable visible height" % message)
+	var list_root = list.get_list_root()
+	var first_child = list_root.get_child(0) if list_root != null and list_root.get_child_count() > 0 else null
+	_expect(first_child is Control, "%s first card exists" % message)
+	if first_child is Control:
+		var first_rect: Rect2 = first_child.get_global_rect()
+		_expect(first_child.is_visible_in_tree(), "%s first card is visible" % message)
+		_expect(first_rect.size.x > 20.0 and first_rect.size.y > 20.0, "%s first card has rendered size" % message)
+	_expect(_panel_has_button_text(first_child, action_text), "%s exposes %s action" % [message, action_text])

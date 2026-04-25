@@ -341,7 +341,6 @@ func _set_detail_state(field: Dictionary) -> void:
 	_detail_field_label.text = String(field.get("label", "No Field Selected"))
 	_detail_value_label.text = "Current Value: %s" % _get_field_display_value(field)
 	_detail_notes_label.text = String(field.get("notes", "This panel will show field notes and later mechanical explanation."))
-	_queue_scroll_content_widths()
 
 
 func _get_selected_field(selected_section: Dictionary) -> Dictionary:
@@ -366,7 +365,6 @@ func _on_section_pressed(section_id: StringName) -> void:
 	_rebuild_field_list(selected_section)
 	_refresh_selection_styles()
 	_set_detail_state(_get_selected_field(selected_section))
-	_queue_scroll_content_widths()
 
 
 func _on_field_pressed(field_id: StringName) -> void:
@@ -376,7 +374,6 @@ func _on_field_pressed(field_id: StringName) -> void:
 	var selected_section = _get_section_by_id(_selected_section_id)
 	_refresh_selection_styles()
 	_set_detail_state(_get_selected_field(selected_section))
-	_queue_scroll_content_widths()
 
 
 func _apply_button_style(button: Button, selected: bool, compact: bool) -> void:
