@@ -140,7 +140,7 @@ const STORE_PROFILES := {
 	STORE_MEDICINE: {
 		"store_id": STORE_MEDICINE,
 		"display_name": "Medicine / Apothecary",
-		"stock_status": "prepared_catalog_pool",
+		"stock_status": "active",
 		"quality_policy": {
 			"dominant_tiers": [ItemDefinitionScript.QualityTier.COMMON, ItemDefinitionScript.QualityTier.GOOD],
 			"occasional_tiers": [ItemDefinitionScript.QualityTier.POOR],
@@ -149,13 +149,13 @@ const STORE_PROFILES := {
 			"notes": "Prepared medicine stock includes bandages, clean rags, salves, antiseptic, tonic, headache powder, foot powder, liniment, cough syrup, and patent medicine. These are inventory goods only until treatment rules exist."
 		},
 		"supply_tags": [&"medical", &"apothecary", &"doctor_supply"],
-		"service_tags": [&"prepared_medical_stock"],
+		"service_tags": [&"rotating_stock", &"medical_stock"],
 		"merchant_tags": [&"apothecary", &"doctor_supply"],
 		"region_tags": [],
 		"reputation_hooks": [],
 		"relationship_hooks": [],
-		"restock_cadence": &"prepared_weekly",
-		"future_manager_notes": "Medicine goods are catalog-prepared here but are not generated into runtime state yet; do not add treatment, addiction, sickness, or doctor-service mechanics in this catalog."
+		"restock_cadence": &"weekly",
+		"future_manager_notes": "Medicine goods rotate as inventory stock only; do not add treatment, addiction, sickness, or doctor-service mechanics in this catalog."
 	},
 	STORE_SPECIALIST_GROCERY: {
 		"store_id": STORE_SPECIALIST_GROCERY,

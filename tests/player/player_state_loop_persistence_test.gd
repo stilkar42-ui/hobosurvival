@@ -92,12 +92,14 @@ func _init() -> void:
 	_expect(restored_state.grocery_store_stock.size() == original_state.grocery_store_stock.size(), "grocery weekly stock persists")
 	_expect(restored_state.hardware_store_stock.size() == original_state.hardware_store_stock.size(), "hardware weekly stock persists")
 	_expect(restored_state.general_store_stock.size() == original_state.general_store_stock.size(), "general store weekly stock persists")
+	_expect(restored_state.medicine_store_stock.size() == original_state.medicine_store_stock.size(), "medicine store weekly stock persists")
 
 	var legacy_saved = saved.duplicate(true)
 	var legacy_passport = Dictionary(legacy_saved.get("passport_profile", {})).duplicate(true)
 	legacy_saved.erase("passport_profile")
 	legacy_saved["passport_data"] = legacy_passport
 	legacy_saved.erase("general_store_stock")
+	legacy_saved.erase("medicine_store_stock")
 	legacy_saved.erase("fade_value")
 	legacy_saved.erase("fade_state")
 	legacy_saved.erase("fade_last_daily_delta")
@@ -113,6 +115,7 @@ func _init() -> void:
 	_expect(legacy_restored_state.nutrition_tick_bank_minutes == original_state.nutrition_tick_bank_minutes, "legacy nutrition bank migration preserves accumulated time")
 	_expect(legacy_restored_state.fade_value == 0, "legacy saves default fading to a steady zero state")
 	_expect(legacy_restored_state.general_store_stock.is_empty(), "legacy saves without general store stock load with safe empty stock")
+	_expect(legacy_restored_state.medicine_store_stock.is_empty(), "legacy saves without medicine store stock load with safe empty stock")
 
 	quit(1 if _failed else 0)
 

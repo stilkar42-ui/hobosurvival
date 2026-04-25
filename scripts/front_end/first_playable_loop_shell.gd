@@ -385,6 +385,7 @@ func _register_pages_with_ui_manager() -> void:
 	_ui_manager.register_route(_location_manager.PAGE_GROCERY, &"LocationPage")
 	_ui_manager.register_route(_location_manager.PAGE_HARDWARE, &"LocationPage")
 	_ui_manager.register_route(_location_manager.PAGE_GENERAL_STORE, &"LocationPage")
+	_ui_manager.register_route(_location_manager.PAGE_MEDICINE, &"LocationPage")
 	_ui_manager.register_route(_location_manager.PAGE_DOCTOR_APOTHECARY, &"LocationPage")
 	_ui_manager.register_route(_location_manager.ROUTE_CRAFTING_PAGE, &"CraftingPage")
 	_ui_manager.register_route(_location_manager.PAGE_HOBOCRAFT, &"CraftingPage")

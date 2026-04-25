@@ -10,6 +10,7 @@ const PAGE_CAMP := &"camp"
 const PAGE_GROCERY := &"grocery"
 const PAGE_HARDWARE := &"hardware"
 const PAGE_GENERAL_STORE := &"general_store"
+const PAGE_MEDICINE := &"medicine"
 const PAGE_DOCTOR_APOTHECARY := &"doctor_apothecary"
 const PAGE_GETTING_READY := &"getting_ready"
 const PAGE_REST_CAMP := &"rest_camp"
@@ -23,7 +24,7 @@ const ROUTE_PASSPORT := &"passport_stats"
 const ROUTE_EVENT := &"event_encounter"
 const ROUTE_TRAVEL := &"travel_ui"
 
-const TOWN_ONLY_PAGES := [PAGE_TOWN, PAGE_JOBS_BOARD, PAGE_SEND_MONEY, PAGE_GROCERY, PAGE_HARDWARE, PAGE_GENERAL_STORE, PAGE_DOCTOR_APOTHECARY, ROUTE_LOCATION_PAGE]
+const TOWN_ONLY_PAGES := [PAGE_TOWN, PAGE_JOBS_BOARD, PAGE_SEND_MONEY, PAGE_GROCERY, PAGE_HARDWARE, PAGE_GENERAL_STORE, PAGE_MEDICINE, PAGE_DOCTOR_APOTHECARY, ROUTE_LOCATION_PAGE]
 const CAMP_ONLY_PAGES := [PAGE_CAMP, PAGE_GETTING_READY, PAGE_REST_CAMP, PAGE_HOBOCRAFT, PAGE_COOKING, ROUTE_CRAFTING_PAGE, ROUTE_REST_PAGE]
 const CAMP_SUB_PAGES := [PAGE_GETTING_READY, PAGE_REST_CAMP, PAGE_HOBOCRAFT, PAGE_COOKING, ROUTE_CRAFTING_PAGE, ROUTE_REST_PAGE]
 const OVERLAY_ROUTES := [ROUTE_INVENTORY, ROUTE_PASSPORT, ROUTE_EVENT]
@@ -40,6 +41,7 @@ const TOWN_INTERACTION_PAGE_IDS := {
 	&"grocery": PAGE_GROCERY,
 	&"hardware": PAGE_HARDWARE,
 	&"general_store": PAGE_GENERAL_STORE,
+	&"medicine": PAGE_MEDICINE,
 	&"doctor_apothecary": PAGE_DOCTOR_APOTHECARY
 }
 
@@ -55,6 +57,7 @@ const ROUTE_DESTINATIONS := {
 	&"town_grocery": {"action_id": &"", "page_id": PAGE_GROCERY},
 	&"town_hardware": {"action_id": &"", "page_id": PAGE_HARDWARE},
 	&"town_general_store": {"action_id": &"", "page_id": PAGE_GENERAL_STORE},
+	&"town_medicine": {"action_id": &"", "page_id": PAGE_MEDICINE},
 	&"town_doctor_apothecary": {"action_id": &"", "page_id": PAGE_DOCTOR_APOTHECARY},
 	&"town_foreman": {"action_id": &"", "page_id": PAGE_JOBS_BOARD},
 	&"town_exit": {"action_id": &"go_to_camp", "page_id": &""}

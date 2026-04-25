@@ -35,6 +35,8 @@ var _hardware_summary_widget = null
 var _hardware_list_widget = null
 var _general_summary_widget = null
 var _general_list_widget = null
+var _medicine_summary_widget = null
+var _medicine_list_widget = null
 var _doctor_summary_widget = null
 var _doctor_list_widget = null
 var _service_nav_buttons: Dictionary = {}
@@ -114,7 +116,7 @@ func _build_panel(page_host) -> void:
 	root.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_panel.add_child(root)
 
-	for route_id in [&"jobs_board", &"send_money", &"grocery", &"hardware", &"general_store", &"doctor_apothecary"]:
+	for route_id in [&"jobs_board", &"send_money", &"grocery", &"hardware", &"general_store", &"medicine", &"doctor_apothecary"]:
 		var route_panel = PanelContainer.new()
 		route_panel.name = "%sRoute" % String(route_id)
 		route_panel.visible = false
@@ -135,6 +137,7 @@ func _build_panel(page_host) -> void:
 	_build_grocery_page()
 	_build_hardware_page()
 	_build_general_store_page()
+	_build_medicine_store_page()
 	_build_doctor_apothecary_page()
 
 
@@ -262,6 +265,23 @@ func _build_general_store_page() -> void:
 	root.add_child(_general_list_widget)
 
 
+func _build_medicine_store_page() -> void:
+	var root = _get_route_root(&"medicine")
+	_add_title(root, "Medicine Store", "Apothecary stock for cleaning up, foot care, common remedies, and trade. Paid care is handled at Doctor / Apothecary.")
+	root.add_child(_make_back_button())
+	root.add_child(_build_service_nav_panel())
+	_medicine_summary_widget = DataPanelWidgetScript.new()
+	_medicine_summary_widget.set_title("Store Summary")
+	_configure_compact_panel(_medicine_summary_widget)
+	root.add_child(_medicine_summary_widget)
+	_medicine_list_widget = VerticalListWidgetScript.new()
+	_medicine_list_widget.name = "MedicineStoreListWidget"
+	_medicine_list_widget.set_title("Available Stock")
+	_medicine_list_widget.set_variant("dark")
+	_configure_content_list(_medicine_list_widget)
+	root.add_child(_medicine_list_widget)
+
+
 func _build_doctor_apothecary_page() -> void:
 	var root = _get_route_root(&"doctor_apothecary")
 	_add_title(root, "Doctor / Apothecary", "Basic paid care, remedies, and advice. It can steady a man; it does not resolve wounds or sickness.")
@@ -344,9 +364,11 @@ func _refresh_store_stock_sections(player_state) -> void:
 	_grocery_summary_widget.set_data("Week %d town stock. It changes each week; quality and price both matter." % week_index)
 	_hardware_summary_widget.set_data("Week %d hardware stock. Camp utility, repair bits, and small road materials." % week_index)
 	_general_summary_widget.set_data("Week %d general stock. Limited crossover goods for food, camp, and keeping clean." % week_index)
+	_medicine_summary_widget.set_data("Week %d medicine stock. Apothecary goods are for inventory use and trade; paid care is separate." % week_index)
 	_rebuild_store_stock_list(_grocery_list_widget, SurvivalLoopRulesScript.STORE_GROCERY, SurvivalLoopRulesScript.get_store_stock(player_state, config, item_catalog, SurvivalLoopRulesScript.STORE_GROCERY))
 	_rebuild_store_stock_list(_hardware_list_widget, SurvivalLoopRulesScript.STORE_HARDWARE, SurvivalLoopRulesScript.get_store_stock(player_state, config, item_catalog, SurvivalLoopRulesScript.STORE_HARDWARE))
 	_rebuild_store_stock_list(_general_list_widget, SurvivalLoopRulesScript.STORE_GENERAL, SurvivalLoopRulesScript.get_store_stock(player_state, config, item_catalog, SurvivalLoopRulesScript.STORE_GENERAL))
+	_rebuild_store_stock_list(_medicine_list_widget, SurvivalLoopRulesScript.STORE_MEDICINE, SurvivalLoopRulesScript.get_store_stock(player_state, config, item_catalog, SurvivalLoopRulesScript.STORE_MEDICINE))
 
 
 func _refresh_doctor_care(_player_state) -> void:
@@ -482,6 +504,7 @@ func _build_service_nav_panel() -> Control:
 		{"route_id": &"grocery", "label": "Grocery"},
 		{"route_id": &"hardware", "label": "Hardware"},
 		{"route_id": &"general_store", "label": "General Store"},
+		{"route_id": &"medicine", "label": "Medicine Store"},
 		{"route_id": &"doctor_apothecary", "label": "Doctor / Apothecary"}
 	]:
 		var button = ActionButtonWidgetScript.new()

@@ -19,7 +19,7 @@ func _init() -> void:
 	_assert_active_pool(store_catalog_script, item_catalog, &"grocery", [&"coffee_grounds", &"beans_can", &"potted_meat"])
 	_assert_active_pool(store_catalog_script, item_catalog, &"hardware", [&"baling_wire"])
 	_assert_active_pool(store_catalog_script, item_catalog, &"general_store", [])
-	_assert_prepared_pool(store_catalog_script, item_catalog, &"medicine", [&"clean_rag_bundle", &"bandage_roll", &"carbolic_soap"], ItemDefinitionScript.QualityTier.SUPERIOR)
+	_assert_active_pool(store_catalog_script, item_catalog, &"medicine", [&"clean_rag_bundle", &"bandage_roll", &"carbolic_soap"], ItemDefinitionScript.QualityTier.SUPERIOR)
 	_assert_future_profile(store_catalog_script, &"specialist_grocery")
 	_assert_future_profile(store_catalog_script, &"specialist_hardware")
 	_assert_future_profile(store_catalog_script, &"specialist_medicine")
@@ -33,7 +33,7 @@ func _assert_supported_store_ids(store_catalog_script) -> void:
 		_expect(supported_ids.has(store_id), "store catalog supports %s" % String(store_id))
 
 
-func _assert_active_pool(store_catalog_script, item_catalog, store_id: StringName, required_ids: Array) -> void:
+func _assert_active_pool(store_catalog_script, item_catalog, store_id: StringName, required_ids: Array, max_allowed_quality: int = ItemDefinitionScript.QualityTier.GOOD) -> void:
 	var profile: Dictionary = store_catalog_script.get_store_profile(store_id)
 	_expect(String(profile.get("stock_status", "")) == "active", "%s profile is marked active" % String(store_id))
 	var pool: Array = store_catalog_script.get_store_pool(store_id)
@@ -51,7 +51,7 @@ func _assert_active_pool(store_catalog_script, item_catalog, store_id: StringNam
 		_expect(int(entry.get("weight", 0)) > 0, "%s pool item %s has a selection weight" % [String(store_id), String(item_id)])
 		_expect(entry.has("min_quality"), "%s pool item %s has min quality" % [String(store_id), String(item_id)])
 		_expect(entry.has("max_quality"), "%s pool item %s has max quality" % [String(store_id), String(item_id)])
-		_expect(int(entry.get("max_quality", -1)) <= ItemDefinitionScript.QualityTier.GOOD, "%s active pool item %s stays within current basic-store quality cap" % [String(store_id), String(item_id)])
+		_expect(int(entry.get("max_quality", -1)) <= max_allowed_quality, "%s active pool item %s stays within current store quality cap" % [String(store_id), String(item_id)])
 
 
 func _assert_prepared_pool(store_catalog_script, item_catalog, store_id: StringName, required_ids: Array, max_allowed_quality: int) -> void:

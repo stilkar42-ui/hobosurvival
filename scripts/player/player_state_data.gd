@@ -4,7 +4,7 @@ extends Resource
 const PlayerPassportDataScript := preload("res://scripts/player/player_passport_data.gd")
 const InventoryScript := preload("res://scripts/inventory/inventory.gd")
 
-const SAVE_VERSION := 11
+const SAVE_VERSION := 12
 
 # Authoritative player backbone for the prototype. Passport, inventory, hand/loadout,
 # money, time, and future reputation/system hooks all belong here instead of living in UI.
@@ -60,6 +60,7 @@ const SAVE_VERSION := 11
 @export var grocery_store_stock: Array = []
 @export var hardware_store_stock: Array = []
 @export var general_store_stock: Array = []
+@export var medicine_store_stock: Array = []
 @export var standing_hooks: PackedStringArray = PackedStringArray()
 @export var affiliation_hooks: PackedStringArray = PackedStringArray()
 @export var future_system_flags: Dictionary = {}
@@ -562,11 +563,12 @@ func set_loop_location(location_id: StringName) -> void:
 	loop_location_id = location_id if location_id != &"" else &"town"
 
 
-func set_store_stock(week_index: int, grocery_stock: Array, hardware_stock: Array, general_stock: Array = []) -> void:
+func set_store_stock(week_index: int, grocery_stock: Array, hardware_stock: Array, general_stock: Array = [], medicine_stock: Array = []) -> void:
 	store_stock_week_index = max(week_index, 0)
 	grocery_store_stock = _duplicate_dictionary_array(grocery_stock)
 	hardware_store_stock = _duplicate_dictionary_array(hardware_stock)
 	general_store_stock = _duplicate_dictionary_array(general_stock)
+	medicine_store_stock = _duplicate_dictionary_array(medicine_stock)
 
 
 func get_store_stock(store_id: StringName) -> Array:
@@ -577,6 +579,8 @@ func get_store_stock(store_id: StringName) -> Array:
 			return _duplicate_dictionary_array(hardware_store_stock)
 		&"general_store":
 			return _duplicate_dictionary_array(general_store_stock)
+		&"medicine":
+			return _duplicate_dictionary_array(medicine_store_stock)
 		_:
 			return []
 
@@ -877,6 +881,7 @@ func to_save_data() -> Dictionary:
 		"grocery_store_stock": _duplicate_dictionary_array(grocery_store_stock),
 		"hardware_store_stock": _duplicate_dictionary_array(hardware_store_stock),
 		"general_store_stock": _duplicate_dictionary_array(general_store_stock),
+		"medicine_store_stock": _duplicate_dictionary_array(medicine_store_stock),
 		"standing_hooks": Array(standing_hooks),
 		"affiliation_hooks": Array(affiliation_hooks),
 		"future_system_flags": future_system_flags.duplicate(true)
@@ -946,6 +951,7 @@ func from_save_data(data: Dictionary, item_catalog) -> bool:
 	grocery_store_stock = _duplicate_dictionary_array(data.get("grocery_store_stock", grocery_store_stock))
 	hardware_store_stock = _duplicate_dictionary_array(data.get("hardware_store_stock", hardware_store_stock))
 	general_store_stock = _duplicate_dictionary_array(data.get("general_store_stock", general_store_stock))
+	medicine_store_stock = _duplicate_dictionary_array(data.get("medicine_store_stock", medicine_store_stock))
 	standing_hooks = _to_packed_string_array(data.get("standing_hooks", standing_hooks))
 	affiliation_hooks = _to_packed_string_array(data.get("affiliation_hooks", affiliation_hooks))
 	future_system_flags = data.get("future_system_flags", {}).duplicate(true)

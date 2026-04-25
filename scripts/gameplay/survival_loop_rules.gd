@@ -15,6 +15,7 @@ const LOCATION_CAMP := &"camp"
 const STORE_GROCERY := &"grocery"
 const STORE_HARDWARE := &"hardware"
 const STORE_GENERAL := &"general_store"
+const STORE_MEDICINE := &"medicine"
 
 const ACTION_GO_TO_CAMP := &"go_to_camp"
 const ACTION_RETURN_TO_TOWN := &"return_to_town"
@@ -715,12 +716,14 @@ static func ensure_weekly_store_stock(player_state, config, item_catalog) -> voi
 	if player_state.store_stock_week_index == week_index \
 			and not player_state.grocery_store_stock.is_empty() \
 			and not player_state.hardware_store_stock.is_empty() \
-			and not player_state.general_store_stock.is_empty():
+			and not player_state.general_store_stock.is_empty() \
+			and not player_state.medicine_store_stock.is_empty():
 		return
 	var grocery_stock = _generate_store_stock(STORE_GROCERY, StoreInventoryCatalogScript.get_store_pool(STORE_GROCERY), week_index, config, item_catalog)
 	var hardware_stock = _generate_store_stock(STORE_HARDWARE, StoreInventoryCatalogScript.get_store_pool(STORE_HARDWARE), week_index, config, item_catalog)
 	var general_stock = _generate_store_stock(STORE_GENERAL, StoreInventoryCatalogScript.get_store_pool(STORE_GENERAL), week_index, config, item_catalog)
-	player_state.set_store_stock(week_index, grocery_stock, hardware_stock, general_stock)
+	var medicine_stock = _generate_store_stock(STORE_MEDICINE, StoreInventoryCatalogScript.get_store_pool(STORE_MEDICINE), week_index, config, item_catalog)
+	player_state.set_store_stock(week_index, grocery_stock, hardware_stock, general_stock, medicine_stock)
 
 
 static func _get_store_week_index(player_state, config) -> int:
@@ -779,6 +782,8 @@ static func _get_store_seed_offset(store_id: StringName) -> int:
 			return 509
 		STORE_GENERAL:
 			return 907
+		STORE_MEDICINE:
+			return 1201
 		_:
 			return 1301
 
@@ -1776,7 +1781,7 @@ static func _check_town_purchase(player_state, item_catalog, item_id: StringName
 static func _check_store_stock_purchase(player_state, config, item_catalog, store_id: StringName, stock_index: int) -> Dictionary:
 	if not _is_at_town(player_state):
 		return _blocked("Town stores are back in town.")
-	if store_id != STORE_GROCERY and store_id != STORE_HARDWARE and store_id != STORE_GENERAL:
+	if store_id != STORE_GROCERY and store_id != STORE_HARDWARE and store_id != STORE_GENERAL and store_id != STORE_MEDICINE:
 		return _blocked("Choose a town store shelf first.")
 	ensure_weekly_store_stock(player_state, config, item_catalog)
 	var stock_entry = _get_store_stock_entry(player_state, store_id, stock_index)
